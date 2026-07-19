@@ -306,7 +306,7 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
       const res = await fetch(`/api/search?q=${encodeURIComponent(text)}`);
       const data = await res.json();
       console.log("Données reçues de l'API :", data.results); // AJOUTE CECI
-      
+
       setResults(data.results || []);
     } catch (err) {
       console.error(err);
@@ -428,7 +428,9 @@ displayItems = displayItems.filter(item => {
                 {item.type === 'tv' ? 'SÉRIE' : item.type === 'movie' ? 'FILM' : item.type}
               </span>
 
-              <img className={styles.poster} src={item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w200${item.poster_path}`) : 'https://via.placeholder.com/150x225?text=Pas+d+affiche'} alt={item.title} />
+              <img className={styles.poster} 
+              referrerPolicy="no-referrer"
+              src={item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w200${item.poster_path}`) : 'https://via.placeholder.com/150x225?text=Pas+d+affiche'} alt={item.title} />
               <h2>{item.title}</h2>
               
               {item.type === 'movie' && item.runtime && item.runtime > 0 && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.runtime} min</p>}
@@ -457,7 +459,9 @@ displayItems = displayItems.filter(item => {
             
             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
               <div style={{ width: '130px', flexShrink: 0 }}>
-                <img style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', aspectRatio: '2/3' }} src={selectedMedia.poster_path ? (selectedMedia.poster_path.startsWith('http') ? selectedMedia.poster_path : `https://image.tmdb.org/t/p/w200${selectedMedia.poster_path}`) : 'https://via.placeholder.com/150x225'} alt="" />
+                <img style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', aspectRatio: '2/3' }} 
+                referrerPolicy="no-referrer"
+                src={selectedMedia.poster_path ? (selectedMedia.poster_path.startsWith('http') ? selectedMedia.poster_path : `https://image.tmdb.org/t/p/w200${selectedMedia.poster_path}`) : 'https://via.placeholder.com/150x225'} alt="" />
               </div>
 
               <div style={{ flex: 1, minWidth: '250px' }}>
