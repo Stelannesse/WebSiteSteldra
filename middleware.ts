@@ -14,11 +14,14 @@ export async function middleware(request: NextRequest) {
       cookies: {
         get(name: string) { return request.cookies.get(name)?.value },
         set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({ name, value: '', ...options })
-        },
+  response.cookies.set({ 
+    name, 
+    value, 
+    ...options,
+    sameSite: 'lax', // Important pour Vercel
+    secure: true    // Obligatoire pour Vercel
+  })
+},
       },
     }
   )
@@ -40,8 +43,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // On cible tout sauf les fichiers statiques et images
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Exclure toutes les routes de login, auth, et fichiers statiques
+    '/((?!_next/static|_next/image|favicon.ico|login|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
