@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const TMDB_API_KEY = '664b734f314d43f4b897c4e0bc48df8d'; 
+const TMDB_API_KEY = process.env.TMDB_API_KEY
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   try {
     const tmdbUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodedQuery}&page=1`;
     const tmdbRes = await fetch(tmdbUrl).then(res => res.json());
+    
 
     if (tmdbRes.results) {
       // Pour éviter de faire ramer le serveur, on limite les requêtes de détails lourdes aux 4 premiers résultats TV

@@ -1,6 +1,6 @@
 'use client'; // Permet d'utiliser les fonctionnalités côté client
 
-import { supabase } from './lib/supabase'; // Connexion à Supabase
+import { createClient } from './lib/supabase';
 import { useState, useEffect } from 'react'; // Gérer les données et les actions
 import styles from './page.module.css'; //Importer le style de la page
 import { useRouter } from 'next/navigation';  // Permet de changer de page
@@ -18,14 +18,19 @@ interface MediaItem { // Définition de l'interface pour les médias
 }
 
 export default function Home() {
+  const supabase = createClient();
   const [query, setQuery] = useState(''); // État pour la recherche
   const [results, setResults] = useState<MediaItem[]>([]); // État pour les résultats de recherche
   const [loading, setLoading] = useState(false); // État pour indiquer si la recherche est en cours
   const router = useRouter(); // Permet de naviguer entre les pages
   const [isChecking, setIsChecking] = useState(true); // État pour vérifier si l'utilisateur est connecté
   const [userName, setUserName] = useState<string | null>(null); // État pour stocker le nom de l'utilisateur connecté
-  
-  
+  const [userId, setUserId] = useState<string | null>(null); // État pour stocker l'ID de l'utilisateur connecté
+  const [userEmail, setUserEmail] = useState<string | null>(null); // État pour stocker l'email de l'utilisateur connecté
+  const [userAvatar, setUserAvatar] = useState<string | null>(null); // État pour stocker l'avatar de l'utilisateur connecté
+  const [userRole, setUserRole] = useState<string | null>(null); // État pour stocker le rôle de l'utilisateur connecté
+  const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
+
   const [statusFilter, setStatusFilter] = useState<'tout' | 'vu' | 'a_voir'>('tout');
   const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
   
@@ -48,6 +53,38 @@ export default function Home() {
   window.location.href = '/login'; // Redirection vers la page de login
 };
 
+// Fonction pour sauvegarder les données dans Supabase
+const saveToSupabase = async (mediaData: MediaItem, status: string, user: any) => {
+  const mediaKey = `${mediaData.type}_${mediaData.id}`;
+  const { error } = await supabase
+    .from('media_progress')
+    .upsert({
+      user_id: user.id,
+      media_id: mediaData.id.toString(),
+      media_type: mediaData.type,
+      status: status,
+      media_data: mediaData,
+      // On conserve les épisodes et chapitres existants s'ils existent localement
+      watched_episodes: watchedEpisodes,
+      manga_progress: mangaProgress[mediaKey] || 0
+    });
+
+  if (error) console.error("Erreur de sauvegarde globale:", error);
+};
+
+const handleAddToMyList = async (media: MediaItem, status: 'vu' | 'a_voir') => {
+  const mediaKey = `${media.type}_${media.id}`;
+  const updatedList = { ...myList, [mediaKey]: { media, status } };
+  setMyList(updatedList);
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await saveToSupabase(media, status, user);
+  } else {
+    localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
+  }
+};
+
 // Vérification de la session utilisateur au chargement de la page
 useEffect(() => { 
   const loadInitialData = async () => {
@@ -56,29 +93,44 @@ useEffect(() => {
     if (user) {
       // Si connecté : on récupère tout depuis Supabase
       setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || "Utilisateur");
-      const { data, error } = await supabase
-        .from('user_media')
-        .select('*')
-        .eq('user_id', user.id);
-
+    
+      // Dans ton useEffect, change ceci :
+    const { data, error } = await supabase
+      .from('media_progress')
+      .select('*')
+      .eq('user_id', user.id);
       if (data && !error) {
+        console.log("Données brutes reçues de Supabase :", data);
+
         const newList: any = {};
         const newEpisodes: any = {};
         const newProgress: any = {};
 
-        data.forEach(item => {
-          // On stocke les médias et leur statut dans un objet pour un accès rapide
-          const mediaKey = `${item.media_data.type}_${item.media_id}`;// Clé unique pour chaque média
-          newList[mediaKey] = { media: item.media_data, status: item.status };// On stocke les épisodes vus et la progression des mangas
-          
-          // On stocke les épisodes vus et la progression des mangas
-          if (item.watched_episodes) Object.assign(newEpisodes, item.watched_episodes);
-          if (item.manga_progress) newProgress[`${item.media_data.type}_${item.media_id}`] = item.manga_progress;
-        });
-        setMyList(newList);
-        setWatchedEpisodes(newEpisodes);
-        setMangaProgress(newProgress);
-        console.log("Données chargées depuis Supabase");
+      data.forEach((item: any) => {
+    // 1. Récupération sûre du media et de son type
+    const media = item.media_data;
+    const mediaType = media?.type || item.media_type || 'unknown';
+    const mediaId = item.media_id;
+    
+    // 2. Clé unique (en forçant le type pour éviter les erreurs)
+    const mediaKey = `${mediaType}_${mediaId}`;
+    
+    // 3. Reconstitution propre de l'objet
+    newList[mediaKey] = { 
+        media: { ...media, type: mediaType, id: mediaId }, 
+        status: item.status 
+    };
+    
+    // 4. On stocke le reste
+    if (item.watched_episodes) Object.assign(newEpisodes, item.watched_episodes);
+    if (item.manga_progress) newProgress[mediaKey] = item.manga_progress;
+});
+
+// Mise à jour de tous les états
+setMyList(newList);
+setWatchedEpisodes(newEpisodes);
+setMangaProgress(newProgress);
+
       }
     } else {
       // Si pas connecté : on récupère depuis le localStorage
@@ -159,32 +211,45 @@ const openMediaDetails = async (media: MediaItem) => {
 // Fonction pour marquer un épisode comme vu ou non vu
 const toggleEpisodeWatched = async (episodeNum: number) => {
   if (!selectedMedia) return;
-  const key = `${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${episodeNum}`;
-  const updated = { ...watchedEpisodes, [key]: !watchedEpisodes[key] };
+  const mediaKey = `${selectedMedia.type}_${selectedMedia.id}`;
+  const epKey = `${mediaKey}_S${activeSeason}E${episodeNum}`;
+  const updated = { ...watchedEpisodes, [epKey]: !watchedEpisodes[epKey] };
   
   setWatchedEpisodes(updated);
   localStorage.setItem('steldra_watched_episodes_v1', JSON.stringify(updated));
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    // On met à jour la ligne correspondante dans Supabase
-    await supabase.from('user_media')
-      .upsert({ user_id: user.id, media_id: selectedMedia.id.toString(), watched_episodes: updated });
+    await supabase.from('media_progress').upsert({
+      user_id: user.id,
+      media_id: selectedMedia.id.toString(),
+      media_type: selectedMedia.type,
+      media_data: selectedMedia,
+      status: myList[mediaKey]?.status || 'a_voir',
+      watched_episodes: updated
+    });
   }
 };
+
 // Fonction pour gérer la progression des chapitres pour les mangas et manhwas
 const handleChapterChange = async (value: number) => {
   if (!selectedMedia) return;
-  const key = `${selectedMedia.type}_${selectedMedia.id}`;
-  const updated = { ...mangaProgress, [key]: Math.max(0, value) };
+  const mediaKey = `${selectedMedia.type}_${selectedMedia.id}`;
+  const updated = { ...mangaProgress, [mediaKey]: Math.max(0, value) };
   
   setMangaProgress(updated);
   localStorage.setItem('steldra_manga_progress_v1', JSON.stringify(updated));
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
-    await supabase.from('user_media')
-      .upsert({ user_id: user.id, media_id: selectedMedia.id.toString(), manga_progress: value });
+    await supabase.from('media_progress').upsert({
+      user_id: user.id,
+      media_id: selectedMedia.id.toString(),
+      media_type: selectedMedia.type,
+      media_data: selectedMedia,
+      status: myList[mediaKey]?.status || 'a_voir',
+      manga_progress: Math.max(0, value)
+    });
   }
 };
 
@@ -201,26 +266,28 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
     updatedList[mediaKey] = { media, status };
   }
 
-  // Mise à jour de l'état local
+
   setMyList(updatedList);
   localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
 
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
     if (isRemoving) {
-      // 1. SI ON SUPPRIME : On supprime la ligne dans Supabase
+
       await supabase
-        .from('user_media')
+        .from('media_progress')
         .delete()
         .eq('user_id', user.id)
         .eq('media_id', media.id.toString());
     } else {
-      // 2. SI ON AJOUTE/MODIFIE : On fait l'upsert
-      await supabase.from('user_media').upsert({ 
+      await supabase.from('media_progress').upsert({ 
         user_id: user.id, 
         media_id: media.id.toString(), 
+        media_type: media.type,
         media_data: media, 
-        status: status 
+        status: status,
+        watched_episodes: watchedEpisodes,
+        manga_progress: mangaProgress[mediaKey] || 0
       });
     }
   }
@@ -238,6 +305,8 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(text)}`);
       const data = await res.json();
+      console.log("Données reçues de l'API :", data.results); // AJOUTE CECI
+      
       setResults(data.results || []);
     } catch (err) {
       console.error(err);
@@ -248,20 +317,38 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
 
   // Fonction pour gérer la déconnexion de l'utilisateur
   const isSearching = query.trim().length >= 2;
+  // AJOUTE CECI JUSTE AVANT LA LIGNE "let displayItems = ..."
+console.log("Contenu de myList :", Object.values(myList));
   let displayItems = isSearching ? results : Object.values(myList).map(item => item.media);
 
   const itemsForCount = Object.values(myList).filter(item => typeFilter === 'tous' || item.media.type === typeFilter);
   const totalCount = itemsForCount.length;
   const vuCount = itemsForCount.filter(item => item.status === 'vu').length;
   const aVoirCount = itemsForCount.filter(item => item.status === 'a_voir').length;
+  
+  
 
-  // Filtrage des médias à afficher selon le type et le statut
-  displayItems = displayItems.filter(item => {
+// Remplace ton filtre actuel dans page.tsx par celui-ci :
+displayItems = displayItems.filter(item => {
+  const mediaType = (item.type || 'unknown').toLowerCase();
+  const filterType = typeFilter.toLowerCase();
+  
+  // 1. Filtrage par type : Si on est en "Tout", on affiche tout, sinon on filtre par type.
+  const matchesType = typeFilter === 'tous' || mediaType === filterType;
+  
+  // 2. Filtrage par statut :
+  // Si on est en train de chercher (isSearching), on ignore le filtre de statut 
+  // car les résultats de l'API ne sont pas encore dans "myList".
+  // Si on n'est pas en recherche, on applique le filtre de statut habituel.
+  let matchesStatus = true;
+  if (!isSearching) {
     const mediaKey = `${item.type}_${item.id}`;
-    const matchesType = typeFilter === 'tous' || item.type === typeFilter;
-    const matchesStatus = isSearching || statusFilter === 'tout' || myList[mediaKey]?.status === statusFilter;
-    return matchesType && matchesStatus;
-  });
+    const itemStatus = myList[mediaKey]?.status || 'a_voir'; 
+    matchesStatus = statusFilter === 'tout' || itemStatus === statusFilter;
+  }
+  
+  return matchesType && matchesStatus;
+});
 
   return (
     <div className={styles.mainContainer}>
