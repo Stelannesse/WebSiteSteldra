@@ -11,17 +11,23 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) {
-  response.cookies.set({ 
-    name, 
-    value, 
-    ...options,
-    sameSite: 'lax', // Important pour Vercel
-    secure: true    // Obligatoire pour Vercel
-  })
-},
+      // Dans ton middleware.ts, remplace la partie cookies par :
+cookies: {
+  getAll() {
+    return request.cookies.getAll()
+  },
+  setAll(cookiesToSet) {
+    cookiesToSet.forEach(({ name, value, options }) =>
+      request.cookies.set(name, value)
+    )
+    response = NextResponse.next({
+      request
+    })
+    cookiesToSet.forEach(({ name, value, options }) =>
+      response.cookies.set(name, value, options)
+    )
+  },
+
       },
     }
   )
@@ -42,9 +48,17 @@ export async function middleware(request: NextRequest) {
   return response
 }
 
-export const config = {
+  export const config = {
   matcher: [
-    // Exclure toutes les routes de login, auth, et fichiers statiques
-    '/((?!_next/static|_next/image|favicon.ico|login|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    /*
+     * Applique le middleware sur tous les chemins SAUF :
+     * - _next/static (fichiers de style/scripts)
+     * - _next/image (images)
+     * - favicon.ico
+     * - fichiers avec extension (ex: .png, .css)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
+
+

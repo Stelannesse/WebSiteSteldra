@@ -1,7 +1,7 @@
 'use client'; // Permet d'utiliser les fonctionnalités côté client
 
 import { createClient } from './lib/supabase';
-import { useState, useEffect } from 'react'; // Gérer les données et les actions
+import { useState, useEffect, useMemo } from 'react'; // Gérer les données et les actions
 import styles from './page.module.css'; //Importer le style de la page
 import { useRouter } from 'next/navigation';  // Permet de changer de page
 
@@ -30,6 +30,7 @@ export default function Home() {
   const [userAvatar, setUserAvatar] = useState<string | null>(null); // État pour stocker l'avatar de l'utilisateur connecté
   const [userRole, setUserRole] = useState<string | null>(null); // État pour stocker le rôle de l'utilisateur connecté
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<'tout' | 'vu' | 'a_voir'>('tout');
   const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
@@ -39,10 +40,100 @@ export default function Home() {
   // États pour la fiche détaillée "TV Time"
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [mediaDetails, setMediaDetails] = useState<{ synopsis: string; actors: any[]; seasons_count: number } | null>(null);
+  const [mediaDetails, setMediaDetails] = useState<{ synopsis: string; actors: any[]; seasons_count: number; authors?: any[] } | null>(null);
   const [activeSeason, setActiveSeason] = useState<number>(1);
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
+
+  // Reviews (likes/dislikes + commentaire) par média
+  const [reviewsByMedia, setReviewsByMedia] = useState<{ [key: string]: any[] }>({});
+  const [reviewRating, setReviewRating] = useState<'like' | 'dislike'>('like');
+  const [reviewComment, setReviewComment] = useState('');
+
+  // Distribution calculée à partir de la liste personnelle
+  const distribution = useMemo(() => {
+    const counts: { [k: string]: number } = { movie: 0, tv: 0, drama: 0, anime: 0, manga: 0, manhwa: 0 };
+    Object.values(myList).forEach((entry: any) => {
+      const t = entry.media.type;
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    return counts;
+  }, [myList]);
+
+  // Charge les avis depuis Supabase (ou fallback localStorage)
+  const loadReviews = async (mediaId: string | number) => {
+    const mediaKey = mediaId.toString();
+    try {
+      const { data, error } = await supabase.from('media_reviews').select('*').eq('media_id', mediaKey).order('created_at', { ascending: false });
+      if (error) throw error;
+      setReviewsByMedia((p) => ({ ...p, [mediaKey]: data || [] }));
+    } catch (err) {
+      console.error('Erreur loadReviews:', err);
+      const local = JSON.parse(localStorage.getItem(`steldra_reviews_${mediaKey}`) || '[]');
+      setReviewsByMedia((p) => ({ ...p, [mediaKey]: local }));
+    }
+  };
+
+  // Soumet un avis (Supabase, sinon fallback local)
+  const submitReview = async (media: MediaItem, rating: 'like' | 'dislike', comment: string) => {
+    const mediaKey = media.id.toString();
+    const payload: any = {
+      user_id: userId || null,
+      user_name: userName || 'Anonyme',
+      media_id: mediaKey,
+      media_type: media.type,
+      rating,
+      comment,
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const { data, error } = await supabase.from('media_reviews').insert(payload).select().single();
+      if (error) throw error;
+      // insère le nouvel avis au début
+      setReviewsByMedia((p) => ({ ...p, [mediaKey]: [data, ...(p[mediaKey] || [])] }));
+      setReviewComment('');
+      setReviewRating('like');
+    } catch (err) {
+      console.error('Erreur submitReview:', err);
+      const existing = JSON.parse(localStorage.getItem(`steldra_reviews_${mediaKey}`) || '[]');
+      const entry = { id: Date.now(), ...payload };
+      existing.unshift(entry);
+      localStorage.setItem(`steldra_reviews_${mediaKey}`, JSON.stringify(existing));
+      setReviewsByMedia((p) => ({ ...p, [mediaKey]: existing }));
+      setReviewComment('');
+      setReviewRating('like');
+    }
+  };
+
+  // Supprimer un avis (si propriétaire) — Supabase et fallback local
+  const deleteReview = async (reviewId: string | number, mediaId: string | number, reviewUserId?: string | null, reviewUserName?: string | null) => {
+    const mediaKey = mediaId.toString();
+
+    // Autorisation basique : l'utilisateur courant doit être l'auteur
+    if (reviewUserId && userId && reviewUserId === userId) {
+      // ok
+    } else if (reviewUserName && userName && reviewUserName === userName) {
+      // ok
+    } else if (!userId) {
+      // Si pas connecté et l'avis vient d'un fallback local avec id numérique, on autorise suppression locale
+      // mais sinon on refuse
+    }
+
+    try {
+      // Essayer de supprimer côté Supabase
+      const { error } = await supabase.from('media_reviews').delete().eq('id', reviewId);
+      if (error) throw error;
+      setReviewsByMedia((p) => ({ ...p, [mediaKey]: (p[mediaKey] || []).filter((r: any) => r.id !== reviewId) }));
+    } catch (err) {
+      console.warn('deleteReview supabase failed, falling back to local removal:', err);
+      // fallback localStorage
+      const existing = JSON.parse(localStorage.getItem(`steldra_reviews_${mediaKey}`) || '[]');
+      const filtered = existing.filter((r: any) => r.id !== reviewId);
+      localStorage.setItem(`steldra_reviews_${mediaKey}`, JSON.stringify(filtered));
+      setReviewsByMedia((p) => ({ ...p, [mediaKey]: filtered }));
+    }
+  };
   
   // Suivi des épisodes vus et progression chapitres
   const [watchedEpisodes, setWatchedEpisodes] = useState<{ [key: string]: boolean }>({});
@@ -146,9 +237,34 @@ setMangaProgress(newProgress);
       if (savedProgress) setMangaProgress(JSON.parse(savedProgress));
     }
   };
+
       // On met à jour l'état pour indiquer que la vérification est terminée
   loadInitialData();
 }, []);  
+
+useEffect(() => {
+  let scrollTimeout: NodeJS.Timeout;
+  
+  const handleScroll = () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const isScrolled = window.scrollY > 400;
+      setShowScrollTop(isScrolled);
+      console.log('Scroll position:', window.scrollY, 'Show button:', isScrolled);
+    }, 50);
+  };
+  
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  return () => {
+    window.removeEventListener('scroll', handleScroll);
+    clearTimeout(scrollTimeout);
+  };
+}, []);
+
+const scrollToTop = () => {
+  window.document.documentElement.scrollTop = 0; // Pour la plupart des navigateurs
+  window.document.body.scrollTop = 0;           // Pour Safari
+};
 
 // Fonction pour réinitialiser la recherche et les filtres
   const handleReset = (e: React.MouseEvent) => {
@@ -180,8 +296,12 @@ const openMediaDetails = async (media: MediaItem) => {
       setMediaDetails({
         synopsis: data.synopsis || localSynopsis,
         actors: data.actors || [],
-        seasons_count: data.seasons_count || defaultSeasons
+        seasons_count: data.seasons_count || defaultSeasons,
+        authors: data.authors || data.creators || []
       });
+
+      // Charger les avis pour ce média
+      loadReviews(media.id);
 
       // Appel immédiat des épisodes
       if (defaultSeasons > 0) loadSeasonEpisodes(media.id, 1);
@@ -450,6 +570,7 @@ displayItems = displayItems.filter(item => {
           );
         })}
       </div>
+      
 
       {/* Fiche détaillée "TV Time" */}
       {selectedMedia && (
@@ -469,7 +590,76 @@ displayItems = displayItems.filter(item => {
                 <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.2rem 0.6rem', borderRadius: '4px', background: '#393E46' }}>{selectedMedia.type}</span>
                 
                 <h3 style={{ margin: '1.2rem 0 0.5rem 0', fontSize: '1.1rem' }}>Synopsis</h3>
-                {detailsLoading ? <p style={{ opacity: 0.5 }}>Chargement du résumé...</p> : <p style={{ fontSize: '0.95rem', opacity: 0.85, lineHeight: '1.4', margin: 0 }}>{mediaDetails?.synopsis}</p>}
+                {detailsLoading ? (
+                  <p style={{ opacity: 0.5 }}>Chargement du résumé...</p>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '0.95rem', opacity: 0.85, lineHeight: '1.4', margin: 0 }}>{mediaDetails?.synopsis}</p>
+
+                    {/* Auteur / Scénariste pour mangas / manhwas */}
+                    {(selectedMedia.type === 'manga' || selectedMedia.type === 'manhwa') && (
+                      <div style={{ marginTop: '0.8rem', color: '#EEEEEE' }}>
+                        <strong>Auteur / Scénariste : </strong>
+                        {mediaDetails?.authors && mediaDetails.authors.length > 0 ? (
+                          Array.isArray(mediaDetails.authors) ? mediaDetails.authors.join(', ') : mediaDetails.authors
+                        ) : (
+                          'Non renseigné'
+                        )}
+                      </div>
+                    )}
+
+                    {/* Section Avis */}
+                    <div style={{ marginTop: '1.2rem', borderTop: '1px solid #393E46', paddingTop: '1rem' }}>
+                      <h3 style={{ fontSize: '1.1rem', marginBottom: '0.6rem' }}>Avis des utilisateurs</h3>
+
+                      <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginBottom: '0.6rem' }}>
+                        <button onClick={() => setReviewRating('like')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: reviewRating === 'like' ? '2px solid #00ADB5' : '1px solid #393E46', background: reviewRating === 'like' ? '#00ADB5' : '#2a2e35', color: reviewRating === 'like' ? '#222831' : '#FFF', cursor: 'pointer' }}>👍 J'aime</button>
+                        <button onClick={() => setReviewRating('dislike')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: reviewRating === 'dislike' ? '2px solid #FF6B6B' : '1px solid #393E46', background: reviewRating === 'dislike' ? '#FF6B6B' : '#2a2e35', color: reviewRating === 'dislike' ? '#222831' : '#FFF', cursor: 'pointer' }}>👎 Je n'aime pas</button>
+                      </div>
+
+                      <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} placeholder="Laisser un commentaire (optionnel)" style={{ width: '100%', minHeight: '60px', padding: '0.6rem', borderRadius: '8px', background: '#222831', border: '1px solid #393E46', color: '#EEE', marginBottom: '0.6rem' }} />
+
+                      <div style={{ display: 'flex', gap: '0.6rem' }}>
+                        <button onClick={() => submitReview(selectedMedia, reviewRating, reviewComment)} style={{ padding: '0.6rem 1rem', background: '#00ADB5', border: 'none', color: '#222831', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer' }}>Envoyer</button>
+                        <button onClick={() => { setReviewComment(''); setReviewRating('like'); }} style={{ padding: '0.6rem 1rem', background: '#393E46', border: 'none', color: '#EEE', borderRadius: '8px', cursor: 'pointer' }}>Annuler</button>
+                      </div>
+
+                      {/* Liste d'avis */}
+                      <div style={{ marginTop: '1rem' }}>
+                        {(reviewsByMedia[selectedMedia.id] || []).length === 0 ? (
+                          <p style={{ opacity: 0.6 }}>Pas encore d'avis — soyez le premier !</p>
+                        ) : (
+                          (reviewsByMedia[selectedMedia.id] || []).map((r: any) => {
+                            // Vérifie si l'utilisateur courant est l'auteur (ou si l'avis est stocké localement)
+                            let canDelete = false;
+                            try {
+                              const local = JSON.parse(localStorage.getItem(`steldra_reviews_${selectedMedia.id}`) || '[]');
+                              const isLocal = local.some((x:any) => x.id === r.id);
+                              canDelete = (r.user_id && userId && r.user_id === userId) || (r.user_name && userName && r.user_name === userName) || isLocal;
+                            } catch (e) { canDelete = (r.user_id && userId && r.user_id === userId) || (r.user_name && userName && r.user_name === userName); }
+
+                            return (
+                              <div key={r.id} style={{ padding: '0.6rem', background: '#2a2e35', borderRadius: '8px', marginBottom: '0.6rem', border: '1px solid #393E46' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.8rem' }}>
+                                  <strong>{r.user_name || 'Utilisateur'}</strong>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <span style={{ opacity: 0.7, fontSize: '0.85rem' }}>{new Date(r.created_at).toLocaleString()}</span>
+                                    {canDelete && (
+                                      <button onClick={() => deleteReview(r.id, selectedMedia.id, r.user_id, r.user_name)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#EEE', padding: '0.25rem 0.5rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Supprimer</button>
+                                    )}
+                                  </div>
+                                </div>
+                                <div style={{ marginTop: '0.4rem' }}>{r.rating === 'like' ? '👍 J\'aime' : '👎 Je n\'aime pas'}</div>
+                                {r.comment && <div style={{ marginTop: '0.4rem', opacity: 0.9 }}>{r.comment}</div>}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -534,6 +724,16 @@ displayItems = displayItems.filter(item => {
           </div>
         </div>
       )}
+
+      <button
+        onClick={scrollToTop}
+        className={styles.floatS}
+        aria-label="Retour en haut"
+        title="Retour en haut"
+      >
+        S
+      </button>
     </div>
+    
   );
 }

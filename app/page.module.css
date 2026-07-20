@@ -1,19 +1,29 @@
 /* app/page.module.css */
 
+:global(*), :global(*::before), :global(*::after) {
+    box-sizing: border-box;
+}
+
 .mainContainer {
     background-color: #FFFFFF !important;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
     padding-top: 140px;
     font-family: 'Arial', sans-serif;
-    box-sizing: border-box;
     color: #333333;
+    overflow-y: visible !important; 
+    display: block !important;
 }
 
 .header {
-    position: fixed;
+    position: relative;
     top: 0;
     left: 0;
     right: 0; 
+    width: 100%;
+    box-sizing: border-box;
     padding: 1rem 2%;
     background: linear-gradient(135deg, #393E46, #2a2e35);
     display: flex;
@@ -26,30 +36,149 @@
     border-bottom: 2px solid #00ADB5;
 }
 
+.mainContainer {
+    background-color: #FFFFFF !important;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    padding-top: 20px; /* Réduis cette valeur car le header prend sa place naturellement */
+    font-family: 'Arial', sans-serif;
+    color: #333333;
+    min-height: 100vh;
+    overflow: visible; /* Assure-toi que c'est bien 'visible' ou 'auto' */
+}
+
+.scrollTopBtn {
+    position: fixed !important; /* Force le bouton à flotter par-dessus tout */
+    bottom: 25px;
+    right: 25px;
+    z-index: 9999 !important; /* S'assure qu'il est au-dessus de la fiche détaillée */
+    background-color: #00ADB5;
+    color: white;
+    padding: 14px 24px;
+    border-radius: 30px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    animation: slideIn 0.3s ease-out;
+}
+
+.scrollTopBtn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 173, 181, 0.4);
+    background-color: #00d4e0;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Bouton S flottant, toujours visible */
+.floatS {
+    position: fixed !important;
+    right: 25px;
+    bottom: 25px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #00ADB5; /* même couleur que le bouton de connexion */
+    color: #000; /* texte noir */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+    z-index: 10000 !important;
+    border: 2px solid rgba(0,0,0,0.08);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.floatS:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.3); background: #008f95; }
+.floatS:active { transform: translateY(0); }
+
 /* --- ADAPTATION MOBILE / TABLETTE --- */
 @media (max-width: 768px) {
+  /* Restaurer la navbar horizontale compacte : logo + recherche + userControls en ligne */
   .header {
-    flex-direction: column; /* Empile les éléments verticalement */
-    align-items: stretch;   /* Étire la largeur pour remplir l'écran */
-    gap: 15px;
-    padding: 1rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    width: 100%;
   }
 
-  /* Force la barre de recherche à prendre toute la largeur */
+  /* Barre de recherche compacte et flexible */
   .searchContainer {
-    width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 0.6rem;
+    background: rgba(255,255,255,0.04);
+    padding: 0.4rem;
   }
 
   .searchInput {
     width: 100%;
     box-sizing: border-box;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.95rem;
   }
 
-  /* Ajuste les boutons filtres pour qu'ils soient plus compacts sur mobile */
+  /* Boutons filtres plus compacts */
   .filterBtn {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.6rem;
   }
+
+  /* User controls alignés à droite et non expansifs */
+  .userControls { display:flex; gap:0.5rem; align-items:center; justify-content:flex-end; flex: 0 0 auto; }
+
+  /* Bouton Déconnexion plus court mais visible entièrement */
+  .logoutBtn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+    max-width: none;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .usernameDisplay { max-width: 120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* Cards et liste plus compactes */
+  .liste { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0.8rem; gap: 0.6rem; }
+  .card { min-height: 200px; padding: 0.6rem; border-radius: 10px; }
+  .card h2 { font-size: 0.9rem; min-height: 2rem; }
+  .poster { aspect-ratio: 3/4; }
+
+  /* Floating S réduit */
+  .floatS { width:48px; height:48px; right:12px; bottom:12px; font-size:1rem; }
+
+  .distBar { height: 8px; }
+  .reviewForm textarea { min-height: 48px; }
+  .reviewList { gap: 0.5rem; }
+}
+
+/* Cette classe sera ajoutée par le script quand on descend */
+.headerHidden {
+    transform: translateY(-100%);
 }
 
 .logo {
@@ -84,6 +213,9 @@
     justify-content: center;
     flex: 2;
     padding: 0.5rem 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .filterBtn {
@@ -185,12 +317,16 @@
 
 .liste {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1.5rem;
-    padding: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* colonnes plus compactes */
+    gap: 1.2rem;
+    padding: 1.6rem;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.03);
+    box-sizing: border-box;
 }
 
 .card {
@@ -202,9 +338,10 @@
     flex-direction: column;
     gap: 0.8rem;
     width: 100%;
-    min-height: 380px; 
+    min-height: 260px; /* réduit pour éviter des cards trop grandes */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
     box-sizing: border-box;
+    border: 1px solid rgba(255,255,255,0.12);
 }
 
 .card:hover {
@@ -234,4 +371,43 @@
 }
 
 @media (max-width: 1200px) { .liste { grid-template-columns: repeat(4, 1fr); } }
-@media (max-width: 768px) { .liste { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { 
+  .liste { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0.8rem; gap: 0.6rem; }
+  .card { min-height: 200px; padding: 0.75rem; border-radius: 10px; }
+  .card h2 { font-size: 0.9rem; min-height: 2.2rem; }
+  .poster { aspect-ratio: 3/4; }
+
+  /* Header plus compact */
+    .header { padding: 0.6rem 1rem; gap: 0.5rem; border-bottom-width: 1px; display:flex; flex-wrap:wrap; align-items:center; }
+    .header > div { flex: 1 1 auto; min-width: 0; }
+    .logo { font-size: 1rem; padding: 0.3rem 0.6rem; border-radius: 6px; }
+    .searchContainer { min-width: 0; margin: 0; width: 100%; padding: 0.4rem; flex: 1 1 300px; }
+    .filterBtn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+    .userControls { display:flex; gap:0.6rem; align-items:center; justify-content:flex-end; flex: 0 0 auto; }
+    .logoutBtn { padding: 0.25rem 0.45rem; font-size: 0.8rem; max-width: none; white-space: nowrap; overflow: visible; text-overflow: clip; line-height: 1.1; }
+    .usernameDisplay { max-width: 140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .searchInput { min-width: 0; }
+
+  /* Liste et conteneurs */
+  .mainContainer { padding-top: 16px; }
+  .liste { padding: 1rem; }
+
+  /* Floating S réduit */
+  .floatS { width:48px; height:48px; right:16px; bottom:16px; font-size:1rem; }
+
+  /* Distribution */
+  .distBar { height: 8px; }
+
+  /* Avis */
+  .reviewForm textarea { min-height: 48px; }
+  .reviewList { gap: 0.5rem; }
+}
+
+/* Distribution */
+.distContainer { padding: 0.8rem 0; }
+.distItem { margin-bottom: 0.5rem; }
+.distBar { height: 10px; background: linear-gradient(90deg,#00ADB5,#008f95); border-radius: 6px; margin-top: 0.3rem; }
+
+/* Avis */
+.reviewForm { display: flex; flex-direction: column; gap: 0.6rem; }
+.reviewList { margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; }
