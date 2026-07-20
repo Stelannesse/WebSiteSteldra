@@ -32,10 +32,13 @@ export default function Home() {
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  const [statusFilter, setStatusFilter] = useState<'tout' | 'vu' | 'a_voir'>('tout');
+  type WatchStatus = 'vu' | 'a_voir';
+  type FilterStatus = 'tout' | 'termine' | 'commence' | 'a_voir';
+
+  const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
   const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
   
-  const [myList, setMyList] = useState<{ [key: string]: { media: MediaItem; status: 'vu' | 'a_voir' } }>({});
+  const [myList, setMyList] = useState<{ [key: string]: { media: MediaItem; status: WatchStatus } }>({});
   
   // États pour la fiche détaillée "TV Time"
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
@@ -138,6 +141,19 @@ export default function Home() {
   // Suivi des épisodes vus et progression chapitres
   const [watchedEpisodes, setWatchedEpisodes] = useState<{ [key: string]: boolean }>({});
   const [mangaProgress, setMangaProgress] = useState<{ [key: string]: number }>({});  
+
+  const getMediaKey = (media: MediaItem | { type: string; id: string | number }) => `${media.type}_${media.id}`;
+  const hasStartedProgress = (mediaKey: string) => {
+    const hasWatched = Object.keys(watchedEpisodes).some((key) => key.startsWith(`${mediaKey}_S`) && watchedEpisodes[key]);
+    const progressValue = mangaProgress[mediaKey] || 0;
+    return hasWatched || progressValue > 0;
+  };
+
+  const getFilterStatus = (media: MediaItem, currentStatus?: WatchStatus): FilterStatus => {
+    const status = currentStatus || myList[getMediaKey(media)]?.status || 'a_voir';
+    if (status === 'vu') return 'termine';
+    return hasStartedProgress(getMediaKey(media)) ? 'commence' : 'a_voir';
+  };
 
   const handleLogout = async () => {
   await supabase.auth.signOut();
@@ -439,34 +455,31 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
   const isSearching = query.trim().length >= 2;
   // AJOUTE CECI JUSTE AVANT LA LIGNE "let displayItems = ..."
 console.log("Contenu de myList :", Object.values(myList));
-  let displayItems = isSearching ? results : Object.values(myList).map(item => item.media);
+let displayItems = isSearching ? results : Object.values(myList).map(item => item.media);
 
-  const itemsForCount = Object.values(myList).filter(item => typeFilter === 'tous' || item.media.type === typeFilter);
-  const totalCount = itemsForCount.length;
-  const vuCount = itemsForCount.filter(item => item.status === 'vu').length;
-  const aVoirCount = itemsForCount.filter(item => item.status === 'a_voir').length;
-  
-  
+const itemsForCount = Object.values(myList).filter(item => typeFilter === 'tous' || item.media.type === typeFilter);
+const totalCount = itemsForCount.length;
+const termineCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'termine').length;
+const commenceCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'commence').length;
+const aVoirCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'a_voir').length;
 
-// Remplace ton filtre actuel dans page.tsx par celui-ci :
 displayItems = displayItems.filter(item => {
   const mediaType = (item.type || 'unknown').toLowerCase();
   const filterType = typeFilter.toLowerCase();
-  
+    
   // 1. Filtrage par type : Si on est en "Tout", on affiche tout, sinon on filtre par type.
   const matchesType = typeFilter === 'tous' || mediaType === filterType;
-  
+    
   // 2. Filtrage par statut :
   // Si on est en train de chercher (isSearching), on ignore le filtre de statut 
   // car les résultats de l'API ne sont pas encore dans "myList".
   // Si on n'est pas en recherche, on applique le filtre de statut habituel.
   let matchesStatus = true;
   if (!isSearching) {
-    const mediaKey = `${item.type}_${item.id}`;
-    const itemStatus = myList[mediaKey]?.status || 'a_voir'; 
-    matchesStatus = statusFilter === 'tout' || itemStatus === statusFilter;
+    const status = getFilterStatus(item, myList[`${item.type}_${item.id}`]?.status);
+    matchesStatus = statusFilter === 'tout' || status === statusFilter;
   }
-  
+    
   return matchesType && matchesStatus;
 });
 
@@ -526,8 +539,9 @@ displayItems = displayItems.filter(item => {
       {!isSearching && (
         <nav className={styles.navFilters} style={{ marginTop: '1.5rem', padding: '0 2rem' }}>
           <button className={`${styles.filterBtn} ${statusFilter === 'tout' ? styles.active : ''}`} onClick={() => setStatusFilter('tout')}>Tout ({totalCount})</button>
-          <button className={`${styles.filterBtn} ${statusFilter === 'vu' ? styles.active : ''}`} onClick={() => setStatusFilter('vu')}>Terminé ({vuCount})</button>
-          <button className={`${styles.filterBtn} ${statusFilter === 'a_voir' ? styles.active : ''}`} onClick={() => setStatusFilter('a_voir')}>À Faire ({aVoirCount})</button>
+          <button className={`${styles.filterBtn} ${statusFilter === 'termine' ? styles.active : ''}`} onClick={() => setStatusFilter('termine')}>Terminé ({termineCount})</button>
+          <button className={`${styles.filterBtn} ${statusFilter === 'commence' ? styles.active : ''}`} onClick={() => setStatusFilter('commence')}>Commencé ({commenceCount})</button>
+          <button className={`${styles.filterBtn} ${statusFilter === 'a_voir' ? styles.active : ''}`} onClick={() => setStatusFilter('a_voir')}>À voir ({aVoirCount})</button>
         </nav>
       )}
 
@@ -537,6 +551,7 @@ displayItems = displayItems.filter(item => {
         {displayItems.map((item) => {
           const mediaKey = `${item.type}_${item.id}`;
           const currentStatus = myList[mediaKey]?.status;
+          const cardProgressStatus = getFilterStatus(item, currentStatus);
 
           const badgeColors: { [key: string]: string } = {
             movie: '#00ADB5', tv: '#6C5CE7', drama: '#FD79A8', anime: '#E17055', manga: '#F1C40F', manhwa: '#2ED573'
@@ -552,7 +567,9 @@ displayItems = displayItems.filter(item => {
               referrerPolicy="no-referrer"
               src={item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w200${item.poster_path}`) : 'https://via.placeholder.com/150x225?text=Pas+d+affiche'} alt={item.title} />
               <h2>{item.title}</h2>
-              
+              {cardProgressStatus === 'commence' && (
+                <p style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '-0.15rem', color: '#FFD54F' }}>Commencé</p>
+              )}
               {item.type === 'movie' && item.runtime && item.runtime > 0 && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.runtime} min</p>}
               {(item.type === 'tv' || item.type === 'drama') && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.seasons || 1} Saisons</p>}
               {item.type === 'anime' && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.seasons && item.seasons > 1 ? `${item.seasons} Saisons` : `${item.episodes || '?'} Épisodes`}</p>}
@@ -667,7 +684,11 @@ displayItems = displayItems.filter(item => {
             {(selectedMedia.type === 'manga' || selectedMedia.type === 'manhwa') && (
               <div style={{ marginTop: '2rem', borderTop: '1px solid #393E46', paddingTop: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Progression de lecture</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ marginBottom: '0.8rem', color: '#EEEEEE', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                  {selectedMedia.chapters && <span>{selectedMedia.chapters} chapitres</span>}
+                  {(selectedMedia as any).volumes && <span>{(selectedMedia as any).volumes} tomes</span>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.95rem' }}>Chapitre actuel :</span>
                   <input 
                     type="number" 
@@ -694,7 +715,13 @@ displayItems = displayItems.filter(item => {
                     </button>
                   ))}
                 </div>
-
+ 
+                {!episodesLoading && seasonEpisodes.length > 0 && (
+                  <p style={{ opacity: 0.75, fontSize: '0.9rem', marginBottom: '0.8rem' }}>
+                    {seasonEpisodes.filter((ep: any) => !!watchedEpisodes[`${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${ep.episode_number}`]).length}/{seasonEpisodes.length} épisodes vus
+                  </p>
+                )}
+ 
                 {episodesLoading ? (
                   <p style={{ opacity: 0.5, textAlign: 'center' }}>Chargement des épisodes...</p>
                 ) : (
@@ -702,11 +729,11 @@ displayItems = displayItems.filter(item => {
                     {seasonEpisodes.map((ep: any) => {
                       const epKey = `${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${ep.episode_number}`;
                       const isWatched = !!watchedEpisodes[epKey];
-
+ 
                       return (
                         <div key={ep.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: '#2d333b', borderRadius: '8px', border: '1px solid #393E46' }}>
                           <span style={{ fontSize: '0.9rem' }}>
-                            Épisode {ep.episode_number} <span style={{ opacity: 0.6, marginLeft: '0.5rem' }}>{ep.name}</span>
+                            Épisode {ep.episode_number}/{seasonEpisodes.length} <span style={{ opacity: 0.6, marginLeft: '0.5rem' }}>{ep.name}</span>
                           </span>
                           <button 
                             onClick={() => toggleEpisodeWatched(ep.episode_number)} 
