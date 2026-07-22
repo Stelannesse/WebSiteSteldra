@@ -702,7 +702,13 @@ displayItems = displayItems.filter(item => {
               <div style={{ width: '130px', flexShrink: 0 }}>
                 <img style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', aspectRatio: '2/3' }} 
                 referrerPolicy="no-referrer"
-                src={selectedMedia.poster_path ? (selectedMedia.poster_path.startsWith('http') ? selectedMedia.poster_path : `https://image.tmdb.org/t/p/w200${selectedMedia.poster_path}`) : 'https://via.placeholder.com/150x225'} alt="" />
+                src={(() => {
+                  
+                  const rawImg = selectedMedia.poster_path || (selectedMedia as any).cover_image || (selectedMedia as any).image_url || (selectedMedia as any).image;
+                  if (!rawImg) return 'https://via.placeholder.com/150x225';
+                  return rawImg.startsWith('http') ? rawImg : `https://image.tmdb.org/t/p/w200${rawImg}`;
+                })()} 
+                alt="" />
               </div>
 
               <div style={{ flex: 1, minWidth: '250px' }}>
