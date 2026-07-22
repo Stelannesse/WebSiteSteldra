@@ -162,15 +162,6 @@
 
   .usernameDisplay { max-width: 120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-  /* Cards et liste plus compactes */
-  .liste { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0.8rem; gap: 0.6rem; }
-  .card { min-height: 200px; padding: 0.6rem; border-radius: 10px; }
-  .card h2 { font-size: 0.9rem; min-height: 2rem; }
-  .poster { aspect-ratio: 3/4; }
-
-  /* Floating S réduit */
-  .floatS { width:48px; height:48px; right:12px; bottom:12px; font-size:1rem; }
-
   .distBar { height: 8px; }
   .reviewForm textarea { min-height: 48px; }
   .reviewList { gap: 0.5rem; }
@@ -315,99 +306,147 @@
     transition: all 0.3s ease;
 }
 
+/* Grille ultra-épurée style galerie (PC & Mobile) */
 .liste {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* colonnes plus compactes */
-    gap: 1.2rem;
-    padding: 1.6rem;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+    padding: 1rem;
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 18px;
-    background: rgba(255,255,255,0.03);
-    box-sizing: border-box;
 }
 
+/* La carte principale */
 .card {
-    background: #2a2e35;
-    border-radius: 12px;
-    padding: 1rem; 
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #1a1d22;
+    border-radius: 6px;
+    padding: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
+    position: relative;
     width: 100%;
-    min-height: 260px; /* réduit pour éviter des cards trop grandes */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    box-sizing: border-box;
-    border: 1px solid rgba(255,255,255,0.12);
+    aspect-ratio: 2/3;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 173, 181, 0.3);
+    transform: scale(1.03);
+    z-index: 10;
+    box-shadow: 0 8px 20px rgba(0, 173, 181, 0.4);
 }
 
+/* On cache définitivement le texte sous la carte */
 .card h2 {
-    margin: 0;
-    font-size: 0.95rem;
-    color: #00ADB5;
-    font-weight: 600;
-    line-height: 1.3;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 2.6rem; 
+    display: none !important;
 }
 
+/* L'affiche prend 100% de l'espace */
 .poster {
     width: 100%;
-    aspect-ratio: 2/3;
+    height: 100%;
     object-fit: cover;
-    border-radius: 8px;
-    background-color: #1a1d22;
+    border-radius: 6px;
+    display: block;
 }
 
-@media (max-width: 1200px) { .liste { grid-template-columns: repeat(4, 1fr); } }
+/* Bouton "Vu" positionné en haut à gauche de l'affiche */
+.btnTopLeft {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 5;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btnTopLeft:hover {
+    background: #00ADB5;
+    border-color: #00ADB5;
+}
+
+.btnTopLeft.active {
+    background: #00ADB5;
+    border-color: #00ADB5;
+    color: #fff;
+    box-shadow: 0 0 6px rgba(0, 173, 181, 0.6);
+}
+
+/* Bouton "À voir / À lire" positionné en haut à droite de l'affiche */
+.btnTopRight {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    z-index: 5;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.btnTopRight:hover {
+    background: #00ADB5;
+    border-color: #00ADB5;
+}
+
+.btnTopRight.active {
+    background: #00ADB5;
+    border-color: #00ADB5;
+    color: #fff;
+    box-shadow: 0 0 6px rgba(0, 173, 181, 0.6);
+}
+
+/* --- ADAPTATION MOBILE --- */
+@media (max-width: 1200px) { 
+  .liste { grid-template-columns: repeat(4, 1fr); } 
+}
+
 @media (max-width: 768px) { 
-  .liste { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0.8rem; gap: 0.6rem; }
-  .card { min-height: 200px; padding: 0.75rem; border-radius: 10px; }
-  .card h2 { font-size: 0.9rem; min-height: 2.2rem; }
-  .poster { aspect-ratio: 3/4; }
+  .liste { 
+    grid-template-columns: repeat(3, minmax(0, 1fr)); 
+    padding: 0.4rem; 
+    gap: 4px; 
+  }
+  .card { min-height: auto; padding: 0; border-radius: 4px; }
+  .poster { aspect-ratio: 2/3; border-radius: 4px; }
+  
+  .btnTopLeft, .btnTopRight {
+    font-size: 0.55rem;
+    padding: 2px 5px;
+    top: 4px;
+  }
+  .btnTopLeft { left: 4px; }
+  .btnTopRight { right: 4px; }
 
-  /* Header plus compact */
-    .header { padding: 0.6rem 1rem; gap: 0.5rem; border-bottom-width: 1px; display:flex; flex-wrap:wrap; align-items:center; }
-    .header > div { flex: 1 1 auto; min-width: 0; }
-    .logo { font-size: 1rem; padding: 0.3rem 0.6rem; border-radius: 6px; }
-    .searchContainer { min-width: 0; margin: 0; width: 100%; padding: 0.4rem; flex: 1 1 300px; }
-    .filterBtn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
-    .userControls { display:flex; gap:0.6rem; align-items:center; justify-content:flex-end; flex: 0 0 auto; }
-    .logoutBtn { padding: 0.25rem 0.45rem; font-size: 0.8rem; max-width: none; white-space: nowrap; overflow: visible; text-overflow: clip; line-height: 1.1; }
-    .usernameDisplay { max-width: 140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .searchInput { min-width: 0; }
-
-  /* Liste et conteneurs */
+  .header { padding: 0.6rem 1rem; gap: 0.5rem; display: flex; flex-wrap: wrap; align-items: center; }
+  .logo { font-size: 1rem; padding: 0.3rem 0.6rem; border-radius: 6px; }
+  .searchContainer { width: 100%; padding: 0.4rem; }
+  .filterBtn { font-size: 0.8rem; padding: 0.35rem 0.6rem; }
+  .userControls { display: flex; gap: 0.6rem; align-items: center; justify-content: flex-end; }
+  .logoutBtn { padding: 0.25rem 0.45rem; font-size: 0.8rem; }
   .mainContainer { padding-top: 16px; }
-  .liste { padding: 1rem; }
-
-  /* Floating S réduit */
-  .floatS { width:48px; height:48px; right:16px; bottom:16px; font-size:1rem; }
-
-  /* Distribution */
-  .distBar { height: 8px; }
-
-  /* Avis */
-  .reviewForm textarea { min-height: 48px; }
-  .reviewList { gap: 0.5rem; }
+  .floatS { width: 48px; height: 48px; right: 16px; bottom: 16px; font-size: 1rem; }
 }
 
-/* Distribution */
+/* Distribution & Avis */
 .distContainer { padding: 0.8rem 0; }
 .distItem { margin-bottom: 0.5rem; }
 .distBar { height: 10px; background: linear-gradient(90deg,#00ADB5,#008f95); border-radius: 6px; margin-top: 0.3rem; }
-
-/* Avis */
 .reviewForm { display: flex; flex-direction: column; gap: 0.6rem; }
 .reviewList { margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; }
