@@ -38,7 +38,13 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
   const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
   
-  const [myList, setMyList] = useState<{ [key: string]: { media: MediaItem; status: WatchStatus } }>({});
+  const [myList, setMyList] = useState<{ 
+  [key: string]: { 
+    media: MediaItem; 
+    status: WatchStatus; 
+    watchCount?: number; // <--- Ajoute ceci ici pour dire à TypeScript que ça existe
+  } 
+}>({});
   
   // États pour la fiche détaillée "TV Time"
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
@@ -547,46 +553,127 @@ displayItems = displayItems.filter(item => {
 
       {loading && <p style={{ textAlign: 'center', color: '#393E46', fontWeight: 'bold', marginTop: '2rem' }}>Recherche en cours...</p>}
 
-      <div className={styles.liste}>
-        {displayItems.map((item) => {
-          const mediaKey = `${item.type}_${item.id}`;
-          const currentStatus = myList[mediaKey]?.status;
-          const cardProgressStatus = getFilterStatus(item, currentStatus);
+<div className={styles.liste}>
+  {displayItems.map((item) => {
+    const mediaKey = `${item.type}_${item.id}`;
+    const currentStatus = myList[mediaKey]?.status;
+    const currentItem = myList[mediaKey];
+    let watchCount = currentItem?.watchCount || (currentItem?.status === 'vu' ? 1 : 0);
 
-          const badgeColors: { [key: string]: string } = {
-            movie: '#00ADB5', tv: '#6C5CE7', drama: '#FD79A8', anime: '#E17055', manga: '#F1C40F', manhwa: '#2ED573'
-          };
+    const isReadingType = item.type === 'manga' || item.type === 'manhwa';
 
-          return (
-            <div key={mediaKey} className={styles.card} style={{ position: 'relative', cursor: 'pointer', color: '#EEEEEE' }} onClick={() => openMediaDetails(item)}>
-              <span style={{ position: 'absolute', top: '12px', right: '12px', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase', zIndex: 10, backgroundColor: badgeColors[item.type] || '#7f8c8d', color: '#FFF' }}>
-                {item.type === 'tv' ? 'SÉRIE' : item.type === 'movie' ? 'FILM' : item.type}
-              </span>
+    let vuLabel = 'Vu';
+    if (watchCount === 2) vuLabel = 'Vu x2';
+    else if (watchCount === 3) vuLabel = 'Vu x3';
+    else if (watchCount === 4) vuLabel = 'Vu x4';
+    else if (watchCount === 5) vuLabel = 'Vu x5';
+    else if (watchCount === 6) vuLabel = 'Vu x6';
+    else if (watchCount === 7) vuLabel = 'Vu x7';
+    else if (watchCount > 7) vuLabel = `Vu x${watchCount}`;
 
-              <img className={styles.poster} 
-              referrerPolicy="no-referrer"
-              src={item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w200${item.poster_path}`) : 'https://via.placeholder.com/150x225?text=Pas+d+affiche'} alt={item.title} />
-              <h2>{item.title}</h2>
-              {cardProgressStatus === 'commence' && (
-                <p style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '-0.15rem', color: '#FFD54F' }}>Commencé</p>
-              )}
-              {item.type === 'movie' && item.runtime && item.runtime > 0 && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.runtime} min</p>}
-              {(item.type === 'tv' || item.type === 'drama') && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.seasons || 1} Saisons</p>}
-              {item.type === 'anime' && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.seasons && item.seasons > 1 ? `${item.seasons} Saisons` : `${item.episodes || '?'} Épisodes`}</p>}
-              {(item.type === 'manga' || item.type === 'manhwa') && item.chapters && <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '-0.3rem', color: '#EEEEEE' }}>{item.chapters} Chapitres</p>}
+    return (
+      <div 
+        key={mediaKey} 
+        className={styles.card} 
+        style={{ 
+          position: 'relative', 
+          cursor: 'pointer', 
+          backgroundColor: 'transparent', 
+          border: 'none', 
+          boxShadow: 'none', 
+          padding: 0, 
+          margin: 0 
+        }} 
+        onClick={() => openMediaDetails(item)}
+      >
+        {/* Bouton "Vu" / Incrémentable en HAUT À GAUCHE */}
+        <button 
+          onClick={async (e) => {
+            e.stopPropagation();
+            let nextCount = watchCount + 1;
+            if (nextCount > 7) nextCount = 1;
 
-              <div style={{ display: 'flex', gap: '0.4rem', marginTop: 'auto' }}>
-                <button onClick={(e) => toggleStatus(item, 'vu', e)} style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '20px', border: 'none', backgroundColor: currentStatus === 'vu' ? '#4CAF50' : '#EEEEEE', color: currentStatus === 'vu' ? 'white' : '#393E46', fontWeight: 'bold' }}>
-                  {item.type === 'manga' || item.type === 'manhwa' ? 'Lu' : 'Vu'}
-                </button>
-                <button onClick={(e) => toggleStatus(item, 'a_voir', e)} style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '20px', border: 'none', backgroundColor: currentStatus === 'a_voir' ? '#00ADB5' : '#EEEEEE', color: currentStatus === 'a_voir' ? 'white' : '#393E46', fontWeight: 'bold' }}>
-                  {item.type === 'manga' || item.type === 'manhwa' ? 'À lire' : 'À voir'}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+            const updatedList = { ...myList };
+            updatedList[mediaKey] = {
+              media: item,
+              status: 'vu',
+              watchCount: nextCount
+            };
+            setMyList(updatedList);
+            localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('media_progress').upsert({
+                user_id: user.id,
+                media_id: item.id.toString(),
+                media_type: item.type,
+                media_data: item,
+                status: 'vu',
+                watchCount: nextCount,
+                watched_episodes: watchedEpisodes,
+                manga_progress: mangaProgress[mediaKey] || 0
+              });
+            }
+          }}
+          style={{ 
+            position: 'absolute', top: '10px', left: '10px', zIndex: 10,
+            padding: '0.3rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '6px', border: 'none', 
+            backgroundColor: currentStatus === 'vu' ? '#4CAF50' : 'rgba(0,0,0,0.7)', 
+            color: '#FFF', fontWeight: 'bold' 
+          }}
+        >
+          {isReadingType ? (watchCount === 0 ? 'Lu' : (watchCount === 1 ? 'Lu' : `Lu x${watchCount}`)) : (watchCount === 0 ? 'Vu' : vuLabel)}
+        </button>
+
+        {/* Bouton "À voir" / "À lire" en HAUT À DROITE */}
+        <button 
+          onClick={async (e) => {
+            e.stopPropagation();
+            const updatedList = { ...myList };
+            updatedList[mediaKey] = {
+              media: item,
+              status: 'a_voir',
+              watchCount: currentItem?.watchCount || 0
+            };
+            setMyList(updatedList);
+            localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('media_progress').upsert({
+                user_id: user.id,
+                media_id: item.id.toString(),
+                media_type: item.type,
+                media_data: item,
+                status: 'a_voir',
+                watched_episodes: watchedEpisodes,
+                manga_progress: mangaProgress[mediaKey] || 0
+              });
+            }
+          }}
+          style={{ 
+            position: 'absolute', top: '10px', right: '10px', zIndex: 10,
+            padding: '0.3rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '6px', border: 'none', 
+            backgroundColor: currentStatus === 'a_voir' ? '#00ADB5' : 'rgba(0,0,0,0.7)', 
+            color: '#FFF', fontWeight: 'bold' 
+          }}
+        >
+          {isReadingType ? 'À lire' : 'À voir'}
+        </button>
+
+        {/* Uniquement l'image pure */}
+        <img 
+          className={styles.poster} 
+          referrerPolicy="no-referrer"
+          src={item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w200${item.poster_path}`) : 'https://via.placeholder.com/150x225?text=Pas+d+affiche'} 
+          alt={item.title} 
+          style={{ display: 'block', width: '100%', borderRadius: '8px' }}
+        />
       </div>
+    );
+  })}
+</div>
       
 
       {/* Fiche détaillée "TV Time" */}
