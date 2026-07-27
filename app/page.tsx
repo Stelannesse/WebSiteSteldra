@@ -3,18 +3,23 @@
 import { createClient } from './lib/supabase';
 import { useState, useEffect, useMemo } from 'react'; // Gérer les données et les actions
 import styles from './page.module.css'; //Importer le style de la page
+import MediaCard from './components/mediaCard';
+import useReviews from './hooks/useReviews';
+import MediaModal from './components/mediaModal';
+import useMediaProgress from './hooks/useMediaProgress';
+import Header from './components/header';
+import type {
+  MediaItem,
+  MyListItem,
+  WatchStatus,
+  FilterStatus,
+} from './types/media';
 
-interface MediaItem { // Définition de l'interface pour les médias
-  id: string | number; 
-  title: string;
-  poster_path?: string;
-  runtime?: number;
-  seasons?: number;
-  episodes?: number;
-  chapters?: number;
-  synopsis?: string;
-  type: 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa';
-}
+import {
+  searchMedia,
+  getMediaDetails,
+  getSeasonEpisodes,
+} from './lib/mediaService';
 
 export default function Home() {
   const supabase = createClient();
@@ -26,18 +31,11 @@ export default function Home() {
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  type WatchStatus = 'vu' | 'a_voir'| 'en_cours';
-  type FilterStatus = 'tout' | 'termine' | 'en_cours' | 'a_voir'; //medias affichés
-
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
   const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
   
-  const [myList, setMyList] = useState<{ 
-  [key: string]: { 
-    media: MediaItem; 
-    status: WatchStatus; 
-    watchCount?: number; // <--- Ajoute ceci ici pour dire à TypeScript que ça existe
-  } 
+const [myList, setMyList] = useState<{
+  [key: string]: MyListItem;
 }>({});
   
   // États pour la fiche détaillée "TV Time"
@@ -47,102 +45,70 @@ export default function Home() {
   const [activeSeason, setActiveSeason] = useState<number>(1);
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
+  const {
+  reviewsByMedia,
+  reviewRating,
+  reviewComment,
+  setReviewRating,
+  setReviewComment,
+  loadReviews,
+  submitReview,
+  deleteReview,
+} = useReviews({
+  supabase,
+  userId,
+  userName,
+});
 
-  // Reviews (likes/dislikes + commentaire) par média
-  const [reviewsByMedia, setReviewsByMedia] = useState<{ [key: string]: any[] }>({});
-  const [reviewRating, setReviewRating] = useState<'like' | 'dislike'>('like');
-  const [reviewComment, setReviewComment] = useState('');
-
-  // Distribution calculée à partir de la liste personnelle
-  const distribution = useMemo(() => {
-    const counts: { [k: string]: number } = { movie: 0, tv: 0, drama: 0, anime: 0, manga: 0, manhwa: 0 };
-    Object.values(myList).forEach((entry: any) => {
-      const t = entry.media.type;
-      counts[t] = (counts[t] || 0) + 1;
-    });
-    return counts;
-  }, [myList]);
-
-  // Charge les avis depuis Supabase (ou fallback localStorage)
-  const loadReviews = async (mediaId: string | number) => {
-    const mediaKey = mediaId.toString();
-    try {
-      const { data, error } = await supabase.from('media_reviews').select('*').eq('media_id', mediaKey).order('created_at', { ascending: false });
-      if (error) throw error;
-      setReviewsByMedia((p) => ({ ...p, [mediaKey]: data || [] }));
-    } catch (err) {
-      console.error('Erreur loadReviews:', err);
-      const local = JSON.parse(localStorage.getItem(`steldra_reviews_${mediaKey}`) || '[]');
-      setReviewsByMedia((p) => ({ ...p, [mediaKey]: local }));
-    }
+// Distribution calculée à partir de la liste personnelle
+const distribution = useMemo(() => {
+  const counts: { [k: string]: number } = {
+    movie: 0,
+    tv: 0,
+    drama: 0,
+    anime: 0,
+    manga: 0,
+    manhwa: 0,
   };
 
-  // Soumet un avis (Supabase, sinon fallback local)
-  const submitReview = async (media: MediaItem, rating: 'like' | 'dislike', comment: string) => {
-    const mediaKey = media.id.toString();
-    const payload: any = {
-      user_id: userId || null,
-      user_name: userName || 'Anonyme',
-      media_id: mediaKey,
-      media_type: media.type,
-      rating,
-      comment,
-      created_at: new Date().toISOString()
-    };
+  Object.values(myList).forEach((entry) => {
+    const type = entry.media.type;
+    counts[type] = (counts[type] || 0) + 1;
+  });
 
-    try {
-      const { data, error } = await supabase.from('media_reviews').insert(payload).select().single();
-      if (error) throw error;
-      // insère le nouvel avis au début
-      setReviewsByMedia((p) => ({ ...p, [mediaKey]: [data, ...(p[mediaKey] || [])] }));
-      setReviewComment('');
-      setReviewRating('like');
-    } catch (err) {
-      console.error('Erreur submitReview:', err);
-      const existing = JSON.parse(localStorage.getItem(`steldra_reviews_${mediaKey}`) || '[]');
-      const entry = { id: Date.now(), ...payload };
-      existing.unshift(entry);
-      localStorage.setItem(`steldra_reviews_${mediaKey}`, JSON.stringify(existing));
-      setReviewsByMedia((p) => ({ ...p, [mediaKey]: existing }));
-      setReviewComment('');
-      setReviewRating('like');
-    }
-  };
+  return counts;
+}, [myList]);
 
-  // Supprimer un avis (si propriétaire) — Supabase et fallback local
-  const deleteReview = async (reviewId: string | number, mediaId: string | number, reviewUserId?: string | null, reviewUserName?: string | null) => {
-    const mediaKey = mediaId.toString();
-
-    // Autorisation basique : l'utilisateur courant doit être l'auteur
-    if (reviewUserId && userId && reviewUserId === userId) {
-      // ok
-    } else if (reviewUserName && userName && reviewUserName === userName) {
-      // ok
-    } else if (!userId) {
-      // Si pas connecté et l'avis vient d'un fallback local avec id numérique, on autorise suppression locale
-      // mais sinon on refuse
-    }
-
-    try {
-      // Essayer de supprimer côté Supabase
-      const { error } = await supabase.from('media_reviews').delete().eq('id', reviewId);
-      if (error) throw error;
-      setReviewsByMedia((p) => ({ ...p, [mediaKey]: (p[mediaKey] || []).filter((r: any) => r.id !== reviewId) }));
-    } catch (err) {
-      console.warn('deleteReview supabase failed, falling back to local removal:', err);
-      // fallback localStorage
-      const existing = JSON.parse(localStorage.getItem(`steldra_reviews_${mediaKey}`) || '[]');
-      const filtered = existing.filter((r: any) => r.id !== reviewId);
-      localStorage.setItem(`steldra_reviews_${mediaKey}`, JSON.stringify(filtered));
-      setReviewsByMedia((p) => ({ ...p, [mediaKey]: filtered }));
-    }
-  };
-  
   // Suivi des épisodes vus et progression chapitres
   const [watchedEpisodes, setWatchedEpisodes] = useState<{ [key: string]: boolean }>({});
   const [mangaProgress, setMangaProgress] = useState<{ [key: string]: number }>({});  
 
   const getMediaKey = (media: MediaItem | { type: string; id: string | number }) => `${media.type}_${media.id}`;
+
+const {
+  handleMarkWatched,
+  handleToggleInProgress,
+  handleMarkToWatch,
+  toggleEpisodeWatched,
+  handleChapterChange,
+} = useMediaProgress({
+  supabase,
+
+  myList,
+  setMyList,
+
+  watchedEpisodes,
+  setWatchedEpisodes,
+
+  mangaProgress,
+  setMangaProgress,
+
+  selectedMedia,
+  activeSeason,
+
+  getMediaKey,
+});
+
   const hasStartedProgress = (mediaKey: string) => {
     const hasWatched = Object.keys(watchedEpisodes).some((key) => key.startsWith(`${mediaKey}_S`) && watchedEpisodes[key]);
     const progressValue = mangaProgress[mediaKey] || 0;
@@ -200,8 +166,8 @@ useEffect(() => {
     if (user) {
       // Si connecté : on récupère tout depuis Supabase
       setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || "Utilisateur");
-      setUserId(user.id);
 
+      
     const { data, error } = await supabase
       .from('media_progress')
       .select('*')
@@ -223,10 +189,15 @@ useEffect(() => {
     const mediaKey = `${mediaType}_${mediaId}`;
     
     // 3. Reconstitution propre de l'objet
-    newList[mediaKey] = { 
-        media: { ...media, type: mediaType, id: mediaId }, 
-        status: item.status 
-    };
+    newList[mediaKey] = {
+  media: {
+    ...media,
+    type: mediaType,
+    id: mediaId,
+  },
+  status: item.status,
+  watchCount: item.watchCount || 0,
+};
     
     // 4. On stocke le reste
     if (item.watched_episodes) Object.assign(newEpisodes, item.watched_episodes);
@@ -283,109 +254,94 @@ const scrollToTop = () => {
 };
 
 // Fonction pour réinitialiser la recherche et les filtres
-  const handleReset = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setQuery('');
-    setResults([]);
-    setTypeFilter('tous');
-    setStatusFilter('tout');
-    setSelectedMedia(null);
-  };
+const handleReset = () => {
+  setQuery('');
+  setResults([]);
+  setTypeFilter('tous');
+  setStatusFilter('tout');
+  setSelectedMedia(null);
+};
+
 // Fonction pour ouvrir la fiche détaillée d'un média
-const openMediaDetails = async (media: MediaItem) => {
-    setSelectedMedia(media);
-    setMediaDetails(null);
-    setSeasonEpisodes([]);
-    setActiveSeason(1);
-    setDetailsLoading(true);
+  const openMediaDetails = async (media: MediaItem) => {
+  setSelectedMedia(media);
+  setMediaDetails(null);
+  setSeasonEpisodes([]);
+  setActiveSeason(1);
+  setDetailsLoading(true);
 
-    const localSynopsis = media.synopsis || 'Aucun synopsis disponible.';
-    
-    // On définit un nombre de saisons par défaut pour forcer l'affichage
-    const defaultSeasons = ['tv', 'anime', 'drama'].includes(media.type) ? (media.seasons || 1) : 0;
+  const localSynopsis =
+    media.synopsis || 'Aucun synopsis disponible.';
 
-    try {
-      let apiType = media.type === 'movie' ? 'movie' : 'tv';
-      const res = await fetch(`/api/media-details?id=${media.id}&type=${apiType}`);
-      const data = await res.json();
+  const defaultSeasons = [
+    'tv',
+    'anime',
+    'drama',
+  ].includes(media.type)
+    ? media.seasons || 1
+    : 0;
 
-      setMediaDetails({
-        synopsis: data.synopsis || localSynopsis,
-        actors: data.actors || [],
-        seasons_count: data.seasons_count || defaultSeasons,
-        authors: data.authors || data.creators || []
-      });
+  try {
+    const data = await getMediaDetails(media);
 
-      // Charger les avis pour ce média
-      loadReviews(media.id);
-
-      // Appel immédiat des épisodes
-      if (defaultSeasons > 0) loadSeasonEpisodes(media.id, 1);
-      
-    } catch (err) {
-      setMediaDetails({ synopsis: localSynopsis, actors: [], seasons_count: defaultSeasons });
-      if (defaultSeasons > 0) loadSeasonEpisodes(media.id, 1);
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
-// Fonction pour charger les épisodes d'une saison spécifique (ca marche pas)
-  const loadSeasonEpisodes = async (mediaId: string | number, seasonNum: number) => {
-    setActiveSeason(seasonNum);
-    setEpisodesLoading(true);
-    try {
-      const res = await fetch(`/api/tv-season?id=${mediaId}&season=${seasonNum}`);
-      const data = await res.json();
-      // On s'assure que c'est un tableau, sinon on met vide
-      setSeasonEpisodes(Array.isArray(data.episodes) ? data.episodes : []);
-    } catch (err) {
-      setSeasonEpisodes([]);
-    } finally {
-      setEpisodesLoading(false);
-    }
-  };
-// Fonction pour marquer un épisode comme vu ou non vu
-const toggleEpisodeWatched = async (episodeNum: number) => {
-  if (!selectedMedia) return;
-  const mediaKey = `${selectedMedia.type}_${selectedMedia.id}`;
-  const epKey = `${mediaKey}_S${activeSeason}E${episodeNum}`;
-  const updated = { ...watchedEpisodes, [epKey]: !watchedEpisodes[epKey] };
-  
-  setWatchedEpisodes(updated);
-  localStorage.setItem('steldra_watched_episodes_v1', JSON.stringify(updated));
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('media_progress').upsert({
-      user_id: user.id,
-      media_id: selectedMedia.id.toString(),
-      media_type: selectedMedia.type,
-      media_data: selectedMedia,
-      status: myList[mediaKey]?.status || 'a_voir',
-      watched_episodes: updated
+    setMediaDetails({
+      synopsis: data.synopsis || localSynopsis,
+      actors: data.actors || [],
+      seasons_count:
+        data.seasons_count || defaultSeasons,
+      authors: data.authors || data.creators || [],
     });
+
+    loadReviews(media.id);
+
+    if (defaultSeasons > 0) {
+      loadSeasonEpisodes(media.id, 1);
+    }
+  } catch (error) {
+    console.error(
+      'Erreur lors du chargement des détails :',
+      error
+    );
+
+    setMediaDetails({
+      synopsis: localSynopsis,
+      actors: [],
+      seasons_count: defaultSeasons,
+      authors: [],
+    });
+
+    if (defaultSeasons > 0) {
+      loadSeasonEpisodes(media.id, 1);
+    }
+  } finally {
+    setDetailsLoading(false);
   }
 };
 
-// Fonction pour gérer la progression des chapitres pour les mangas et manhwas
-const handleChapterChange = async (value: number) => {
-  if (!selectedMedia) return;
-  const mediaKey = `${selectedMedia.type}_${selectedMedia.id}`;
-  const updated = { ...mangaProgress, [mediaKey]: Math.max(0, value) };
-  
-  setMangaProgress(updated);
-  localStorage.setItem('steldra_manga_progress_v1', JSON.stringify(updated));
+// Fonction pour charger les épisodes d'une saison spécifique (ca marche pas)
+  const loadSeasonEpisodes = async (
+  mediaId: string | number,
+  seasonNum: number
+) => {
+  setActiveSeason(seasonNum);
+  setEpisodesLoading(true);
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('media_progress').upsert({
-      user_id: user.id,
-      media_id: selectedMedia.id.toString(),
-      media_type: selectedMedia.type,
-      media_data: selectedMedia,
-      status: myList[mediaKey]?.status || 'a_voir',
-      manga_progress: Math.max(0, value)
-    });
+  try {
+    const episodes = await getSeasonEpisodes(
+      mediaId,
+      seasonNum
+    );
+
+    setSeasonEpisodes(episodes);
+  } catch (error) {
+    console.error(
+      'Erreur lors du chargement des épisodes :',
+      error
+    );
+
+    setSeasonEpisodes([]);
+  } finally {
+    setEpisodesLoading(false);
   }
 };
 
@@ -430,26 +386,26 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
 };
 
 // Fonction pour effectuer la recherche de médias via l'API interne
-  const searchMedia = async (text: string) => {
-    setQuery(text);
-    if (text.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(text)}`);
-      const data = await res.json();
-      console.log("Données reçues de l'API :", data.results); // AJOUTE CECI
+const handleSearch = async (text: string) => {
+  setQuery(text);
 
-      setResults(data.results || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (text.trim().length < 2) {
+    setResults([]);
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const mediaResults = await searchMedia(text);
+    setResults(mediaResults);
+  } catch (error) {
+    console.error('Erreur de recherche :', error);
+    setResults([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Fonction pour gérer la déconnexion de l'utilisateur
   const isSearching = query.trim().length >= 2;
@@ -487,402 +443,94 @@ displayItems = displayItems.filter(item => {
   return (
     <div className={styles.mainContainer}>
       
-      <header className={styles.header}>
-  {/* Ligne 1 : Logo + User + Déconnexion */}
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-    <a href="#" className={styles.logo} onClick={handleReset}>Steldra</a>
-  </div>
+      <Header
+  query={query}
+  typeFilter={typeFilter}
+  statusFilter={statusFilter}
+  isSearching={isSearching}
 
-  {/* Ligne 3 : Filtres */}
-      
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-          <button className={`${styles.filterBtn} ${typeFilter === 'tous' ? styles.active : ''}`} onClick={() => setTypeFilter('tous')}>Tout</button>
-          <button className={`${styles.filterBtn} ${typeFilter === 'movie' ? styles.active : ''}`} onClick={() => setTypeFilter('movie')}>Films</button>
-          <button className={`${styles.filterBtn} ${typeFilter === 'tv' ? styles.active : ''}`} onClick={() => setTypeFilter('tv')}>Séries</button>
-          <button className={`${styles.filterBtn} ${typeFilter === 'drama' ? styles.active : ''}`} onClick={() => setTypeFilter('drama')}>Dramas</button>
-          <button className={`${styles.filterBtn} ${typeFilter === 'anime' ? styles.active : ''}`} onClick={() => setTypeFilter('anime')}>Animes</button>
-          <button className={`${styles.filterBtn} ${typeFilter === 'manga' ? styles.active : ''}`} onClick={() => setTypeFilter('manga')}>Mangas</button>
-          <button className={`${styles.filterBtn} ${typeFilter === 'manhwa' ? styles.active : ''}`} onClick={() => setTypeFilter('manhwa')}>Manhwas</button>
-        </div>
+  totalCount={totalCount}
+  termineCount={termineCount}
+  enCoursCount={enCoursCount}
+  aVoirCount={aVoirCount}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-    {/* La recherche est seule ici */}
-    <div className={styles.searchContainer}>
-      <input 
-        type="text" 
-        placeholder="Rechercher..." 
-        className={styles.searchInput} 
-        value={query} 
-        onChange={(e) => searchMedia(e.target.value)} 
-      />
-    </div>
-
-    {/* Le bouton est isolé ici */}
-    <button 
-      onClick={handleLogout} 
-      className={styles.logoutBtn}
-      style={{ 
-        padding: '0.5rem 1rem', 
-        cursor: 'pointer', 
-        backgroundColor: '#FF4757', 
-        color: 'white', 
-        border: 'none', 
-        borderRadius: '6px',
-        fontWeight: 'bold'
-      }}
-    >
-      Déconnexion
-    </button>
-  </div>
-</header>
-
- {/*Ligne 4 : Résultats de recherche ou liste personnelle*/}
-      {!isSearching && (
-        <nav className={styles.navFilters} style={{ marginTop: '1.5rem', padding: '0 2rem' }}>
-          <button className={`${styles.filterBtn} ${statusFilter === 'tout' ? styles.active : ''}`} onClick={() => setStatusFilter('tout')}>Tout ({totalCount})</button>
-          <button className={`${styles.filterBtn} ${statusFilter === 'termine' ? styles.active : ''}`} onClick={() => setStatusFilter('termine')}>Terminé ({termineCount})</button>
-          <button className={`${styles.filterBtn} ${statusFilter === 'en_cours' ? styles.active : ''}`} onClick={() => setStatusFilter('en_cours')}>Commencé ({enCoursCount})</button>
-          <button className={`${styles.filterBtn} ${statusFilter === 'a_voir' ? styles.active : ''}`} onClick={() => setStatusFilter('a_voir')}>À voir ({aVoirCount})</button>
-        </nav>
-      )}
+  onSearchChange={handleSearch}
+  onTypeFilterChange={setTypeFilter}
+  onStatusFilterChange={setStatusFilter}
+  onReset={handleReset}
+  onLogout={handleLogout}
+/>
 
       {loading && <p style={{ textAlign: 'center', color: '#393E46', fontWeight: 'bold', marginTop: '2rem' }}>Recherche en cours...</p>}
 
 <div className={styles.liste}>
   {displayItems.map((item) => {
-    const mediaKey = `${item.type}_${item.id}`;
-    const currentStatus = myList[mediaKey]?.status;
-    const currentItem = myList[mediaKey];
-    let watchCount = currentItem?.watchCount || (currentItem?.status === 'vu' ? 1 : 0);
-
-    const isReadingType = item.type === 'manga' || item.type === 'manhwa';
-
-    let vuLabel = 'Vu';
-    if (watchCount === 2) vuLabel = 'Vu x2';
-    else if (watchCount === 3) vuLabel = 'Vu x3';
-    else if (watchCount === 4) vuLabel = 'Vu x4';
-    else if (watchCount === 5) vuLabel = 'Vu x5';
-    else if (watchCount === 6) vuLabel = 'Vu x6';
-    else if (watchCount === 7) vuLabel = 'Vu x7';
-    else if (watchCount > 7) vuLabel = `Vu x${watchCount}`;
+    const mediaKey = getMediaKey(item);
 
     return (
-      <div 
-        key={mediaKey} 
-        className={styles.card} 
-        style={{ 
-          position: 'relative', 
-          cursor: 'pointer', 
-          backgroundColor: 'transparent', 
-          border: 'none', 
-          boxShadow: 'none', 
-          padding: 0, 
-          margin: 0 
-        }} 
-        onClick={() => openMediaDetails(item)}
-      >
-          {/* Bouton "Vu" */}
-          <button 
-            onClick={async (e) => {
-              e.stopPropagation();
-              let nextCount = watchCount + 1;
-              if (nextCount > 7) nextCount = 1;
-
-              const updatedList = { ...myList };
-              updatedList[mediaKey] = {
-                media: item,
-                status: 'vu',
-                watchCount: nextCount
-              };
-              setMyList(updatedList);
-              localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
-
-              const { data: { user } } = await supabase.auth.getUser();
-              if (user) {
-                await supabase.from('media_progress').upsert({
-                  user_id: user.id,
-                  media_id: item.id.toString(),
-                  media_type: item.type,
-                  media_data: item,
-                  status: 'vu',
-                  watchCount: nextCount,
-                  watched_episodes: watchedEpisodes,
-                  manga_progress: mangaProgress[mediaKey] || 0
-                });
-              }
-            }}
-            style={{ 
-              position: 'absolute', top: '10px', left: '10px', zIndex: 10,
-              padding: '0.3rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '6px', border: 'none', 
-              backgroundColor: currentStatus === 'vu' ? '#4CAF50' : 'rgba(0,0,0,0.7)', 
-              color: '#FFF', fontWeight: 'bold' 
-            }}
-          >
-            {isReadingType ? (watchCount === 0 ? 'Lu' : (watchCount === 1 ? 'Lu' : `Lu x${watchCount}`)) : (watchCount === 0 ? 'Vu' : vuLabel)}
-          </button>
-
-          {/* Bouton : En cours (retirer ou ajouter) */}
-          <button
-        onClick={async (e) => {
-          e.stopPropagation();
-          const updatedList = { ...myList };
-          
-          // Si c'est déjà 'en_cours', on le bascule en 'a_voir' (ou on le retire selon ton besoin exact)
-          // Ici, on le remet en 'a_voir' quand l'utilisateur clique sur le bouton actif
-          const newStatus = currentStatus === 'en_cours' ? 'a_voir' : 'en_cours';
-
-          updatedList[mediaKey] = {
-            media: item,
-            status: newStatus,
-            watchCount: currentItem?.watchCount || 0
-          };
-          
-          setMyList(updatedList);
-          localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
-
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.from('media_progress').upsert({
-              user_id: user.id,
-              media_id: item.id.toString(),
-              media_type: item.type,
-              media_data: item,
-              status: newStatus,
-              watched_episodes: watchedEpisodes,
-              manga_progress: mangaProgress[mediaKey] || 0
-            });
-          }
-        }}
-        style={{ 
-          position: 'absolute', 
-          top: '10px', 
-          right: '100px',
-          zIndex: 10,
-          padding: '0.3rem 0.6rem', 
-          fontSize: '0.75rem', 
-          cursor: 'pointer', 
-          borderRadius: '6px', 
-          border: 'none', 
-          backgroundColor: currentStatus === 'en_cours' ? '#FF4C29' : 'rgba(0,0,0,0.7)', 
-          color: '#FFF', 
-          fontWeight: 'bold' 
-        }}
-        >
-          {currentStatus === 'en_cours' ? '−' : '+'}
-        </button>
-
-        {/* Bouton "À voir" */}
-        <button 
-          onClick={async (e) => {
-            e.stopPropagation();
-            const updatedList = { ...myList };
-            updatedList[mediaKey] = {
-              media: item,
-              status: 'a_voir',
-              watchCount: currentItem?.watchCount || 0
-            };
-            setMyList(updatedList);
-            localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
-
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase.from('media_progress').upsert({
-                user_id: user.id,
-                media_id: item.id.toString(),
-                media_type: item.type,
-                media_data: item,
-                status: 'a_voir',
-                watched_episodes: watchedEpisodes,
-                manga_progress: mangaProgress[mediaKey] || 0
-              });
-            }
-          }}
-          style={{ 
-            position: 'absolute', top: '10px', right: '10px', zIndex: 10,
-            padding: '0.3rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '6px', border: 'none', 
-            backgroundColor: currentStatus === 'a_voir' ? '#00ADB5' : 'rgba(0,0,0,0.7)', 
-            color: '#FFF', fontWeight: 'bold' 
-          }}
-        >
-          {isReadingType ? 'À lire' : 'À voir'}
-        </button>
-
-        {/* Uniquement l'image pure */}
-        <img 
-          className={styles.poster} 
-          referrerPolicy="no-referrer"
-          src={item.poster_path ? (item.poster_path.startsWith('http') ? item.poster_path : `https://image.tmdb.org/t/p/w200${item.poster_path}`) : 'https://via.placeholder.com/150x225?text=Pas+d+affiche'} 
-          alt={item.title} 
-          style={{ display: 'block', width: '100%', borderRadius: '8px' }}
-        />
-      </div>
+      <MediaCard
+        key={mediaKey}
+        item={item}
+        currentItem={myList[mediaKey]}
+        onOpen={openMediaDetails}
+        onMarkWatched={handleMarkWatched}
+        onToggleInProgress={handleToggleInProgress}
+        onMarkToWatch={handleMarkToWatch}
+      />
     );
   })}
 </div>
-      
 
       {/* Fiche détaillée "TV Time" */}
-      {selectedMedia && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }} onClick={() => setSelectedMedia(null)}>
-          <div style={{ backgroundColor: '#222831', color: '#EEEEEE', width: '100%', maxWidth: '750px', maxHeight: '85vh', borderRadius: '16px', overflowY: 'auto', padding: '2rem', position: 'relative', border: '1px solid #393E46' }} onClick={(e) => e.stopPropagation()}>
-            <button style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', color: '#EEEEEE', fontSize: '1.5rem', cursor: 'pointer' }} onClick={() => setSelectedMedia(null)}>✕</button>
-            
-            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-              <div style={{ width: '130px', flexShrink: 0 }}>
-                <img style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', aspectRatio: '2/3' }} 
-                referrerPolicy="no-referrer"
-                src={selectedMedia.poster_path ? (selectedMedia.poster_path.startsWith('http') ? selectedMedia.poster_path : `https://image.tmdb.org/t/p/w200${selectedMedia.poster_path}`) : 'https://via.placeholder.com/150x225'} alt="" />
-              </div>
+          <MediaModal
+        selectedMedia={selectedMedia}
+        detailsLoading={detailsLoading}
+        mediaDetails={mediaDetails}
 
-              <div style={{ flex: 1, minWidth: '250px' }}>
-                <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.8rem', color: '#00ADB5' }}>{selectedMedia.title}</h2>
-                <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.2rem 0.6rem', borderRadius: '4px', background: '#393E46' }}>{selectedMedia.type}</span>
-                
-                <h3 style={{ margin: '1.2rem 0 0.5rem 0', fontSize: '1.1rem' }}>Synopsis</h3>
-                {detailsLoading ? (
-                  <p style={{ opacity: 0.5 }}>Chargement du résumé...</p>
-                ) : (
-                  <>
-                    <p style={{ fontSize: '0.95rem', opacity: 0.85, lineHeight: '1.4', margin: 0 }}>{mediaDetails?.synopsis}</p>
+        reviews={
+          selectedMedia
+            ? reviewsByMedia[
+                selectedMedia.id.toString()
+              ] || []
+            : []
+        }
+        reviewRating={reviewRating}
+        reviewComment={reviewComment}
+        userId={userId}
+        userName={userName}
 
-                    {/* Auteur / Scénariste pour mangas / manhwas */}
-                    {(selectedMedia.type === 'manga' || selectedMedia.type === 'manhwa') && (
-                      <div style={{ marginTop: '0.8rem', color: '#EEEEEE' }}>
-                        <strong>Auteur / Scénariste : </strong>
-                        {mediaDetails?.authors && mediaDetails.authors.length > 0 ? (
-                          Array.isArray(mediaDetails.authors) ? mediaDetails.authors.join(', ') : mediaDetails.authors
-                        ) : (
-                          'Non renseigné'
-                        )}
-                      </div>
-                    )}
+        mangaProgress={mangaProgress}
 
-                    {/* Section Avis */}
-                    <div style={{ marginTop: '1.2rem', borderTop: '1px solid #393E46', paddingTop: '1rem' }}>
-                      <h3 style={{ fontSize: '1.1rem', marginBottom: '0.6rem' }}>Avis des utilisateurs</h3>
+        activeSeason={activeSeason}
+        seasonEpisodes={seasonEpisodes}
+        episodesLoading={episodesLoading}
+        watchedEpisodes={watchedEpisodes}
 
-                      <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', marginBottom: '0.6rem' }}>
-                        <button onClick={() => setReviewRating('like')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: reviewRating === 'like' ? '2px solid #00ADB5' : '1px solid #393E46', background: reviewRating === 'like' ? '#00ADB5' : '#2a2e35', color: reviewRating === 'like' ? '#222831' : '#FFF', cursor: 'pointer' }}>👍 J'aime</button>
-                        <button onClick={() => setReviewRating('dislike')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: reviewRating === 'dislike' ? '2px solid #FF6B6B' : '1px solid #393E46', background: reviewRating === 'dislike' ? '#FF6B6B' : '#2a2e35', color: reviewRating === 'dislike' ? '#222831' : '#FFF', cursor: 'pointer' }}>👎 Je n'aime pas</button>
-                      </div>
+        onClose={() => setSelectedMedia(null)}
+        onRatingChange={setReviewRating}
+        onCommentChange={setReviewComment}
 
-                      <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} placeholder="Laisser un commentaire (optionnel)" style={{ width: '100%', minHeight: '60px', padding: '0.6rem', borderRadius: '8px', background: '#222831', border: '1px solid #393E46', color: '#EEE', marginBottom: '0.6rem' }} />
+        onSubmitReview={() => {
+          if (!selectedMedia) return;
 
-                      <div style={{ display: 'flex', gap: '0.6rem' }}>
-                        <button onClick={() => submitReview(selectedMedia, reviewRating, reviewComment)} style={{ padding: '0.6rem 1rem', background: '#00ADB5', border: 'none', color: '#222831', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer' }}>Envoyer</button>
-                        <button onClick={() => { setReviewComment(''); setReviewRating('like'); }} style={{ padding: '0.6rem 1rem', background: '#393E46', border: 'none', color: '#EEE', borderRadius: '8px', cursor: 'pointer' }}>Annuler</button>
-                      </div>
+          submitReview(
+            selectedMedia,
+            reviewRating,
+            reviewComment
+          );
+        }}
 
-                      {/* Liste d'avis */}
-                      <div style={{ marginTop: '1rem' }}>
-                        {(reviewsByMedia[selectedMedia.id] || []).length === 0 ? (
-                          <p style={{ opacity: 0.6 }}>Pas encore d'avis — soyez le premier !</p>
-                        ) : (
-                          (reviewsByMedia[selectedMedia.id] || []).map((r: any) => {
-                            // Vérifie si l'utilisateur courant est l'auteur (ou si l'avis est stocké localement)
-                            let canDelete = false;
-                            try {
-                              const local = JSON.parse(localStorage.getItem(`steldra_reviews_${selectedMedia.id}`) || '[]');
-                              const isLocal = local.some((x:any) => x.id === r.id);
-                              canDelete = (r.user_id && userId && r.user_id === userId) || (r.user_name && userName && r.user_name === userName) || isLocal;
-                            } catch (e) { canDelete = (r.user_id && userId && r.user_id === userId) || (r.user_name && userName && r.user_name === userName); }
+        onCancelReview={() => {
+          setReviewComment('');
+          setReviewRating('like');
+        }}
 
-                            return (
-                              <div key={r.id} style={{ padding: '0.6rem', background: '#2a2e35', borderRadius: '8px', marginBottom: '0.6rem', border: '1px solid #393E46' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.8rem' }}>
-                                  <strong>{r.user_name || 'Utilisateur'}</strong>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                    <span style={{ opacity: 0.7, fontSize: '0.85rem' }}>{new Date(r.created_at).toLocaleString()}</span>
-                                    {canDelete && (
-                                      <button onClick={() => deleteReview(r.id, selectedMedia.id, r.user_id, r.user_name)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#EEE', padding: '0.25rem 0.5rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>Supprimer</button>
-                                    )}
-                                  </div>
-                                </div>
-                                <div style={{ marginTop: '0.4rem' }}>{r.rating === 'like' ? '👍 J\'aime' : '👎 Je n\'aime pas'}</div>
-                                {r.comment && <div style={{ marginTop: '0.4rem', opacity: 0.9 }}>{r.comment}</div>}
-                              </div>
-                            );
-                          })
-                        )}
-                      </div>
+        onDeleteReview={deleteReview}
 
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Progression Mangas / Manhwas */}
-            {(selectedMedia.type === 'manga' || selectedMedia.type === 'manhwa') && (
-              <div style={{ marginTop: '2rem', borderTop: '1px solid #393E46', paddingTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Progression de lecture</h3>
-                <div style={{ marginBottom: '0.8rem', color: '#EEEEEE', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  {selectedMedia.chapters && <span>{selectedMedia.chapters} chapitres</span>}
-                  {(selectedMedia as any).volumes && <span>{(selectedMedia as any).volumes} tomes</span>}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.95rem' }}>Chapitre actuel :</span>
-                  <input 
-                    type="number" 
-                    value={mangaProgress[`${selectedMedia.type}_${selectedMedia.id}`] || 0} 
-                    onChange={(e) => handleChapterChange(parseInt(e.target.value) || 0)}
-                    style={{ backgroundColor: '#393E46', border: 'none', color: '#FFF', padding: '0.5rem', borderRadius: '6px', width: '80px', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
-                  />
-                  {selectedMedia.chapters && (
-                    <span style={{ opacity: 0.6, fontSize: '0.9rem' }}> / {selectedMedia.chapters} chapitres au total</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Liste des Épisodes */}
-            {mediaDetails && mediaDetails.seasons_count > 0 && (
-              <div style={{ marginTop: '2rem', borderTop: '1px solid #393E46', paddingTop: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Épisodes</h3>
-                
-                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.8rem', marginBottom: '1.2rem' }}>
-                  {Array.from({ length: mediaDetails.seasons_count }, (_, i) => i + 1).map((sNum) => (
-                    <button key={sNum} onClick={() => loadSeasonEpisodes(selectedMedia.id, sNum)} style={{ padding: '0.5rem 1.2rem', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap', backgroundColor: activeSeason === sNum ? '#00ADB5' : '#393E46', color: activeSeason === sNum ? '#222831' : '#FFF' }}>
-                      Saison {sNum}
-                    </button>
-                  ))}
-                </div>
- 
-                {!episodesLoading && seasonEpisodes.length > 0 && (
-                  <p style={{ opacity: 0.75, fontSize: '0.9rem', marginBottom: '0.8rem' }}>
-                    {seasonEpisodes.filter((ep: any) => !!watchedEpisodes[`${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${ep.episode_number}`]).length}/{seasonEpisodes.length} épisodes vus
-                  </p>
-                )}
- 
-                {episodesLoading ? (
-                  <p style={{ opacity: 0.5, textAlign: 'center' }}>Chargement des épisodes...</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '300px', overflowY: 'auto' }}>
-                    {seasonEpisodes.map((ep: any) => {
-                      const epKey = `${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${ep.episode_number}`;
-                      const isWatched = !!watchedEpisodes[epKey];
- 
-                      return (
-                        <div key={ep.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', backgroundColor: '#2d333b', borderRadius: '8px', border: '1px solid #393E46' }}>
-                          <span style={{ fontSize: '0.9rem' }}>
-                            Épisode {ep.episode_number}/{seasonEpisodes.length} <span style={{ opacity: 0.6, marginLeft: '0.5rem' }}>{ep.name}</span>
-                          </span>
-                          <button 
-                            onClick={() => toggleEpisodeWatched(ep.episode_number)} 
-                            style={{ padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 'bold', cursor: 'pointer', backgroundColor: isWatched ? '#4CAF50' : '#00ADB5', color: '#FFF' }}
-                          >
-                            {isWatched ? '✓ Vu' : 'À voir'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        onChapterChange={handleChapterChange}
+        onLoadSeason={loadSeasonEpisodes}
+        onToggleEpisode={toggleEpisodeWatched}
+      />
 
       <button
         onClick={scrollToTop}
