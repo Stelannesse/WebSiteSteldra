@@ -8,11 +8,24 @@ import type {
   ReviewRating,
 } from '../types/media';
 
+type Actor = {
+  id: number | string;
+  name: string;
+  character?: string;
+  profile_path?: string | null;
+  image_url?: string | null;
+  voice_actor?: string | null;
+  language?: string | null;
+};
+
 type MediaDetails = {
   synopsis: string;
-  actors: any[];
+  actors: Actor[];
   seasons_count: number;
   authors?: any[];
+
+  runtime?: number | null;
+  episode_runtime?: number | null;
 };
 
 type Episode = {
@@ -301,6 +314,52 @@ const formatEpisodeDate = (
               {selectedMedia.type}
             </span>
 
+            {(mediaDetails?.runtime ||
+  mediaDetails?.episode_runtime) && (
+  <div
+    style={{
+      marginTop: '0.7rem',
+      display: 'flex',
+      gap: '0.5rem',
+      flexWrap: 'wrap',
+    }}
+  >
+    {mediaDetails.runtime && (
+      <span
+        style={{
+          padding: '0.35rem 0.65rem',
+          borderRadius: '20px',
+          backgroundColor: '#393E46',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+        }}
+      >
+        {Math.floor(mediaDetails.runtime / 60) > 0
+          ? `${Math.floor(
+              mediaDetails.runtime / 60
+            )} h ${mediaDetails.runtime % 60} min`
+          : `${mediaDetails.runtime} min`}
+      </span>
+    )}
+
+    {!mediaDetails.runtime &&
+      mediaDetails.episode_runtime && (
+        <span
+          style={{
+            padding: '0.35rem 0.65rem',
+            borderRadius: '20px',
+            backgroundColor: '#393E46',
+            fontSize: '0.8rem',
+            fontWeight: 'bold',
+          }}
+        >
+          Environ {mediaDetails.episode_runtime} min
+          par épisode
+        </span>
+      )}
+  </div>
+)}
+
             <h3
               style={{
                 margin: '1.2rem 0 0.5rem 0',
@@ -351,6 +410,143 @@ const formatEpisodeDate = (
     </button>
   )}
 </div>
+
+{mediaDetails?.actors &&
+  mediaDetails.actors.length > 0 && (
+    <section
+      style={{
+        marginTop: '1.8rem',
+        borderTop: '1px solid #393E46',
+        paddingTop: '1.4rem',
+      }}
+    >
+      <h3
+        style={{
+          margin: '0 0 1rem',
+          fontSize: '1.1rem',
+        }}
+      >
+        {selectedMedia.type === 'anime'
+          ? 'Personnages et doubleurs'
+          : 'Distribution'}
+      </h3>
+
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.9rem',
+          overflowX: 'auto',
+          paddingBottom: '0.6rem',
+        }}
+      >
+        {mediaDetails.actors
+          .slice(0, 15)
+          .map((actor) => {
+            const imageUrl =
+              actor.image_url ||
+              (actor.profile_path
+                ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
+                : null);
+
+            return (
+              <div
+                key={`${actor.id}_${actor.name}`}
+                style={{
+                  flex: '0 0 120px',
+                  backgroundColor: '#2d333b',
+                  border: '1px solid #393E46',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                }}
+              >
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={actor.name}
+                    referrerPolicy="no-referrer"
+                    style={{
+                      width: '100%',
+                      height: '155px',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      height: '155px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#393E46',
+                      fontSize: '2rem',
+                    }}
+                  >
+                    👤
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    padding: '0.7rem',
+                  }}
+                >
+                  <strong
+                    style={{
+                      display: 'block',
+                      fontSize: '0.82rem',
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {actor.name}
+                  </strong>
+
+                  {actor.character && (
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: '0.3rem',
+                        fontSize: '0.72rem',
+                        opacity: 0.7,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {actor.character}
+                    </span>
+                  )}
+
+                  {actor.voice_actor && (
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: '0.35rem',
+                        fontSize: '0.72rem',
+                        color: '#00ADB5',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      Voix : {actor.voice_actor}
+                    </span>
+                  )}
+
+                  {actor.language && (
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: '0.2rem',
+                        fontSize: '0.66rem',
+                        opacity: 0.55,
+                      }}
+                    >
+                      {actor.language}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+      </div>
+    </section>
+  )}
 
 {(selectedMedia.type === 'manga' ||
   selectedMedia.type === 'manhwa') && (

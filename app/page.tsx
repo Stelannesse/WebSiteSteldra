@@ -9,6 +9,7 @@ import MediaModal from './components/mediaModal';
 import useMediaProgress from './hooks/useMediaProgress';
 import Header from './components/header';
 import type { MediaType } from './types/media';
+import TimeStats from './components/timeStats';
 import type {
   MediaItem,
   MyListItem,
@@ -41,7 +42,14 @@ const [myList, setMyList] = useState<{
   // États pour la fiche détaillée "TV Time"
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [mediaDetails, setMediaDetails] = useState<{ synopsis: string; actors: any[]; seasons_count: number; authors?: any[] } | null>(null);
+  const [mediaDetails, setMediaDetails] = useState<{
+  synopsis: string;
+  actors: any[];
+  seasons_count: number;
+  authors?: any[];
+  runtime?: number | null;
+  episode_runtime?: number | null;
+} | null>(null);  
   const [activeSeason, setActiveSeason] = useState<number>(1);
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
@@ -299,39 +307,97 @@ const handleReset = () => {
     ? media.seasons || 1
     : 0;
 
-  try {
-    const data = await getMediaDetails(media);
+try {
+  const data = await getMediaDetails(media);
 
-    setMediaDetails({
-      synopsis: data.synopsis || localSynopsis,
-      actors: data.actors || [],
-      seasons_count:
-        data.seasons_count || defaultSeasons,
-      authors: data.authors || data.creators || [],
-    });
+  console.log('DÉTAILS REÇUS :', data);
+  console.log('RUNTIME FILM :', data.runtime);
+  console.log(
+    'RUNTIME ÉPISODE :',
+    data.episode_runtime
+  );
 
-    loadReviews(media.id);
+const enrichedMedia: MediaItem = {
+  ...media,
+  runtime:
+    data.runtime ??
+    media.runtime ??
+    null,
+  episode_runtime:
+    data.episode_runtime ??
+    media.episode_runtime ??
+    null,
+};
 
-    if (defaultSeasons > 0) {
-      loadSeasonEpisodes(media.id, 1);
+setSelectedMedia(enrichedMedia);
+
+const mediaKey = getMediaKey(enrichedMedia);
+
+if (myList[mediaKey]) {
+  const updatedEntry = {
+    ...myList[mediaKey],
+    media: enrichedMedia,
+  };
+
+  setMyList((current) => ({
+    ...current,
+    [mediaKey]: updatedEntry,
+  }));
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { error } = await supabase
+      .from('media_progress')
+      .update({
+        media_data: enrichedMedia,
+      })
+      .eq('user_id', user.id)
+      .eq('media_id', enrichedMedia.id.toString())
+      .eq('media_type', enrichedMedia.type);
+
+    if (error) {
+      console.error(
+        'Erreur sauvegarde du runtime :',
+        error
+      );
     }
-  } catch (error) {
-    console.error(
-      'Erreur lors du chargement des détails :',
-      error
+  } else {
+    const updatedList = {
+      ...myList,
+      [mediaKey]: updatedEntry,
+    };
+
+    localStorage.setItem(
+      'steldra_multimedia_list_v1',
+      JSON.stringify(updatedList)
     );
+  }
+}
 
-    setMediaDetails({
-      synopsis: localSynopsis,
-      actors: [],
-      seasons_count: defaultSeasons,
-      authors: [],
-    });
+setMediaDetails({
+  synopsis:
+    data.synopsis || localSynopsis,
+  actors: data.actors || [],
+  seasons_count:
+    data.seasons_count || defaultSeasons,
+  authors:
+    data.authors ||
+    data.creators ||
+    [],
+  runtime: data.runtime,
+  episode_runtime:
+    data.episode_runtime,
+});
 
-    if (defaultSeasons > 0) {
-      loadSeasonEpisodes(media.id, 1);
-    }
-  } finally {
+  loadReviews(media.id);
+
+  if (defaultSeasons > 0) {
+    loadSeasonEpisodes(media.id, 1);
+  }
+} finally {
     setDetailsLoading(false);
   }
 };
@@ -474,12 +540,10 @@ displayItems = displayItems.filter(item => {
   typeFilter={typeFilter}
   statusFilter={statusFilter}
   isSearching={isSearching}
-
   totalCount={totalCount}
   termineCount={termineCount}
   enCoursCount={enCoursCount}
   aVoirCount={aVoirCount}
-
   onSearchChange={handleSearch}
   onTypeFilterChange={setTypeFilter}
   onStatusFilterChange={setStatusFilter}
@@ -487,6 +551,10 @@ displayItems = displayItems.filter(item => {
   onLogout={handleLogout}
 />
 
+<TimeStats
+  myList={myList}
+  watchedEpisodes={watchedEpisodes}
+/>
       {loading && <p style={{ textAlign: 'center', color: '#393E46', fontWeight: 'bold', marginTop: '2rem' }}>Recherche en cours...</p>}
 
 <div className={styles.liste}>

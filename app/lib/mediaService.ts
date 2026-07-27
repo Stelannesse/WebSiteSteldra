@@ -16,6 +16,16 @@ export async function searchMedia(text: string) {
   return data.results || [];
 }
 
+export type MediaDetailsResult = {
+  synopsis: string;
+  actors: any[];
+  seasons_count: number;
+  authors?: any[];
+
+  runtime?: number | null;
+  episode_runtime?: number | null;
+};
+
 export async function getMediaDetails(
   media: MediaItem
 ) {

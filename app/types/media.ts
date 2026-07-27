@@ -26,6 +26,7 @@ export interface MediaItem {
   runtime?: number;
   seasons?: number;
   episodes?: number;
+  episode_runtime?: number | null;
   chapters?: number;
   volumes?: number;
   synopsis?: string;
@@ -60,4 +61,4 @@ export interface MediaReview {
   rating: ReviewRating;
   comment?: string;
   created_at: string;
-}
+};
