@@ -39,20 +39,26 @@ export default function useReviews({
           ascending: false,
         });
 
-      if (error) {
-        throw error;
-      }
+if (error) {
+  console.error('Erreur Supabase reviews :', {
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    code: error.code,
+  });
 
+  throw new Error(error.message);
+}
       setReviewsByMedia((previous) => ({
         ...previous,
         [mediaKey]: data || [],
       }));
-    } catch (error) {
-      console.error(
-        'Erreur loadReviews :',
-        error
-      );
-
+    } catch (error: unknown) {
+  if (error instanceof Error) {
+    console.error('Erreur loadReviews :', error.message);
+  } else {
+    console.error('Erreur loadReviews complète :', error);
+  }
       const localReviews = JSON.parse(
         localStorage.getItem(
           `steldra_reviews_${mediaKey}`

@@ -8,6 +8,7 @@ import useReviews from './hooks/useReviews';
 import MediaModal from './components/mediaModal';
 import useMediaProgress from './hooks/useMediaProgress';
 import Header from './components/header';
+import type { MediaType } from './types/media';
 import type {
   MediaItem,
   MyListItem,
@@ -32,8 +33,7 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
-  const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
-  
+const [typeFilter, setTypeFilter] =useState<MediaType | 'tous'>('tous');  
 const [myList, setMyList] = useState<{
   [key: string]: MyListItem;
 }>({});
@@ -469,7 +469,7 @@ displayItems = displayItems.filter(item => {
   return (
     <div className={styles.mainContainer}>
       
-      <Header
+<Header
   query={query}
   typeFilter={typeFilter}
   statusFilter={statusFilter}

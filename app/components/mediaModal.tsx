@@ -1,6 +1,7 @@
 'use client';
 
 import ReviewSection from './ReviewSection';
+import { useState } from 'react';
 import type {
   MediaItem,
   MediaReview,
@@ -12,6 +13,17 @@ type MediaDetails = {
   actors: any[];
   seasons_count: number;
   authors?: any[];
+};
+
+type Episode = {
+  id: number;
+  episode_number: number;
+  season_number?: number;
+  name: string;
+  overview?: string;
+  air_date?: string | null;
+  still_path?: string | null;
+  runtime?: number | null;
 };
 
 type MediaModalProps = {
@@ -28,7 +40,7 @@ type MediaModalProps = {
   mangaProgress: Record<string, number>;
 
   activeSeason: number;
-  seasonEpisodes: any[];
+  seasonEpisodes: Episode[];
   episodesLoading: boolean;
   watchedEpisodes: Record<string, boolean>;
 
@@ -76,12 +88,74 @@ export default function MediaModal({
   onLoadSeason,
   onToggleEpisode,
 }: MediaModalProps) {
+  const [showFullSynopsis, setShowFullSynopsis] =
+    useState(false);
+
+  const [expandedEpisodes, setExpandedEpisodes] =
+    useState<Record<string, boolean>>({});
+
   if (!selectedMedia) {
     return null;
   }
-
-  const mediaKey =
+const mediaKey =
     `${selectedMedia.type}_${selectedMedia.id}`;
+
+    const synopsis =
+  mediaDetails?.synopsis ||
+  'Aucun synopsis disponible.';
+
+const hasEpisodes =
+  selectedMedia.type === 'tv' ||
+  selectedMedia.type === 'anime' ||
+  selectedMedia.type === 'drama';
+
+const synopsisLimit = hasEpisodes ? 220 : 450;
+
+const shouldShortenSynopsis =
+  synopsis.length > synopsisLimit;
+
+const displayedSynopsis =
+  shouldShortenSynopsis && !showFullSynopsis
+    ? `${synopsis
+        .slice(0, synopsisLimit)
+        .trim()}...`
+    : synopsis;
+
+const currentChapter =
+  mangaProgress[mediaKey] || 0;
+
+const totalChapters =
+  Number(selectedMedia.chapters) || 0;
+
+const totalVolumes =
+  Number((selectedMedia as any).volumes) || 0;
+
+const remainingChapters =
+  totalChapters > 0
+    ? Math.max(
+        totalChapters - currentChapter,
+        0
+      )
+    : null;
+
+const nextChapter =
+  totalChapters > 0
+    ? Math.min(
+        currentChapter + 1,
+        totalChapters
+      )
+    : currentChapter + 1;
+
+const mangaProgressPercentage =
+  totalChapters > 0
+    ? Math.min(
+        Math.round(
+          (currentChapter / totalChapters) *
+            100
+        ),
+        100
+      )
+    : 0;
 
   const posterUrl = selectedMedia.poster_path
     ? selectedMedia.poster_path.startsWith('http')
@@ -89,31 +163,54 @@ export default function MediaModal({
       : `https://image.tmdb.org/t/p/w200${selectedMedia.poster_path}`
     : 'https://via.placeholder.com/150x225';
 
-  const watchedCount = seasonEpisodes.filter(
-    (episode: any) => {
-      const episodeKey =
-        `${selectedMedia.type}_${selectedMedia.id}` +
-        `_S${activeSeason}E${episode.episode_number}`;
+const watchedCount = seasonEpisodes.filter(
+  (episode) => {
+    const episodeKey =
+      `${selectedMedia.type}_${selectedMedia.id}` +
+      `_S${activeSeason}E${episode.episode_number}`;
 
-      return Boolean(watchedEpisodes[episodeKey]);
-    }
-  ).length;
+    return Boolean(watchedEpisodes[episodeKey]);
+  }
+).length;
+
+const progressPercentage =
+  seasonEpisodes.length > 0
+    ? Math.round(
+        (watchedCount / seasonEpisodes.length) * 100
+      )
+    : 0;
+
+const today = new Date();
+today.setHours(23, 59, 59, 999);
+
+const formatEpisodeDate = (
+  airDate?: string | null
+) => {
+  if (!airDate) {
+    return 'Date inconnue';
+  }
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(airDate));
+};
 
   return (
     <div
-      style={{
+        style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
+        inset: 0,
         width: '100vw',
-        height: '100vh',
+        height: '100dvh',
         backgroundColor: 'rgba(0,0,0,0.85)',
-        zIndex: 999,
+        zIndex: 5000,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         padding: '1rem',
-      }}
+        }}
       onClick={onClose}
     >
       <div
@@ -122,8 +219,7 @@ export default function MediaModal({
           color: '#EEEEEE',
           width: '100%',
           maxWidth: '750px',
-          maxHeight: '85vh',
-          borderRadius: '16px',
+        maxHeight: 'calc(100dvh - 2rem)',          borderRadius: '16px',
           overflowY: 'auto',
           padding: '2rem',
           position: 'relative',
@@ -220,40 +316,430 @@ export default function MediaModal({
               </p>
             ) : (
               <>
-                <p
-                  style={{
-                    fontSize: '0.95rem',
-                    opacity: 0.85,
-                    lineHeight: '1.4',
-                    margin: 0,
-                  }}
-                >
-                  {mediaDetails?.synopsis ||
-                    'Aucun synopsis disponible.'}
-                </p>
+                <div>
+  <p
+    style={{
+      fontSize: '0.95rem',
+      opacity: 0.85,
+      lineHeight: '1.5',
+      margin: 0,
+    }}
+  >
+    {displayedSynopsis}
+  </p>
 
-                {(selectedMedia.type === 'manga' ||
-                  selectedMedia.type === 'manhwa') && (
-                  <div
-                    style={{
-                      marginTop: '0.8rem',
-                      color: '#EEEEEE',
-                    }}
-                  >
-                    <strong>
-                      Auteur / Scénariste :
-                    </strong>{' '}
-                    {mediaDetails?.authors &&
-                    mediaDetails.authors.length > 0
-                      ? Array.isArray(
-                          mediaDetails.authors
-                        )
-                        ? mediaDetails.authors.join(', ')
-                        : mediaDetails.authors
-                      : 'Non renseigné'}
-                  </div>
-                )}
+  {shouldShortenSynopsis && (
+    <button
+      type="button"
+      onClick={() =>
+        setShowFullSynopsis((current) => !current)
+      }
+      style={{
+        marginTop: '0.5rem',
+        padding: 0,
+        background: 'transparent',
+        border: 'none',
+        color: '#00ADB5',
+        fontSize: '0.85rem',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+      }}
+    >
+      {showFullSynopsis
+        ? 'Voir moins'
+        : 'Voir plus'}
+    </button>
+  )}
+</div>
 
+{(selectedMedia.type === 'manga' ||
+  selectedMedia.type === 'manhwa') && (
+  <div
+    style={{
+      marginTop: '2rem',
+      borderTop: '1px solid #393E46',
+      paddingTop: '1.5rem',
+    }}
+  >
+    <h3
+      style={{
+        fontSize: '1.1rem',
+        margin: '0 0 1rem',
+      }}
+    >
+      Progression de lecture
+    </h3>
+
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns:
+          'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '0.8rem',
+        marginBottom: '1.2rem',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: '#2d333b',
+          border: '1px solid #393E46',
+          borderRadius: '10px',
+          padding: '1rem',
+        }}
+      >
+        <div
+          style={{
+            opacity: 0.65,
+            fontSize: '0.8rem',
+            marginBottom: '0.35rem',
+          }}
+        >
+          Chapitre actuel
+        </div>
+
+        <strong
+          style={{
+            color: '#00ADB5',
+            fontSize: '1.4rem',
+          }}
+        >
+          {currentChapter}
+        </strong>
+      </div>
+
+      {totalChapters > 0 && (
+    <div
+  style={{
+    backgroundColor: '#2d333b',
+    border: '1px solid #393E46',
+    borderRadius: '10px',
+    padding: '1rem',
+  }}
+>
+  <div
+    style={{
+      opacity: 0.65,
+      fontSize: '0.8rem',
+      marginBottom: '0.35rem',
+    }}
+  >
+    Chapitres disponibles
+  </div>
+
+  <strong
+    style={{
+      fontSize: '1rem',
+      opacity: 0.75,
+    }}
+  >
+    Nombre inconnu
+  </strong>
+</div>
+      )}
+
+      {remainingChapters !== null && (
+        <div
+          style={{
+            backgroundColor: '#2d333b',
+            border: '1px solid #393E46',
+            borderRadius: '10px',
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              opacity: 0.65,
+              fontSize: '0.8rem',
+              marginBottom: '0.35rem',
+            }}
+          >
+            Restant à lire
+          </div>
+
+          <strong
+            style={{
+              color:
+                remainingChapters === 0
+                  ? '#4CAF50'
+                  : '#FFB347',
+              fontSize: '1.4rem',
+            }}
+          >
+            {remainingChapters}
+          </strong>
+        </div>
+      )}
+
+      {totalVolumes > 0 && (
+        <div
+          style={{
+            backgroundColor: '#2d333b',
+            border: '1px solid #393E46',
+            borderRadius: '10px',
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              opacity: 0.65,
+              fontSize: '0.8rem',
+              marginBottom: '0.35rem',
+            }}
+          >
+            Tomes connus
+          </div>
+
+          <strong
+            style={{
+              fontSize: '1.4rem',
+            }}
+          >
+            {totalVolumes}
+          </strong>
+        </div>
+      )}
+    </div>
+
+    {totalChapters > 0 && (
+      <div
+        style={{
+          marginBottom: '1.3rem',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '0.5rem',
+            fontSize: '0.9rem',
+          }}
+        >
+          <span>
+            {currentChapter} / {totalChapters}{' '}
+            chapitres
+          </span>
+
+          <strong
+            style={{
+              color: '#00ADB5',
+            }}
+          >
+            {mangaProgressPercentage} %
+          </strong>
+        </div>
+
+        <div
+          style={{
+            width: '100%',
+            height: '9px',
+            backgroundColor: '#393E46',
+            borderRadius: '20px',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              width: `${mangaProgressPercentage}%`,
+              height: '100%',
+              backgroundColor:
+                mangaProgressPercentage === 100
+                  ? '#4CAF50'
+                  : '#00ADB5',
+              borderRadius: '20px',
+              transition: 'width 0.3s ease',
+            }}
+          />
+        </div>
+      </div>
+    )}
+
+    {remainingChapters === 0 &&
+    totalChapters > 0 ? (
+      <div
+        style={{
+          backgroundColor:
+            'rgba(76, 175, 80, 0.12)',
+          border:
+            '1px solid rgba(76, 175, 80, 0.5)',
+          borderRadius: '10px',
+          padding: '1rem',
+          marginBottom: '1rem',
+          color: '#8BE28E',
+          fontWeight: 'bold',
+        }}
+      >
+        ✓ Tous les chapitres disponibles ont été
+        lus.
+      </div>
+    ) : (
+      <div
+        style={{
+          backgroundColor:
+            'rgba(0, 173, 181, 0.12)',
+          border:
+            '1px solid rgba(0, 173, 181, 0.45)',
+          borderRadius: '10px',
+          padding: '1rem',
+          marginBottom: '1rem',
+        }}
+      >
+        <div
+          style={{
+            opacity: 0.7,
+            fontSize: '0.8rem',
+            marginBottom: '0.3rem',
+          }}
+        >
+          Prochain chapitre à lire
+        </div>
+
+        <strong
+          style={{
+            color: '#00ADB5',
+            fontSize: '1.25rem',
+          }}
+        >
+          Chapitre {nextChapter}
+        </strong>
+      </div>
+    )}
+
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        flexWrap: 'wrap',
+      }}
+    >
+      <button
+        type="button"
+        disabled={currentChapter <= 0}
+        onClick={() =>
+          onChapterChange(
+            Math.max(currentChapter - 1, 0)
+          )
+        }
+        style={{
+          border: 'none',
+          borderRadius: '8px',
+          padding: '0.65rem 1rem',
+          cursor:
+            currentChapter > 0
+              ? 'pointer'
+              : 'not-allowed',
+          backgroundColor: '#393E46',
+          color: '#FFF',
+          fontWeight: 'bold',
+          opacity:
+            currentChapter > 0 ? 1 : 0.5,
+        }}
+      >
+        − 1
+      </button>
+
+<input
+        type="number"
+        min={0}
+        step={0.1}     
+        max={
+          totalChapters > 0
+            ? totalChapters
+            : undefined
+        }
+        value={currentChapter}
+        onChange={(event) => {
+            const value =
+            Number.parseFloat(event.target.value) || 0;
+          const safeValue =
+            totalChapters > 0
+              ? Math.min(
+                  Math.max(value, 0),
+                  totalChapters
+                )
+              : Math.max(value, 0);
+
+          onChapterChange(safeValue);
+        }}
+        style={{
+          backgroundColor: '#393E46',
+          border: '1px solid #4b515a',
+          color: '#FFF',
+          padding: '0.65rem',
+          borderRadius: '8px',
+          width: '85px',
+          textAlign: 'center',
+          fontWeight: 'bold',
+          fontSize: '1rem',
+        }}
+      />
+
+      <button
+        type="button"
+        disabled={
+          totalChapters > 0 &&
+          currentChapter >= totalChapters
+        }
+        onClick={() =>
+          onChapterChange(nextChapter)
+        }
+        style={{
+          border: 'none',
+          borderRadius: '8px',
+          padding: '0.65rem 1rem',
+          cursor:
+            totalChapters > 0 &&
+            currentChapter >= totalChapters
+              ? 'not-allowed'
+              : 'pointer',
+          backgroundColor: '#00ADB5',
+          color: '#FFF',
+          fontWeight: 'bold',
+          opacity:
+            totalChapters > 0 &&
+            currentChapter >= totalChapters
+              ? 0.5
+              : 1,
+        }}
+      >
+        + 1
+      </button>
+
+      <button
+        type="button"
+        disabled={
+          totalChapters > 0 &&
+          currentChapter >= totalChapters
+        }
+        onClick={() =>
+          onChapterChange(nextChapter)
+        }
+        style={{
+          marginLeft: 'auto',
+          border: 'none',
+          borderRadius: '20px',
+          padding: '0.7rem 1.2rem',
+          cursor:
+            totalChapters > 0 &&
+            currentChapter >= totalChapters
+              ? 'not-allowed'
+              : 'pointer',
+          backgroundColor: '#4CAF50',
+          color: '#FFF',
+          fontWeight: 'bold',
+          opacity:
+            totalChapters > 0 &&
+            currentChapter >= totalChapters
+              ? 0.5
+              : 1,
+        }}
+      >
+        ✓ Chapitre {nextChapter} lu
+      </button>
+    </div>
+  </div>
+)}
                 <ReviewSection
                   media={selectedMedia}
                   reviews={reviews}
@@ -272,100 +758,10 @@ export default function MediaModal({
           </div>
         </div>
 
-        {(selectedMedia.type === 'manga' ||
-          selectedMedia.type === 'manhwa') && (
-          <div
-            style={{
-              marginTop: '2rem',
-              borderTop: '1px solid #393E46',
-              paddingTop: '1.5rem',
-            }}
-          >
-            <h3
-              style={{
-                fontSize: '1.1rem',
-                marginBottom: '1rem',
-              }}
-            >
-              Progression de lecture
-            </h3>
-
-            <div
-              style={{
-                marginBottom: '0.8rem',
-                color: '#EEEEEE',
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '0.75rem',
-              }}
-            >
-              {selectedMedia.chapters && (
-                <span>
-                  {selectedMedia.chapters} chapitres
-                </span>
-              )}
-
-              {(selectedMedia as any).volumes && (
-                <span>
-                  {(selectedMedia as any).volumes} tomes
-                </span>
-              )}
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '1rem',
-                flexWrap: 'wrap',
-              }}
-            >
-              <span style={{ fontSize: '0.95rem' }}>
-                Chapitre actuel :
-              </span>
-
-              <input
-                type="number"
-                min={0}
-                value={mangaProgress[mediaKey] || 0}
-                onChange={(event) =>
-                  onChapterChange(
-                    Number.parseInt(
-                      event.target.value,
-                      10
-                    ) || 0
-                  )
-                }
-                style={{
-                  backgroundColor: '#393E46',
-                  border: 'none',
-                  color: '#FFF',
-                  padding: '0.5rem',
-                  borderRadius: '6px',
-                  width: '80px',
-                  textAlign: 'center',
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                }}
-              />
-
-              {selectedMedia.chapters && (
-                <span
-                  style={{
-                    opacity: 0.6,
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  / {selectedMedia.chapters} chapitres
-                  au total
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
         {mediaDetails &&
-          mediaDetails.seasons_count > 0 && (
+            selectedMedia.type !== 'manga' &&
+            selectedMedia.type !== 'manhwa' &&
+            mediaDetails.seasons_count > 0 && (
             <div
               style={{
                 marginTop: '2rem',
@@ -429,20 +825,54 @@ export default function MediaModal({
                 ))}
               </div>
 
-              {!episodesLoading &&
-                seasonEpisodes.length > 0 && (
-                  <p
+            {!episodesLoading &&
+            seasonEpisodes.length > 0 && (
+                <div
+                style={{
+                    marginBottom: '1.2rem',
+                }}
+                >
+                <div
                     style={{
-                      opacity: 0.75,
-                      fontSize: '0.9rem',
-                      marginBottom: '0.8rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.5rem',
+                    fontSize: '0.9rem',
                     }}
-                  >
-                    {watchedCount}/
-                    {seasonEpisodes.length} épisodes vus
-                  </p>
-                )}
+                >
+                    <span>
+                    {watchedCount} / {seasonEpisodes.length}{' '}
+                    épisodes vus
+                    </span>
 
+                    <strong style={{ color: '#00ADB5' }}>
+                    {progressPercentage} %
+                    </strong>
+                </div>
+
+                <div
+                    style={{
+                    width: '100%',
+                    height: '8px',
+                    backgroundColor: '#393E46',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    }}
+                >
+                    <div
+                    style={{
+                        width: `${progressPercentage}%`,
+                        height: '100%',
+                        backgroundColor: '#00ADB5',
+                        borderRadius: '20px',
+                        transition: 'width 0.3s ease',
+                    }}
+                    />
+                </div>
+                </div>
+            )
+            }
               {episodesLoading ? (
                 <p
                   style={{
@@ -458,83 +888,224 @@ export default function MediaModal({
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.6rem',
-                    maxHeight: '300px',
+                    maxHeight: '500px',
                     overflowY: 'auto',
                   }}
                 >
-                  {seasonEpisodes.map(
-                    (episode: any) => {
-                      const episodeKey =
+                  {seasonEpisodes.map((episode) => {
+                    const episodeKey =
                         `${selectedMedia.type}_${selectedMedia.id}` +
                         `_S${activeSeason}E${episode.episode_number}`;
 
-                      const isWatched = Boolean(
+                    const isWatched = Boolean(
                         watchedEpisodes[episodeKey]
-                      );
+                    );
 
-                      return (
+                    const airDate = episode.air_date
+                        ? new Date(episode.air_date)
+                        : null;
+
+                    const isReleased =
+                        !airDate || airDate <= today;
+
+                    const episodeImage = episode.still_path
+                        ? `https://image.tmdb.org/t/p/w500${episode.still_path}`
+                        : null;
+
+                        const episodeExpandKey =
+                        `${selectedMedia.type}_${selectedMedia.id}` +
+                        `_S${activeSeason}E${episode.episode_number}`;
+
+                        const episodeOverview =
+                        episode.overview ||
+                        'Aucun résumé disponible pour cet épisode.';
+
+                        const episodeOverviewLimit = 160;
+
+                        const shouldShortenEpisode =
+                        episodeOverview.length > episodeOverviewLimit;
+
+                        const isEpisodeExpanded =
+                        Boolean(expandedEpisodes[episodeExpandKey]);
+
+                        const displayedEpisodeOverview =
+                        shouldShortenEpisode && !isEpisodeExpanded
+                            ? `${episodeOverview
+                                .slice(0, episodeOverviewLimit)
+                                .trim()}...`
+                            : episodeOverview;
+
+                    return (
                         <div
-                          key={episode.id}
-                          style={{
+                        key={episode.id}
+                        style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent:
-                              'space-between',
-                            padding: '0.75rem 1rem',
-                            backgroundColor:
-                              '#2d333b',
-                            borderRadius: '8px',
-                            border:
-                              '1px solid #393E46',
-                          }}
+                            gap: '1rem',
+                            padding: '1rem',
+                            backgroundColor: isWatched
+                            ? 'rgba(76, 175, 80, 0.12)'
+                            : '#2d333b',
+                            borderRadius: '12px',
+                            border: isWatched
+                            ? '1px solid rgba(76, 175, 80, 0.5)'
+                            : '1px solid #393E46',
+                            opacity: isReleased ? 1 : 0.65,
+                        }}
                         >
-                          <span
+                        {episodeImage && (
+                            <img
+                            src={episodeImage}
+                            alt={`Image de l’épisode ${episode.episode_number}`}
+                            referrerPolicy="no-referrer"
                             style={{
-                              fontSize: '0.9rem',
+                                width: '150px',
+                                height: '85px',
+                                objectFit: 'cover',
+                                borderRadius: '8px',
+                                flexShrink: 0,
                             }}
-                          >
-                            Épisode{' '}
-                            {episode.episode_number}/
-                            {seasonEpisodes.length}
+                            />
+                        )}
 
-                            <span
-                              style={{
-                                opacity: 0.6,
-                                marginLeft: '0.5rem',
-                              }}
+                        <div
+                            style={{
+                            flex: 1,
+                            minWidth: 0,
+                            }}
+                        >
+                            <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                gap: '1rem',
+                                alignItems: 'flex-start',
+                            }}
                             >
-                              {episode.name}
-                            </span>
-                          </span>
+                            <div>
+                                <div
+                                style={{
+                                    color: '#00ADB5',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    textTransform: 'uppercase',
+                                    marginBottom: '0.25rem',
+                                }}
+                                >
+                                Saison {activeSeason} · Épisode{' '}
+                                {episode.episode_number}
+                                </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onToggleEpisode(
-                                episode.episode_number
-                              )
-                            }
+                                <h4
+                                style={{
+                                    margin: 0,
+                                    fontSize: '1rem',
+                                    color: '#EEEEEE',
+                                }}
+                                >
+                                {episode.name ||
+                                    `Épisode ${episode.episode_number}`}
+                                </h4>
+                            </div>
+
+                            <button
+                                type="button"
+                                disabled={!isReleased}
+                                onClick={() =>
+                                onToggleEpisode(
+                                    episode.episode_number
+                                )
+                                }
+                                style={{
+                                padding: '0.45rem 0.9rem',
+                                borderRadius: '20px',
+                                border: 'none',
+                                fontWeight: 'bold',
+                                cursor: isReleased
+                                    ? 'pointer'
+                                    : 'not-allowed',
+                                backgroundColor: !isReleased
+                                    ? '#393E46'
+                                    : isWatched
+                                    ? '#4CAF50'
+                                    : '#00ADB5',
+                                color: '#FFF',
+                                whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {!isReleased
+                                ? 'À venir'
+                                : isWatched
+                                    ? '✓ Vu'
+                                    : 'À voir'}
+                            </button>
+                            </div>
+
+                            <div
                             style={{
-                              padding:
-                                '0.4rem 1rem',
-                              borderRadius: '20px',
-                              border: 'none',
-                              fontWeight: 'bold',
-                              cursor: 'pointer',
-                              backgroundColor:
-                                isWatched
-                                  ? '#4CAF50'
-                                  : '#00ADB5',
-                              color: '#FFF',
+                                display: 'flex',
+                                flexWrap: 'wrap',
+                                gap: '0.8rem',
+                                marginTop: '0.6rem',
+                                fontSize: '0.8rem',
+                                opacity: 0.7,
                             }}
-                          >
-                            {isWatched
-                              ? '✓ Vu'
-                              : 'À voir'}
-                          </button>
-                        </div>
-                      );
-                    }
+                            >
+                            <span>
+                                {formatEpisodeDate(episode.air_date)}
+                            </span>
+
+                            {episode.runtime && (
+                                <span>{episode.runtime} min</span>
+                            )}
+                            </div>
+
+<div
+  style={{
+    marginTop: '0.7rem',
+  }}
+>
+  <p
+    style={{
+      margin: 0,
+      lineHeight: 1.45,
+      fontSize: '0.88rem',
+      opacity: 0.85,
+    }}
+  >
+    {displayedEpisodeOverview}
+  </p>
+
+  {shouldShortenEpisode && (
+    <button
+      type="button"
+      onClick={() =>
+        setExpandedEpisodes((current) => ({
+          ...current,
+          [episodeExpandKey]:
+            !current[episodeExpandKey],
+        }))
+      }
+      style={{
+        marginTop: '0.45rem',
+        padding: 0,
+        background: 'transparent',
+        border: 'none',
+        color: '#00ADB5',
+        fontSize: '0.82rem',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+      }}
+    >
+      {isEpisodeExpanded
+        ? 'Voir moins'
+        : 'Voir plus'}
+    </button>
+  )}
+</div>
+      </div>
+    </div>
+  );
+}
                   )}
                 </div>
               )}

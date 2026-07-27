@@ -1,13 +1,11 @@
-import type { MediaItem } from '../types/media';
+import { MediaItem } from '../types/media';
 
-export async function searchMedia(text: string): Promise<MediaItem[]> {
+export async function searchMedia(text: string) {
   if (text.trim().length < 2) {
     return [];
   }
 
-  const res = await fetch(
-    `/api/search?q=${encodeURIComponent(text)}`
-  );
+  const res = await fetch(`/api/search?q=${encodeURIComponent(text)}`);
 
   if (!res.ok) {
     throw new Error('Erreur lors de la recherche');
@@ -15,42 +13,79 @@ export async function searchMedia(text: string): Promise<MediaItem[]> {
 
   const data = await res.json();
 
-  return Array.isArray(data.results) ? data.results : [];
+  return data.results || [];
 }
 
-export async function getMediaDetails(media: MediaItem) {
-  const apiType = media.type === 'movie' ? 'movie' : 'tv';
+export async function getMediaDetails(
+  media: MediaItem
+) {
+  let apiType: string;
+
+  if (media.type === 'movie') {
+    apiType = 'movie';
+  } else if (
+    media.type === 'manga' ||
+    media.type === 'manhwa'
+  ) {
+    apiType = media.type;
+  } else {
+    apiType = 'tv';
+  }
 
   const res = await fetch(
-    `/api/media-details?id=${media.id}&type=${apiType}`
+    `/api/media-details?id=${encodeURIComponent(
+      media.id.toString()
+    )}&type=${apiType}`
   );
 
   if (!res.ok) {
+    const errorText = await res.text();
+
+    console.error(
+      'Erreur détails média :',
+      {
+        status: res.status,
+        mediaId: media.id,
+        mediaType: media.type,
+        apiType,
+        response: errorText,
+      }
+    );
+
     throw new Error(
-      'Erreur lors du chargement des détails'
+      `Erreur lors du chargement des détails : ${res.status}`
     );
   }
 
-  return res.json();
+  return await res.json();
 }
 
 export async function getSeasonEpisodes(
   mediaId: string | number,
-  seasonNum: number
+  seasonNumber: number
 ) {
-  const res = await fetch(
-    `/api/tv-season?id=${mediaId}&season=${seasonNum}`
-  );
 
+        const res = await fetch(
+        `/api/tv-seasons?id=${mediaId}&season=${seasonNumber}`
+        );
   if (!res.ok) {
+    const errorText = await res.text();
+
+    console.error('Erreur API épisodes :', {
+      status: res.status,
+      statusText: res.statusText,
+      response: errorText,
+      mediaId,
+      seasonNumber,
+    });
+
     throw new Error(
-      'Erreur lors du chargement des épisodes'
+      `Erreur épisodes ${res.status} : ${
+        errorText || res.statusText
+      }`
     );
   }
 
   const data = await res.json();
-
-  return Array.isArray(data.episodes)
-    ? data.episodes
-    : [];
-}
+  return data.episodes || [];
+}  

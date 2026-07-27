@@ -1,20 +1,16 @@
 'use client';
 
+import { useState } from 'react';
 import styles from '../page.module.css';
-import type { FilterStatus } from '../types/media';
 
-type TypeFilter =
-  | 'tous'
-  | 'movie'
-  | 'tv'
-  | 'drama'
-  | 'anime'
-  | 'manga'
-  | 'manhwa';
+import type {
+  FilterStatus,
+  MediaType,
+} from '../types/media';
 
 type HeaderProps = {
   query: string;
-  typeFilter: TypeFilter;
+  typeFilter: MediaType | 'tous';
   statusFilter: FilterStatus;
   isSearching: boolean;
 
@@ -23,12 +19,32 @@ type HeaderProps = {
   enCoursCount: number;
   aVoirCount: number;
 
-  onSearchChange: (value: string) => void;
-  onTypeFilterChange: (value: TypeFilter) => void;
-  onStatusFilterChange: (value: FilterStatus) => void;
+  onSearchChange: (text: string) => void;
+
+  onTypeFilterChange: (
+    type: MediaType | 'tous'
+  ) => void;
+
+  onStatusFilterChange: (
+    status: FilterStatus
+  ) => void;
+
   onReset: () => void;
-  onLogout: () => void | Promise<void>;
+  onLogout: () => void;
 };
+
+const typeFilters: Array<{
+  value: MediaType | 'tous';
+  label: string;
+}> = [
+  { value: 'tous', label: 'Tout' },
+  { value: 'movie', label: 'Films' },
+  { value: 'tv', label: 'Séries' },
+  { value: 'drama', label: 'Dramas' },
+  { value: 'anime', label: 'Animés' },
+  { value: 'manga', label: 'Mangas' },
+  { value: 'manhwa', label: 'Manhwas' },
+];
 
 export default function Header({
   query,
@@ -47,198 +63,214 @@ export default function Header({
   onReset,
   onLogout,
 }: HeaderProps) {
+  const [profileOpen, setProfileOpen] =
+    useState(false);
+
+  const statusFilters: Array<{
+    value: FilterStatus;
+    label: string;
+    count: number;
+  }> = [
+    {
+      value: 'tout',
+      label: 'Tout',
+      count: totalCount,
+    },
+    {
+      value: 'en_cours',
+      label: 'En cours',
+      count: enCoursCount,
+    },
+    {
+      value: 'termine',
+      label: 'Terminé',
+      count: termineCount,
+    },
+    {
+      value: 'a_voir',
+      label: 'À voir',
+      count: aVoirCount,
+    },
+  ];
+
+  const handleClearSearch = () => {
+    onSearchChange('');
+  };
+
   return (
-    <>
-      <header className={styles.header}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '1rem',
-          }}
-        >
-          <a
-            href="#"
-            className={styles.logo}
-            onClick={(event) => {
-              event.preventDefault();
-              onReset();
-            }}
-          >
-            Steldra
-          </a>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.4rem',
-            flexWrap: 'wrap',
-          }}
-        >
+    <header className={styles.appHeader}>
+      <div className={styles.headerShell}>
+        <div className={styles.headerTop}>
           <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'tous' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('tous')}
+            type="button"
+            className={styles.brandButton}
+            onClick={onReset}
+            aria-label="Retour à l’accueil"
           >
-            Tout
+            <span className={styles.brandMark}>
+              S
+            </span>
+
+            <span className={styles.brandContent}>
+              <span className={styles.brandName}>
+                STELDRA
+              </span>
+
+              <span className={styles.brandSubtitle}>
+                Mon univers cinéma & lecture
+              </span>
+            </span>
           </button>
 
-          <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'movie' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('movie')}
-          >
-            Films
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'tv' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('tv')}
-          >
-            Séries
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'drama' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('drama')}
-          >
-            Dramas
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'anime' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('anime')}
-          >
-            Animes
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'manga' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('manga')}
-          >
-            Mangas
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              typeFilter === 'manhwa' ? styles.active : ''
-            }`}
-            onClick={() => onTypeFilterChange('manhwa')}
-          >
-            Manhwas
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-          }}
-        >
-          <div className={styles.searchContainer}>
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              className={styles.searchInput}
-              value={query}
-              onChange={(event) =>
-                onSearchChange(event.target.value)
+          <div className={styles.profileContainer}>
+            <button
+              type="button"
+              className={styles.profileButton}
+              onClick={() =>
+                setProfileOpen((current) => !current)
               }
-            />
+              aria-label="Ouvrir le menu utilisateur"
+              aria-expanded={profileOpen}
+            >
+              <span className={styles.profileInitials}>
+                NT
+              </span>
+
+              <span
+                className={`${styles.profileChevron} ${
+                  profileOpen
+                    ? styles.profileChevronOpen
+                    : ''
+                }`}
+              >
+                ▾
+              </span>
+            </button>
+
+            {profileOpen && (
+              <div className={styles.profileMenu}>
+                <div className={styles.profileMenuHeader}>
+                  <strong>Mon compte</strong>
+
+                  <span>Steldra</span>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.profileMenuItem}
+                  onClick={() => {
+                    setProfileOpen(false);
+                    onLogout();
+                  }}
+                >
+                  <span aria-hidden="true">↪</span>
+                  Déconnexion
+                </button>
+              </div>
+            )}
           </div>
-
-          <button
-            onClick={onLogout}
-            className={styles.logoutBtn}
-            style={{
-              padding: '0.5rem 1rem',
-              cursor: 'pointer',
-              backgroundColor: '#FF4757',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-            }}
-          >
-            Déconnexion
-          </button>
         </div>
-      </header>
 
-      {!isSearching && (
+        <div className={styles.modernSearch}>
+          <span
+            className={styles.modernSearchIcon}
+            aria-hidden="true"
+          >
+            ⌕
+          </span>
+
+          <input
+            type="search"
+            className={styles.modernSearchInput}
+            value={query}
+            onChange={(event) =>
+              onSearchChange(event.target.value)
+            }
+            placeholder="Rechercher un film, une série, un manga..."
+            aria-label="Rechercher un média"
+          />
+
+          {isSearching && (
+            <span
+              className={styles.modernSearchLoader}
+              aria-label="Recherche en cours"
+            />
+          )}
+
+          {query && !isSearching && (
+            <button
+              type="button"
+              className={styles.modernSearchClear}
+              onClick={handleClearSearch}
+              aria-label="Effacer la recherche"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
         <nav
-          className={styles.navFilters}
-          style={{
-            marginTop: '1.5rem',
-            padding: '0 2rem',
-          }}
+          className={styles.mediaTabs}
+          aria-label="Types de médias"
         >
-          <button
-            className={`${styles.filterBtn} ${
-              statusFilter === 'tout'
-                ? styles.active
-                : ''
-            }`}
-            onClick={() =>
-              onStatusFilterChange('tout')
-            }
-          >
-            Tout ({totalCount})
-          </button>
+          {typeFilters.map((filter) => {
+            const isActive =
+              typeFilter === filter.value;
 
-          <button
-            className={`${styles.filterBtn} ${
-              statusFilter === 'termine'
-                ? styles.active
-                : ''
-            }`}
-            onClick={() =>
-              onStatusFilterChange('termine')
-            }
-          >
-            Terminé ({termineCount})
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              statusFilter === 'en_cours'
-                ? styles.active
-                : ''
-            }`}
-            onClick={() =>
-              onStatusFilterChange('en_cours')
-            }
-          >
-            Commencé ({enCoursCount})
-          </button>
-
-          <button
-            className={`${styles.filterBtn} ${
-              statusFilter === 'a_voir'
-                ? styles.active
-                : ''
-            }`}
-            onClick={() =>
-              onStatusFilterChange('a_voir')
-            }
-          >
-            À voir ({aVoirCount})
-          </button>
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                className={`${styles.mediaTab} ${
+                  isActive
+                    ? styles.mediaTabActive
+                    : ''
+                }`}
+                onClick={() =>
+                  onTypeFilterChange(filter.value)
+                }
+              >
+                {filter.label}
+              </button>
+            );
+          })}
         </nav>
-      )}
-    </>
+
+        <nav
+          className={styles.statusSegment}
+          aria-label="Statut des médias"
+        >
+          {statusFilters.map((filter) => {
+            const isActive =
+              statusFilter === filter.value;
+
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                className={`${styles.statusSegmentButton} ${
+                  isActive
+                    ? styles.statusSegmentButtonActive
+                    : ''
+                }`}
+                onClick={() =>
+                  onStatusFilterChange(filter.value)
+                }
+              >
+                <span>{filter.label}</span>
+
+                <span
+                  className={
+                    styles.statusSegmentCount
+                  }
+                >
+                  {filter.count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
   );
 }
