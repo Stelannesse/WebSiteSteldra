@@ -113,6 +113,7 @@
 .floatS:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.3); background: #008f95; }
 .floatS:active { transform: translateY(0); }
 
+
 /* --- ADAPTATION MOBILE / TABLETTE --- */
 @media (max-width: 768px) {
   /* Restaurer la navbar horizontale compacte : logo + recherche + userControls en ligne */

@@ -3,7 +3,6 @@
 import { createClient } from './lib/supabase';
 import { useState, useEffect, useMemo } from 'react'; // Gérer les données et les actions
 import styles from './page.module.css'; //Importer le style de la page
-import { useRouter } from 'next/navigation';  // Permet de changer de page
 
 interface MediaItem { // Définition de l'interface pour les médias
   id: string | number; 
@@ -22,18 +21,13 @@ export default function Home() {
   const [query, setQuery] = useState(''); // État pour la recherche
   const [results, setResults] = useState<MediaItem[]>([]); // État pour les résultats de recherche
   const [loading, setLoading] = useState(false); // État pour indiquer si la recherche est en cours
-  const router = useRouter(); // Permet de naviguer entre les pages
-  const [isChecking, setIsChecking] = useState(true); // État pour vérifier si l'utilisateur est connecté
   const [userName, setUserName] = useState<string | null>(null); // État pour stocker le nom de l'utilisateur connecté
   const [userId, setUserId] = useState<string | null>(null); // État pour stocker l'ID de l'utilisateur connecté
-  const [userEmail, setUserEmail] = useState<string | null>(null); // État pour stocker l'email de l'utilisateur connecté
-  const [userAvatar, setUserAvatar] = useState<string | null>(null); // État pour stocker l'avatar de l'utilisateur connecté
-  const [userRole, setUserRole] = useState<string | null>(null); // État pour stocker le rôle de l'utilisateur connecté
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  type WatchStatus = 'vu' | 'a_voir';
-  type FilterStatus = 'tout' | 'termine' | 'commence' | 'a_voir';
+  type WatchStatus = 'vu' | 'a_voir'| 'en_cours';
+  type FilterStatus = 'tout' | 'termine' | 'en_cours' | 'a_voir'; //medias affichés
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
   const [typeFilter, setTypeFilter] = useState<'tous' | 'movie' | 'tv' | 'drama' | 'anime' | 'manga' | 'manhwa'>('tous');
@@ -158,7 +152,7 @@ export default function Home() {
   const getFilterStatus = (media: MediaItem, currentStatus?: WatchStatus): FilterStatus => {
     const status = currentStatus || myList[getMediaKey(media)]?.status || 'a_voir';
     if (status === 'vu') return 'termine';
-    return hasStartedProgress(getMediaKey(media)) ? 'commence' : 'a_voir';
+    return hasStartedProgress(getMediaKey(media)) ? 'en_cours' : 'a_voir';
   };
 
   const handleLogout = async () => {
@@ -206,8 +200,8 @@ useEffect(() => {
     if (user) {
       // Si connecté : on récupère tout depuis Supabase
       setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || "Utilisateur");
-    
-      // Dans ton useEffect, change ceci :
+      setUserId(user.id);
+
     const { data, error } = await supabase
       .from('media_progress')
       .select('*')
@@ -335,7 +329,7 @@ const openMediaDetails = async (media: MediaItem) => {
       setDetailsLoading(false);
     }
   };
-// Fonction pour charger les épisodes d'une saison spécifique
+// Fonction pour charger les épisodes d'une saison spécifique (ca marche pas)
   const loadSeasonEpisodes = async (mediaId: string | number, seasonNum: number) => {
     setActiveSeason(seasonNum);
     setEpisodesLoading(true);
@@ -459,14 +453,15 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
 
   // Fonction pour gérer la déconnexion de l'utilisateur
   const isSearching = query.trim().length >= 2;
-  // AJOUTE CECI JUSTE AVANT LA LIGNE "let displayItems = ..."
+
 console.log("Contenu de myList :", Object.values(myList));
 let displayItems = isSearching ? results : Object.values(myList).map(item => item.media);
 
+//filtrage
 const itemsForCount = Object.values(myList).filter(item => typeFilter === 'tous' || item.media.type === typeFilter);
 const totalCount = itemsForCount.length;
 const termineCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'termine').length;
-const commenceCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'commence').length;
+const enCoursCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'en_cours').length;
 const aVoirCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'a_voir').length;
 
 displayItems = displayItems.filter(item => {
@@ -546,7 +541,7 @@ displayItems = displayItems.filter(item => {
         <nav className={styles.navFilters} style={{ marginTop: '1.5rem', padding: '0 2rem' }}>
           <button className={`${styles.filterBtn} ${statusFilter === 'tout' ? styles.active : ''}`} onClick={() => setStatusFilter('tout')}>Tout ({totalCount})</button>
           <button className={`${styles.filterBtn} ${statusFilter === 'termine' ? styles.active : ''}`} onClick={() => setStatusFilter('termine')}>Terminé ({termineCount})</button>
-          <button className={`${styles.filterBtn} ${statusFilter === 'commence' ? styles.active : ''}`} onClick={() => setStatusFilter('commence')}>Commencé ({commenceCount})</button>
+          <button className={`${styles.filterBtn} ${statusFilter === 'en_cours' ? styles.active : ''}`} onClick={() => setStatusFilter('en_cours')}>Commencé ({enCoursCount})</button>
           <button className={`${styles.filterBtn} ${statusFilter === 'a_voir' ? styles.active : ''}`} onClick={() => setStatusFilter('a_voir')}>À voir ({aVoirCount})</button>
         </nav>
       )}
@@ -586,47 +581,97 @@ displayItems = displayItems.filter(item => {
         }} 
         onClick={() => openMediaDetails(item)}
       >
-        {/* Bouton "Vu" / Incrémentable en HAUT À GAUCHE */}
-        <button 
-          onClick={async (e) => {
-            e.stopPropagation();
-            let nextCount = watchCount + 1;
-            if (nextCount > 7) nextCount = 1;
+          {/* Bouton "Vu" */}
+          <button 
+            onClick={async (e) => {
+              e.stopPropagation();
+              let nextCount = watchCount + 1;
+              if (nextCount > 7) nextCount = 1;
 
-            const updatedList = { ...myList };
-            updatedList[mediaKey] = {
-              media: item,
-              status: 'vu',
-              watchCount: nextCount
-            };
-            setMyList(updatedList);
-            localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
-
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase.from('media_progress').upsert({
-                user_id: user.id,
-                media_id: item.id.toString(),
-                media_type: item.type,
-                media_data: item,
+              const updatedList = { ...myList };
+              updatedList[mediaKey] = {
+                media: item,
                 status: 'vu',
-                watchCount: nextCount,
-                watched_episodes: watchedEpisodes,
-                manga_progress: mangaProgress[mediaKey] || 0
-              });
-            }
-          }}
-          style={{ 
-            position: 'absolute', top: '10px', left: '10px', zIndex: 10,
-            padding: '0.3rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '6px', border: 'none', 
-            backgroundColor: currentStatus === 'vu' ? '#4CAF50' : 'rgba(0,0,0,0.7)', 
-            color: '#FFF', fontWeight: 'bold' 
-          }}
+                watchCount: nextCount
+              };
+              setMyList(updatedList);
+              localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
+
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                await supabase.from('media_progress').upsert({
+                  user_id: user.id,
+                  media_id: item.id.toString(),
+                  media_type: item.type,
+                  media_data: item,
+                  status: 'vu',
+                  watchCount: nextCount,
+                  watched_episodes: watchedEpisodes,
+                  manga_progress: mangaProgress[mediaKey] || 0
+                });
+              }
+            }}
+            style={{ 
+              position: 'absolute', top: '10px', left: '10px', zIndex: 10,
+              padding: '0.3rem 0.6rem', fontSize: '0.75rem', cursor: 'pointer', borderRadius: '6px', border: 'none', 
+              backgroundColor: currentStatus === 'vu' ? '#4CAF50' : 'rgba(0,0,0,0.7)', 
+              color: '#FFF', fontWeight: 'bold' 
+            }}
+          >
+            {isReadingType ? (watchCount === 0 ? 'Lu' : (watchCount === 1 ? 'Lu' : `Lu x${watchCount}`)) : (watchCount === 0 ? 'Vu' : vuLabel)}
+          </button>
+
+          {/* Bouton : En cours (retirer ou ajouter) */}
+          <button
+        onClick={async (e) => {
+          e.stopPropagation();
+          const updatedList = { ...myList };
+          
+          // Si c'est déjà 'en_cours', on le bascule en 'a_voir' (ou on le retire selon ton besoin exact)
+          // Ici, on le remet en 'a_voir' quand l'utilisateur clique sur le bouton actif
+          const newStatus = currentStatus === 'en_cours' ? 'a_voir' : 'en_cours';
+
+          updatedList[mediaKey] = {
+            media: item,
+            status: newStatus,
+            watchCount: currentItem?.watchCount || 0
+          };
+          
+          setMyList(updatedList);
+          localStorage.setItem('steldra_multimedia_list_v1', JSON.stringify(updatedList));
+
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('media_progress').upsert({
+              user_id: user.id,
+              media_id: item.id.toString(),
+              media_type: item.type,
+              media_data: item,
+              status: newStatus,
+              watched_episodes: watchedEpisodes,
+              manga_progress: mangaProgress[mediaKey] || 0
+            });
+          }
+        }}
+        style={{ 
+          position: 'absolute', 
+          top: '10px', 
+          right: '100px',
+          zIndex: 10,
+          padding: '0.3rem 0.6rem', 
+          fontSize: '0.75rem', 
+          cursor: 'pointer', 
+          borderRadius: '6px', 
+          border: 'none', 
+          backgroundColor: currentStatus === 'en_cours' ? '#FF4C29' : 'rgba(0,0,0,0.7)', 
+          color: '#FFF', 
+          fontWeight: 'bold' 
+        }}
         >
-          {isReadingType ? (watchCount === 0 ? 'Lu' : (watchCount === 1 ? 'Lu' : `Lu x${watchCount}`)) : (watchCount === 0 ? 'Vu' : vuLabel)}
+          {currentStatus === 'en_cours' ? '−' : '+'}
         </button>
 
-        {/* Bouton "À voir" / "À lire" en HAUT À DROITE */}
+        {/* Bouton "À voir" */}
         <button 
           onClick={async (e) => {
             e.stopPropagation();
