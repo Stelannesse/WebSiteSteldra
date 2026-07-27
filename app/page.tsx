@@ -115,11 +115,29 @@ const {
     return hasWatched || progressValue > 0;
   };
 
-  const getFilterStatus = (media: MediaItem, currentStatus?: WatchStatus): FilterStatus => {
-    const status = currentStatus || myList[getMediaKey(media)]?.status || 'a_voir';
-    if (status === 'vu') return 'termine';
-    return hasStartedProgress(getMediaKey(media)) ? 'en_cours' : 'a_voir';
-  };
+const getFilterStatus = (
+  media: MediaItem,
+  currentStatus?: WatchStatus
+): FilterStatus => {
+  const status =
+    currentStatus ||
+    myList[getMediaKey(media)]?.status ||
+    'a_voir';
+
+  if (status === 'vu') {
+    return 'termine';
+  }
+
+  if (status === 'en_cours') {
+    return 'en_cours';
+  }
+
+  if (hasStartedProgress(getMediaKey(media))) {
+    return 'en_cours';
+  }
+
+  return 'a_voir';
+};
 
   const handleLogout = async () => {
   await supabase.auth.signOut();
@@ -372,16 +390,24 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
         .eq('user_id', user.id)
         .eq('media_id', media.id.toString());
     } else {
-      await supabase.from('media_progress').upsert({ 
-        user_id: user.id, 
-        media_id: media.id.toString(), 
-        media_type: media.type,
-        media_data: media, 
-        status: status,
-        watched_episodes: watchedEpisodes,
-        manga_progress: mangaProgress[mediaKey] || 0
-      });
-    }
+const { error } = await supabase
+  .from('media_progress')
+  .upsert({
+    user_id: user.id,
+    media_id: media.id.toString(),
+    media_type: media.type,
+    media_data: media,
+    status,
+    watched_episodes: watchedEpisodes,
+    manga_progress: mangaProgress[mediaKey] || 0,
+  });
+
+if (error) {
+  console.error(
+    'Erreur Supabase lors de la sauvegarde :',
+    error
+  );
+}    }
   }
 };
 

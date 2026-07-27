@@ -94,7 +94,8 @@ export default function MediaCard({
         style={{
           position: 'absolute',
           top: '10px',
-          right: '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           zIndex: 10,
           padding: '0.3rem 0.6rem',
           fontSize: '0.75rem',

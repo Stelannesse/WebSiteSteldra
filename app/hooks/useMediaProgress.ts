@@ -44,46 +44,54 @@ export default function useMediaProgress({
   getMediaKey,
 
 }: UseMediaProgressProps) {
-  const updateMediaInList = async (
-    media: MediaItem,
-    status: WatchStatus,
-    watchCount = 0
-  ) => {
-    const mediaKey = getMediaKey(media);
+const updateMediaInList = async (
+  media: MediaItem,
+  status: WatchStatus,
+  watchCount = 0
+) => {
+  const mediaKey = getMediaKey(media);
 
-    const updatedList = {
-      ...myList,
-      [mediaKey]: {
-        media,
-        status,
-        watchCount,
-      },
-    };
+  const updatedList = {
+    ...myList,
+    [mediaKey]: {
+      media,
+      status,
+      watchCount,
+    },
+  };
 
-    setMyList(updatedList);
+  setMyList(updatedList);
 
-    localStorage.setItem(
-      'steldra_multimedia_list_v1',
-      JSON.stringify(updatedList)
-    );
+  localStorage.setItem(
+    'steldra_multimedia_list_v1',
+    JSON.stringify(updatedList)
+  );
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) return;
+  if (!user) return;
 
-    await supabase.from('media_progress').upsert({
+  const { error } = await supabase
+    .from('media_progress')
+    .upsert({
       user_id: user.id,
       media_id: media.id.toString(),
       media_type: media.type,
       media_data: media,
       status,
-      watchCount,
       watched_episodes: watchedEpisodes,
       manga_progress: mangaProgress[mediaKey] || 0,
     });
-  };
+
+  if (error) {
+    console.error(
+      'Erreur sauvegarde media_progress :',
+      error
+    );
+  }
+};
 
   const handleMarkWatched = async (
     media: MediaItem
