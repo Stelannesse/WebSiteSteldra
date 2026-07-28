@@ -11,6 +11,7 @@ type MediaCardProps = {
   onMarkWatched: (media: MediaItem) => void;
   onToggleInProgress: (media: MediaItem) => void;
   onMarkToWatch: (media: MediaItem) => void;
+  onRemove: (media: MediaItem) => void;
 };
 
 export default function MediaCard({
@@ -20,8 +21,9 @@ export default function MediaCard({
   onMarkWatched,
   onToggleInProgress,
   onMarkToWatch,
+  onRemove,
 }: MediaCardProps) {
-  const currentStatus: WatchStatus | undefined =
+      const currentStatus: WatchStatus | undefined =
     currentItem?.status;
 
   const watchCount =
@@ -155,6 +157,41 @@ export default function MediaCard({
           borderRadius: '8px',
         }}
       />
+{currentItem && (
+  <button
+    type="button"
+    onClick={(event) => {
+      event.stopPropagation();
+
+      const confirmed = window.confirm(
+        `Supprimer « ${item.title} » de ta collection ?`
+      );
+
+      if (confirmed) {
+        onRemove(item);
+      }
+    }}
+    aria-label={`Supprimer ${item.title}`}
+    title="Supprimer de ma collection"
+    style={{
+      position: 'absolute',
+      right: '8px',
+      bottom: '8px',
+      zIndex: 10,
+      width: '32px',
+      height: '32px',
+      border: 'none',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(190, 35, 35, 0.9)',
+      color: '#ffffff',
+      fontSize: '1rem',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+    }}
+  >
+    ×
+  </button>
+)}
     </div>
   );
 }

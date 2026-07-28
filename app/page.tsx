@@ -97,23 +97,19 @@ const {
   handleMarkWatched,
   handleToggleInProgress,
   handleMarkToWatch,
+  handleRemove,
   toggleEpisodeWatched,
   handleChapterChange,
 } = useMediaProgress({
   supabase,
-
   myList,
   setMyList,
-
   watchedEpisodes,
   setWatchedEpisodes,
-
   mangaProgress,
   setMangaProgress,
-
   selectedMedia,
   activeSeason,
-
   getMediaKey,
 });
 
@@ -570,6 +566,8 @@ displayItems = displayItems.filter(item => {
         onMarkWatched={handleMarkWatched}
         onToggleInProgress={handleToggleInProgress}
         onMarkToWatch={handleMarkToWatch}
+        onRemove={handleRemove}
+
       />
     );
   })}

@@ -192,10 +192,78 @@ const handleChapterChange = async (value: number) => {
     );
   };
 
-  return {
+const handleRemove = async (media: MediaItem) => {
+  const mediaKey = getMediaKey(media);
+
+  // Suppression de la liste
+  setMyList((current) => {
+    const updatedList = { ...current };
+    delete updatedList[mediaKey];
+
+    localStorage.setItem(
+      'steldra_multimedia_list_v1',
+      JSON.stringify(updatedList)
+    );
+
+    return updatedList;
+  });
+
+  // Suppression des épisodes associés
+  setWatchedEpisodes((current) => {
+    const updatedEpisodes = Object.fromEntries(
+      Object.entries(current).filter(
+        ([episodeKey]) =>
+          !episodeKey.startsWith(`${mediaKey}_S`)
+      )
+    );
+
+    localStorage.setItem(
+      'steldra_watched_episodes_v1',
+      JSON.stringify(updatedEpisodes)
+    );
+
+    return updatedEpisodes;
+  });
+
+  // Suppression de la progression manga
+  setMangaProgress((current) => {
+    const updatedProgress = { ...current };
+    delete updatedProgress[mediaKey];
+
+    localStorage.setItem(
+      'steldra_manga_progress_v1',
+      JSON.stringify(updatedProgress)
+    );
+
+    return updatedProgress;
+  });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const { error } = await supabase
+    .from('media_progress')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('media_id', media.id.toString())
+    .eq('media_type', media.type);
+
+  if (error) {
+    console.error(
+      'Erreur lors de la suppression du média :',
+      error
+    );
+  }
+};
+
+return {
   handleMarkWatched,
   handleToggleInProgress,
   handleMarkToWatch,
+  handleRemove,
   toggleEpisodeWatched,
   handleChapterChange,
 };
