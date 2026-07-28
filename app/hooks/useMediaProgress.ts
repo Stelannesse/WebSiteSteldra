@@ -73,17 +73,32 @@ const updateMediaInList = async (
 
   if (!user) return;
 
-  const { error } = await supabase
-    .from('media_progress')
-    .upsert({
+const { error } = await supabase
+  .from('media_progress')
+  .upsert(
+    {
       user_id: user.id,
-      media_id: media.id.toString(),
+      media_id: String(media.id),
       media_type: media.type,
-      media_data: media,
       status,
-      watched_episodes: watchedEpisodes,
-      manga_progress: mangaProgress[mediaKey] || 0,
-    });
+      media_data: media,
+      watched_episode: watchedEpisodes,
+      manga_progress: mangaProgress[mediaKey] ?? 0,
+      watch_count: watchCount,
+    },
+    {
+      onConflict: 'user_id,media_id',
+    }
+  );
+
+if (error) {
+  console.error('Erreur sauvegarde media_progress :', {
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  });
+}
 
   if (error) {
     console.error(
@@ -115,47 +130,130 @@ const updateMediaInList = async (
   };
 
   // Fonction pour marquer un épisode comme vu ou non vu
-const toggleEpisodeWatched = async (episodeNum: number) => {
+const toggleEpisodeWatched = async (
+  episodeNum: number
+) => {
   if (!selectedMedia) return;
-  const mediaKey = `${selectedMedia.type}_${selectedMedia.id}`;
-  const epKey = `${mediaKey}_S${activeSeason}E${episodeNum}`;
-  const updated = { ...watchedEpisodes, [epKey]: !watchedEpisodes[epKey] };
-  
-  setWatchedEpisodes(updated);
-  localStorage.setItem('steldra_watched_episodes_v1', JSON.stringify(updated));
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('media_progress').upsert({
-      user_id: user.id,
-      media_id: selectedMedia.id.toString(),
-      media_type: selectedMedia.type,
-      media_data: selectedMedia,
-      status: myList[mediaKey]?.status || 'a_voir',
-      watched_episodes: updated
-    });
+  const mediaKey = getMediaKey(selectedMedia);
+  const epKey =
+    `${mediaKey}_S${activeSeason}E${episodeNum}`;
+
+  const updated = {
+    ...watchedEpisodes,
+    [epKey]: !watchedEpisodes[epKey],
+  };
+
+  setWatchedEpisodes(updated);
+
+  localStorage.setItem(
+    'steldra_watched_episodes_v1',
+    JSON.stringify(updated)
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const currentItem = myList[mediaKey];
+
+  const { error } = await supabase
+    .from('media_progress')
+    .upsert(
+      {
+        user_id: user.id,
+        media_id: String(selectedMedia.id),
+        media_type: selectedMedia.type,
+        media_data: selectedMedia,
+        status: currentItem?.status || 'a_voir',
+
+        // Singulier, comme dans Supabase
+        watched_episode: updated,
+
+        manga_progress:
+          mangaProgress[mediaKey] ?? 0,
+
+        watch_count:
+          currentItem?.watchCount ?? 0,
+      },
+      {
+        onConflict: 'user_id,media_id',
+      }
+    );
+
+  if (error) {
+    console.error(
+      'Erreur sauvegarde des épisodes :',
+      {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      }
+    );
   }
 };
 
 // Fonction pour gérer la progression des chapitres pour les mangas et manhwas
-const handleChapterChange = async (value: number) => {
+const handleChapterChange = async (
+  value: number
+) => {
   if (!selectedMedia) return;
-  const mediaKey = `${selectedMedia.type}_${selectedMedia.id}`;
-  const updated = { ...mangaProgress, [mediaKey]: Math.max(0, value) };
-  
-  setMangaProgress(updated);
-  localStorage.setItem('steldra_manga_progress_v1', JSON.stringify(updated));
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase.from('media_progress').upsert({
-      user_id: user.id,
-      media_id: selectedMedia.id.toString(),
-      media_type: selectedMedia.type,
-      media_data: selectedMedia,
-      status: myList[mediaKey]?.status || 'a_voir',
-      manga_progress: Math.max(0, value)
-    });
+  const mediaKey = getMediaKey(selectedMedia);
+  const newProgress = Math.max(0, value);
+
+  const updated = {
+    ...mangaProgress,
+    [mediaKey]: newProgress,
+  };
+
+  setMangaProgress(updated);
+
+  localStorage.setItem(
+    'steldra_manga_progress_v1',
+    JSON.stringify(updated)
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const currentItem = myList[mediaKey];
+
+  const { error } = await supabase
+    .from('media_progress')
+    .upsert(
+      {
+        user_id: user.id,
+        media_id: String(selectedMedia.id),
+        media_type: selectedMedia.type,
+        media_data: selectedMedia,
+        status: currentItem?.status || 'a_voir',
+        watched_episode: watchedEpisodes,
+        manga_progress: newProgress,
+        watch_count:
+          currentItem?.watchCount ?? 0,
+      },
+      {
+        onConflict: 'user_id,media_id',
+      }
+    );
+
+  if (error) {
+    console.error(
+      'Erreur sauvegarde progression manga :',
+      {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      }
+    );
   }
 };
 

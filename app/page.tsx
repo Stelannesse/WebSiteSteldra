@@ -218,8 +218,7 @@ useEffect(() => {
     id: mediaId,
   },
   status: item.status,
-  watchCount: item.watchCount || 0,
-};
+  watchCount: Number(item.watch_count) || 0,};
     
     // 4. On stocke le reste
     if (item.watched_episodes) Object.assign(newEpisodes, item.watched_episodes);
