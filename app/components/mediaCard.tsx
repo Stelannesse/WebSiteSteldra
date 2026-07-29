@@ -3,11 +3,11 @@ import type {
   MyListItem,
   WatchStatus,
 } from '../types/media';
+import { useRouter } from 'next/navigation';
 
 type MediaCardProps = {
   item: MediaItem;
   currentItem?: MyListItem;
-  onOpen: (media: MediaItem) => void;
   onMarkWatched: (media: MediaItem) => void;
   onToggleInProgress: (media: MediaItem) => void;
   onMarkToWatch: (media: MediaItem) => void;
@@ -17,7 +17,6 @@ type MediaCardProps = {
 export default function MediaCard({
   item,
   currentItem,
-  onOpen,
   onMarkWatched,
   onToggleInProgress,
   onMarkToWatch,
@@ -25,6 +24,17 @@ export default function MediaCard({
 }: MediaCardProps) {
       const currentStatus: WatchStatus | undefined =
     currentItem?.status;
+
+    const router = useRouter();
+
+const openDetails = () => {
+  sessionStorage.setItem(
+    'steldra_selected_media',
+    JSON.stringify(item)
+  );
+
+  router.push(`/media/${item.type}/${item.id}`);
+};
 
   const watchCount =
     currentItem?.watchCount ||
@@ -49,8 +59,8 @@ export default function MediaCard({
 
   return (
     <div
-      onClick={() => onOpen(item)}
-      style={{
+        onClick={openDetails}      
+        style={{
         position: 'relative',
         cursor: 'pointer',
         backgroundColor: 'transparent',

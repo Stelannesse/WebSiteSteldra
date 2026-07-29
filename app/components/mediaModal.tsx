@@ -2,6 +2,7 @@
 
 import ReviewSection from './ReviewSection';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type {
   MediaItem,
   MediaReview,
@@ -39,7 +40,7 @@ type Episode = {
   runtime?: number | null;
 };
 
-type MediaModalProps = {
+type MediaPageContentProps = {
   selectedMedia: MediaItem | null;
   detailsLoading: boolean;
   mediaDetails: MediaDetails | null;
@@ -57,7 +58,6 @@ type MediaModalProps = {
   episodesLoading: boolean;
   watchedEpisodes: Record<string, boolean>;
 
-  onClose: () => void;
   onRatingChange: (rating: ReviewRating) => void;
   onCommentChange: (comment: string) => void;
   onSubmitReview: () => void;
@@ -72,7 +72,7 @@ type MediaModalProps = {
   onToggleEpisode: (episodeNumber: number) => void;
 };
 
-export default function MediaModal({
+export default function MediaPageContent({
   selectedMedia,
   detailsLoading,
   mediaDetails,
@@ -90,7 +90,6 @@ export default function MediaModal({
   episodesLoading,
   watchedEpisodes,
 
-  onClose,
   onRatingChange,
   onCommentChange,
   onSubmitReview,
@@ -100,7 +99,9 @@ export default function MediaModal({
   onChapterChange,
   onLoadSeason,
   onToggleEpisode,
-}: MediaModalProps) {
+}: MediaPageContentProps) {
+  const router = useRouter();
+
   const [showFullSynopsis, setShowFullSynopsis] =
     useState(false);
 
@@ -210,53 +211,53 @@ const formatEpisodeDate = (
   }).format(new Date(airDate));
 };
 
-  return (
-    <div
-        style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100vw',
-        height: '100dvh',
-        backgroundColor: 'rgba(0,0,0,0.85)',
-        zIndex: 5000,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '1rem',
-        }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: '#222831',
-          color: '#EEEEEE',
-          width: '100%',
-          maxWidth: '750px',
-        maxHeight: 'calc(100dvh - 2rem)',          borderRadius: '16px',
-          overflowY: 'auto',
-          padding: '2rem',
-          position: 'relative',
-          border: '1px solid #393E46',
-        }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          style={{
-            position: 'absolute',
-            top: '1.5rem',
-            right: '1.5rem',
-            background: 'none',
-            border: 'none',
-            color: '#EEEEEE',
-            fontSize: '1.5rem',
-            cursor: 'pointer',
-          }}
-          onClick={onClose}
-          aria-label="Fermer"
-        >
-          ✕
-        </button>
+return (
+  <main
+    style={{
+      width: '100%',
+      minHeight: '100vh',
+      padding: 'clamp(1rem, 4vw, 2.5rem)',
+      backgroundColor: '#222831',
+      color: '#EEEEEE',
+    }}
+  >      
+  
+<div
+  style={{
+    width: '100%',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: 'clamp(1rem, 4vw, 2rem)',
+    position: 'relative',
+    backgroundColor: '#222831',
+    color: '#EEEEEE',
+    border: '1px solid #393E46',
+    borderRadius: '20px',
+    boxShadow: '0 20px 55px rgba(0, 0, 0, 0.25)',
+  }}
+>
+<button
+  type="button"
+  onClick={() => router.back()}
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '42px',
+    marginBottom: '1.5rem',
+    padding: '0.6rem 1rem',
+    gap: '0.5rem',
+    backgroundColor: '#393E46',
+    color: '#FFFFFF',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '12px',
+    fontSize: '0.9rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+  }}
+>
+  ← Retour à la collection
+</button>
 
         <div
           style={{
@@ -315,49 +316,49 @@ const formatEpisodeDate = (
             </span>
 
             {(mediaDetails?.runtime ||
-  mediaDetails?.episode_runtime) && (
-  <div
-    style={{
-      marginTop: '0.7rem',
-      display: 'flex',
-      gap: '0.5rem',
-      flexWrap: 'wrap',
-    }}
-  >
-    {mediaDetails.runtime && (
-      <span
-        style={{
-          padding: '0.35rem 0.65rem',
-          borderRadius: '20px',
-          backgroundColor: '#393E46',
-          fontSize: '0.8rem',
-          fontWeight: 'bold',
-        }}
-      >
-        {Math.floor(mediaDetails.runtime / 60) > 0
-          ? `${Math.floor(
-              mediaDetails.runtime / 60
-            )} h ${mediaDetails.runtime % 60} min`
-          : `${mediaDetails.runtime} min`}
-      </span>
-    )}
+            mediaDetails?.episode_runtime) && (
+            <div
+              style={{
+                marginTop: '0.7rem',
+                display: 'flex',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+              }}
+            >
+          {mediaDetails.runtime && (
+            <span
+              style={{
+                padding: '0.35rem 0.65rem',
+                borderRadius: '20px',
+                backgroundColor: '#393E46',
+                fontSize: '0.8rem',
+                fontWeight: 'bold',
+              }}
+            >
+              {Math.floor(mediaDetails.runtime / 60) > 0
+                ? `${Math.floor(
+                    mediaDetails.runtime / 60
+                  )} h ${mediaDetails.runtime % 60} min`
+                : `${mediaDetails.runtime} min`}
+            </span>
+          )}
 
-    {!mediaDetails.runtime &&
-      mediaDetails.episode_runtime && (
-        <span
-          style={{
-            padding: '0.35rem 0.65rem',
-            borderRadius: '20px',
-            backgroundColor: '#393E46',
-            fontSize: '0.8rem',
-            fontWeight: 'bold',
-          }}
-        >
-          Environ {mediaDetails.episode_runtime} min
-          par épisode
-        </span>
-      )}
-  </div>
+          {!mediaDetails.runtime &&
+            mediaDetails.episode_runtime && (
+              <span
+                style={{
+                  padding: '0.35rem 0.65rem',
+                  borderRadius: '20px',
+                  backgroundColor: '#393E46',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                }}
+              >
+                Environ {mediaDetails.episode_runtime} min
+                par épisode
+              </span>
+            )}
+</div>
 )}
 
             <h3
@@ -1308,6 +1309,6 @@ const formatEpisodeDate = (
             </div>
           )}
       </div>
-    </div>
+    </main>
   );
 }

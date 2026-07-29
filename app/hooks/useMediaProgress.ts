@@ -7,26 +7,27 @@ import type {
 type UseMediaProgressProps = {
   supabase: any;
 
-  setWatchedEpisodes: React.Dispatch<
-  React.SetStateAction<Record<string, boolean>>
->;
-
-setMangaProgress: React.Dispatch<
-  React.SetStateAction<Record<string, number>>
->;
-
-selectedMedia: MediaItem | null;
-
-activeSeason: number;
-
   myList: Record<string, MyListItem>;
+
   setMyList: React.Dispatch<
     React.SetStateAction<Record<string, MyListItem>>
   >;
 
   watchedEpisodes: Record<string, boolean>;
 
+  setWatchedEpisodes: React.Dispatch<
+    React.SetStateAction<Record<string, boolean>>
+  >;
+
   mangaProgress: Record<string, number>;
+
+  setMangaProgress: React.Dispatch<
+    React.SetStateAction<Record<string, number>>
+  >;
+
+  selectedMedia: MediaItem | null;
+
+  activeSeason: number;
 
   getMediaKey: (media: MediaItem) => string;
 };
@@ -42,71 +43,67 @@ export default function useMediaProgress({
   selectedMedia,
   activeSeason,
   getMediaKey,
-
 }: UseMediaProgressProps) {
-const updateMediaInList = async (
-  media: MediaItem,
-  status: WatchStatus,
-  watchCount = 0
-) => {
-  const mediaKey = getMediaKey(media);
+  const updateMediaInList = async (
+    media: MediaItem,
+    status: WatchStatus,
+    watchCount = 0
+  ) => {
+    const mediaKey = getMediaKey(media);
 
-  const updatedList = {
-    ...myList,
-    [mediaKey]: {
-      media,
-      status,
-      watchCount,
-    },
-  };
+    const updatedList = {
+      ...myList,
+      [mediaKey]: {
+        media,
+        status,
+        watchCount,
+      },
+    };
 
-  setMyList(updatedList);
+    setMyList(updatedList);
 
-  localStorage.setItem(
-    'steldra_multimedia_list_v1',
-    JSON.stringify(updatedList)
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-const { error } = await supabase
-  .from('media_progress')
-  .upsert(
-    {
-      user_id: user.id,
-      media_id: String(media.id),
-      media_type: media.type,
-      status,
-      media_data: media,
-      watched_episode: watchedEpisodes,
-      manga_progress: mangaProgress[mediaKey] ?? 0,
-      watch_count: watchCount,
-    },
-    {
-      onConflict: 'user_id,media_id',
-    }
-  );
-
-if (error) {
-  console.error('Erreur sauvegarde media_progress :', {
-    code: error.code,
-    message: error.message,
-    details: error.details,
-    hint: error.hint,
-  });
-}
-
-  if (error) {
-    console.error(
-      'Erreur sauvegarde media_progress :',
-      error
+    localStorage.setItem(
+      'steldra_multimedia_list_v1',
+      JSON.stringify(updatedList)
     );
-  }
-};
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('media_progress')
+      .upsert(
+        {
+          user_id: user.id,
+          media_id: String(media.id),
+          media_type: media.type,
+          status,
+          media_data: media,
+          watched_episode: watchedEpisodes,
+          manga_progress:
+            mangaProgress[mediaKey] ?? 0,
+          watch_count: watchCount,
+        },
+        {
+          onConflict: 'user_id,media_id',
+        }
+      );
+
+    if (error) {
+      console.error(
+        'Erreur sauvegarde media_progress :',
+        {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        }
+      );
+    }
+  };
 
   const handleMarkWatched = async (
     media: MediaItem
@@ -120,7 +117,9 @@ if (error) {
       (currentItem?.status === 'vu' ? 1 : 0);
 
     const nextCount =
-      currentCount >= 7 ? 1 : currentCount + 1;
+      currentCount >= 7
+        ? 1
+        : currentCount + 1;
 
     await updateMediaInList(
       media,
@@ -128,134 +127,6 @@ if (error) {
       nextCount
     );
   };
-
-  // Fonction pour marquer un épisode comme vu ou non vu
-const toggleEpisodeWatched = async (
-  episodeNum: number
-) => {
-  if (!selectedMedia) return;
-
-  const mediaKey = getMediaKey(selectedMedia);
-  const epKey =
-    `${mediaKey}_S${activeSeason}E${episodeNum}`;
-
-  const updated = {
-    ...watchedEpisodes,
-    [epKey]: !watchedEpisodes[epKey],
-  };
-
-  setWatchedEpisodes(updated);
-
-  localStorage.setItem(
-    'steldra_watched_episodes_v1',
-    JSON.stringify(updated)
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  const currentItem = myList[mediaKey];
-
-  const { error } = await supabase
-    .from('media_progress')
-    .upsert(
-      {
-        user_id: user.id,
-        media_id: String(selectedMedia.id),
-        media_type: selectedMedia.type,
-        media_data: selectedMedia,
-        status: currentItem?.status || 'a_voir',
-
-        // Singulier, comme dans Supabase
-        watched_episode: updated,
-
-        manga_progress:
-          mangaProgress[mediaKey] ?? 0,
-
-        watch_count:
-          currentItem?.watchCount ?? 0,
-      },
-      {
-        onConflict: 'user_id,media_id',
-      }
-    );
-
-  if (error) {
-    console.error(
-      'Erreur sauvegarde des épisodes :',
-      {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-      }
-    );
-  }
-};
-
-// Fonction pour gérer la progression des chapitres pour les mangas et manhwas
-const handleChapterChange = async (
-  value: number
-) => {
-  if (!selectedMedia) return;
-
-  const mediaKey = getMediaKey(selectedMedia);
-  const newProgress = Math.max(0, value);
-
-  const updated = {
-    ...mangaProgress,
-    [mediaKey]: newProgress,
-  };
-
-  setMangaProgress(updated);
-
-  localStorage.setItem(
-    'steldra_manga_progress_v1',
-    JSON.stringify(updated)
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  const currentItem = myList[mediaKey];
-
-  const { error } = await supabase
-    .from('media_progress')
-    .upsert(
-      {
-        user_id: user.id,
-        media_id: String(selectedMedia.id),
-        media_type: selectedMedia.type,
-        media_data: selectedMedia,
-        status: currentItem?.status || 'a_voir',
-        watched_episode: watchedEpisodes,
-        manga_progress: newProgress,
-        watch_count:
-          currentItem?.watchCount ?? 0,
-      },
-      {
-        onConflict: 'user_id,media_id',
-      }
-    );
-
-  if (error) {
-    console.error(
-      'Erreur sauvegarde progression manga :',
-      {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-      }
-    );
-  }
-};
 
   const handleToggleInProgress = async (
     media: MediaItem
@@ -290,29 +161,263 @@ const handleChapterChange = async (
     );
   };
 
-const handleRemove = async (media: MediaItem) => {
-  const mediaKey = getMediaKey(media);
+  const saveWatchedEpisodes = async (
+    updatedEpisodes: Record<string, boolean>
+  ) => {
+    if (!selectedMedia) return;
 
-  // Suppression de la liste
-  setMyList((current) => {
-    const updatedList = { ...current };
+    const mediaKey =
+      getMediaKey(selectedMedia);
+
+    setWatchedEpisodes(updatedEpisodes);
+
+    localStorage.setItem(
+      'steldra_watched_episodes_v1',
+      JSON.stringify(updatedEpisodes)
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const currentItem = myList[mediaKey];
+
+    const { error } = await supabase
+      .from('media_progress')
+      .upsert(
+        {
+          user_id: user.id,
+          media_id: String(selectedMedia.id),
+          media_type: selectedMedia.type,
+          media_data: selectedMedia,
+          status:
+            currentItem?.status || 'a_voir',
+          watched_episode: updatedEpisodes,
+          manga_progress:
+            mangaProgress[mediaKey] ?? 0,
+          watch_count:
+            currentItem?.watchCount ?? 0,
+        },
+        {
+          onConflict: 'user_id,media_id',
+        }
+      );
+
+    if (error) {
+      console.error(
+        'Erreur sauvegarde des épisodes :',
+        {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        }
+      );
+    }
+  };
+
+  const toggleEpisodeWatched = async (
+    episodeNumber: number
+  ) => {
+    if (!selectedMedia) return;
+
+    const mediaKey =
+      getMediaKey(selectedMedia);
+
+    const episodeKey =
+      `${mediaKey}_S${activeSeason}` +
+      `E${episodeNumber}`;
+
+    const updatedEpisodes = {
+      ...watchedEpisodes,
+      [episodeKey]:
+        !watchedEpisodes[episodeKey],
+    };
+
+    await saveWatchedEpisodes(
+      updatedEpisodes
+    );
+  };
+
+  const markEpisodesUpTo = async (
+    episodeNumber: number,
+    episodeNumbers: number[]
+  ) => {
+    if (!selectedMedia) return;
+
+    const mediaKey =
+      getMediaKey(selectedMedia);
+
+    const updatedEpisodes = {
+      ...watchedEpisodes,
+    };
+
+    episodeNumbers.forEach(
+      (currentEpisodeNumber) => {
+        if (
+          currentEpisodeNumber <=
+          episodeNumber
+        ) {
+          const episodeKey =
+            `${mediaKey}_S${activeSeason}` +
+            `E${currentEpisodeNumber}`;
+
+          updatedEpisodes[episodeKey] = true;
+        }
+      }
+    );
+
+    await saveWatchedEpisodes(
+      updatedEpisodes
+    );
+  };
+
+  const toggleWholeSeason = async (
+    episodeNumbers: number[]
+  ) => {
+    if (
+      !selectedMedia ||
+      episodeNumbers.length === 0
+    ) {
+      return;
+    }
+
+    const mediaKey =
+      getMediaKey(selectedMedia);
+
+    const allEpisodesWatched =
+      episodeNumbers.every(
+        (episodeNumber) => {
+          const episodeKey =
+            `${mediaKey}_S${activeSeason}` +
+            `E${episodeNumber}`;
+
+          return Boolean(
+            watchedEpisodes[episodeKey]
+          );
+        }
+      );
+
+    const updatedEpisodes = {
+      ...watchedEpisodes,
+    };
+
+    episodeNumbers.forEach(
+      (episodeNumber) => {
+        const episodeKey =
+          `${mediaKey}_S${activeSeason}` +
+          `E${episodeNumber}`;
+
+        updatedEpisodes[episodeKey] =
+          !allEpisodesWatched;
+      }
+    );
+
+    await saveWatchedEpisodes(
+      updatedEpisodes
+    );
+  };
+
+  const handleChapterChange = async (
+    value: number
+  ) => {
+    if (!selectedMedia) return;
+
+    const mediaKey =
+      getMediaKey(selectedMedia);
+
+    const newProgress =
+      Math.max(0, value);
+
+    const updatedProgress = {
+      ...mangaProgress,
+      [mediaKey]: newProgress,
+    };
+
+    setMangaProgress(updatedProgress);
+
+    localStorage.setItem(
+      'steldra_manga_progress_v1',
+      JSON.stringify(updatedProgress)
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const currentItem = myList[mediaKey];
+
+    const { error } = await supabase
+      .from('media_progress')
+      .upsert(
+        {
+          user_id: user.id,
+          media_id: String(selectedMedia.id),
+          media_type: selectedMedia.type,
+          media_data: selectedMedia,
+          status:
+            currentItem?.status || 'a_voir',
+          watched_episode:
+            watchedEpisodes,
+          manga_progress: newProgress,
+          watch_count:
+            currentItem?.watchCount ?? 0,
+        },
+        {
+          onConflict: 'user_id,media_id',
+        }
+      );
+
+    if (error) {
+      console.error(
+        'Erreur sauvegarde progression manga :',
+        {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        }
+      );
+    }
+  };
+
+  const handleRemove = async (
+    media: MediaItem
+  ) => {
+    const mediaKey =
+      getMediaKey(media);
+
+    const updatedList = {
+      ...myList,
+    };
+
     delete updatedList[mediaKey];
+
+    setMyList(updatedList);
 
     localStorage.setItem(
       'steldra_multimedia_list_v1',
       JSON.stringify(updatedList)
     );
 
-    return updatedList;
-  });
+    const updatedEpisodes =
+      Object.fromEntries(
+        Object.entries(
+          watchedEpisodes
+        ).filter(
+          ([episodeKey]) =>
+            !episodeKey.startsWith(
+              `${mediaKey}_S`
+            )
+        )
+      );
 
-  // Suppression des épisodes associés
-  setWatchedEpisodes((current) => {
-    const updatedEpisodes = Object.fromEntries(
-      Object.entries(current).filter(
-        ([episodeKey]) =>
-          !episodeKey.startsWith(`${mediaKey}_S`)
-      )
+    setWatchedEpisodes(
+      updatedEpisodes
     );
 
     localStorage.setItem(
@@ -320,49 +425,61 @@ const handleRemove = async (media: MediaItem) => {
       JSON.stringify(updatedEpisodes)
     );
 
-    return updatedEpisodes;
-  });
+    const updatedProgress = {
+      ...mangaProgress,
+    };
 
-  // Suppression de la progression manga
-  setMangaProgress((current) => {
-    const updatedProgress = { ...current };
     delete updatedProgress[mediaKey];
+
+    setMangaProgress(
+      updatedProgress
+    );
 
     localStorage.setItem(
       'steldra_manga_progress_v1',
       JSON.stringify(updatedProgress)
     );
 
-    return updatedProgress;
-  });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (!user) return;
 
-  if (!user) return;
+    const { error } = await supabase
+      .from('media_progress')
+      .delete()
+      .eq('user_id', user.id)
+      .eq(
+        'media_id',
+        String(media.id)
+      )
+      .eq(
+        'media_type',
+        media.type
+      );
 
-  const { error } = await supabase
-    .from('media_progress')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('media_id', media.id.toString())
-    .eq('media_type', media.type);
+    if (error) {
+      console.error(
+        'Erreur lors de la suppression du média :',
+        {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        }
+      );
+    }
+  };
 
-  if (error) {
-    console.error(
-      'Erreur lors de la suppression du média :',
-      error
-    );
-  }
-};
-
-return {
-  handleMarkWatched,
-  handleToggleInProgress,
-  handleMarkToWatch,
-  handleRemove,
-  toggleEpisodeWatched,
-  handleChapterChange,
-};
+  return {
+    handleMarkWatched,
+    handleToggleInProgress,
+    handleMarkToWatch,
+    handleRemove,
+    toggleEpisodeWatched,
+    markEpisodesUpTo,
+    toggleWholeSeason,
+    handleChapterChange,
+  };
 }
