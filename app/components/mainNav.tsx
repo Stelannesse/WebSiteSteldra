@@ -25,7 +25,7 @@ const links = [
     icon: '★',
   },
   {
-    href: '/parametres',
+    href: '/settings',
     label: 'Paramètres',
     icon: '⚙',
   },

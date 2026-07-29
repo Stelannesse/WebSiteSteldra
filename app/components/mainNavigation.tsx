@@ -22,7 +22,7 @@ const links = [
     label: 'Tier lists',
   },
   {
-    href: '/parametres',
+    href: '/settings',
     label: 'Paramètres',
   },
 ];

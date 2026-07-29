@@ -71,7 +71,7 @@ export default function HomePage() {
         </Link>
 
         <Link
-          href="/parametres"
+          href="/settings"
           className={styles.sectionCard}
         >
           <span className={styles.icon}>⚙</span>
