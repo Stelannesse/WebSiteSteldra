@@ -203,6 +203,99 @@ export default function TierListsPage() {
     );
   };
 
+  const updateRowLabel = (
+  rowId: string,
+  value: string
+) => {
+  setRows((currentRows) =>
+    currentRows.map((row) =>
+      row.id === rowId
+        ? {
+            ...row,
+            label: value.toUpperCase().slice(0, 3),
+          }
+        : row
+    )
+  );
+};
+
+const addRow = () => {
+  const usedLabels = rows.map((row) =>
+    row.label.toUpperCase()
+  );
+
+  const availableLabels = [
+    'S',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+  ];
+
+  const nextLabel =
+    availableLabels.find(
+      (label) => !usedLabels.includes(label)
+    ) ?? `R${rows.length + 1}`;
+
+  const newRow: TierRow = {
+    id:
+      typeof crypto !== 'undefined' &&
+      crypto.randomUUID
+        ? crypto.randomUUID()
+        : `row-${Date.now()}`,
+    label: nextLabel,
+    title: 'Nouveau rang',
+    media: [],
+  };
+
+  setRows((currentRows) => [
+    ...currentRows,
+    newRow,
+  ]);
+};
+
+const deleteRow = (rowId: string) => {
+  const rowToDelete = rows.find(
+    (row) => row.id === rowId
+  );
+
+  if (!rowToDelete) return;
+
+  const confirmed = window.confirm(
+    `Supprimer le rang ${rowToDelete.label} ?`
+  );
+
+  if (!confirmed) return;
+
+  setUnranked((currentMedia) => {
+    const allMedia = [
+      ...currentMedia,
+      ...rowToDelete.media,
+    ];
+
+    return Array.from(
+      new Map(
+        allMedia.map((media) => [
+          `${media.type}_${media.id}`,
+          media,
+        ])
+      ).values()
+    );
+  });
+
+  setRows((currentRows) =>
+    currentRows.filter(
+      (row) => row.id !== rowId
+    )
+  );
+
+  setDragOverRank(null);
+};
+
   const saveTierList = () => {
     const data: TierListData = {
       title,
@@ -311,30 +404,38 @@ export default function TierListsPage() {
           </div>
 
           <div className={styles.headerActions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={resetTierList}
-            >
-              Réinitialiser
-            </button>
+  <button
+    type="button"
+    className={styles.addRowButton}
+    onClick={addRow}
+  >
+    + Ajouter un rang
+  </button>
 
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={saveTierList}
-            >
-              Enregistrer
-            </button>
+  <button
+    type="button"
+    className={styles.secondaryButton}
+    onClick={resetTierList}
+  >
+    Réinitialiser
+  </button>
 
-            <button
-              type="button"
-              className={styles.primaryButton}
-              onClick={downloadTierList}
-            >
-              Télécharger
-            </button>
-          </div>
+  <button
+    type="button"
+    className={styles.secondaryButton}
+    onClick={saveTierList}
+  >
+    Enregistrer
+  </button>
+
+  <button
+    type="button"
+    className={styles.primaryButton}
+    onClick={downloadTierList}
+  >
+    Télécharger
+  </button>
+</div>
         </section>
 
         {savedMessage && (
@@ -358,89 +459,125 @@ export default function TierListsPage() {
 
           
            <div className={styles.rows}>
-            {rows.map((row) => (
-                <div
-                key={row.id}
-                className={`${styles.tierRow} ${
-                    dragOverRank === row.id
-                    ? styles.tierRowDragOver
-                    : ''
-                }`}
-                onDragOver={(event) => {
-                    event.preventDefault();
-                    setDragOverRank(row.id);
-                }}
-                onDragLeave={(event) => {
-                    const nextElement =
-                    event.relatedTarget as Node | null;
+            {rows.map((row, rowIndex) => (                
+<div
+  key={row.id}
+  className={`${styles.tierRow} ${
+    dragOverRank === row.id
+      ? styles.tierRowDragOver
+      : ''
+  }`}
+  onDragOver={(event) => {
+    event.preventDefault();
+    setDragOverRank(row.id);
+  }}
+  onDragLeave={(event) => {
+    const nextElement =
+      event.relatedTarget as Node | null;
 
-                    if (
-                    !nextElement ||
-                    !event.currentTarget.contains(nextElement)
-                    ) {
-                    setDragOverRank(null);
-                    }
-                }}
-                onDrop={(event) => {
-                    setDragOverRank(null);
-                    handleDropOnRow(event, row.id);
-                }}
-                >
-                <div
-                  className={`${styles.rankLabel} ${
-                    styles[`rank${row.label}`]
-                  }`}
-                >
-                  {row.label}
-                </div>
+    if (
+      !nextElement ||
+      !event.currentTarget.contains(nextElement)
+    ) {
+      setDragOverRank(null);
+    }
+  }}
+  onDrop={(event) => {
+    setDragOverRank(null);
+    handleDropOnRow(event, row.id);
+  }}
+>
+  <div
+    className={styles.rankLabel}
+    style={{
+      backgroundColor: [
+        '#f87171',
+        '#fb923c',
+        '#facc15',
+        '#4ade80',
+        '#60a5fa',
+        '#a78bfa',
+        '#f472b6',
+        '#22d3ee',
+      ][rowIndex % 8],
+    }}
+  >
+    <input
+      className={styles.rankInput}
+      value={row.label}
+      maxLength={3}
+      onChange={(event) =>
+        updateRowLabel(
+          row.id,
+          event.target.value
+        )
+      }
+      aria-label={`Lettre du rang ${row.label}`}
+    />
+  </div>
 
-                <div className={styles.rowContent}>
-                  <input
-                    className={styles.rowTitleInput}
-                    value={row.title}
-                    onChange={(event) =>
-                      updateRowTitle(
-                        row.id,
-                        event.target.value
-                      )
-                    }
-                    aria-label={`Nom du rang ${row.label}`}
-                  />
+  <div className={styles.rowContent}>
+    <div className={styles.rowHeader}>
+      <input
+        className={styles.rowTitleInput}
+        value={row.title}
+        onChange={(event) =>
+          updateRowTitle(
+            row.id,
+            event.target.value
+          )
+        }
+        placeholder="Nom du rang"
+        aria-label={`Nom du rang ${row.label}`}
+      />
 
-                  <div className={styles.rowMedia}>
-                    {row.media.length === 0 && (
-                      <span
-                        className={styles.emptyRowText}
-                      >
-                        Dépose une œuvre ici
-                      </span>
-                    )}
+      <button
+        type="button"
+        className={styles.deleteRowButton}
+        onClick={() => deleteRow(row.id)}
+        title={`Supprimer le rang ${row.label}`}
+        aria-label={`Supprimer le rang ${row.label}`}
+      >
+        Supprimer
+      </button>
+    </div>
 
-                    {row.media.map((media) => (
-                      <button
-                        key={`${media.type}_${media.id}`}
-                        type="button"
-                        className={styles.posterButton}
-                        draggable
-                        onDragStart={() =>
-                          handleDragStart(media)
-                        }
-                        onClick={() =>
-                          moveToUnranked(media)
-                        }
-                        title={`${media.title} — replacer dans les œuvres à classer`}
-                      >
-                        <img
-                          src={getPosterUrl(media)}
-                          alt={media.title}
-                          className={styles.poster}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
+    <div className={styles.rowMedia}>
+      {row.media.length === 0 && (
+        <span className={styles.emptyRowText}>
+          Dépose une œuvre ici
+        </span>
+      )}
+
+      {row.media.map((media) => (
+        <button
+          key={`${media.type}_${media.id}`}
+          type="button"
+          className={styles.posterButton}
+          draggable
+          onDragStart={() =>
+            handleDragStart(media)
+          }
+          onDragEnd={() => {
+            setDraggedMedia(null);
+            setDragOverRank(null);
+          }}
+          onClick={() =>
+            moveToUnranked(media)
+          }
+          title={`${media.title} — replacer dans les œuvres à classer`}
+        >
+          <img
+            src={getPosterUrl(media)}
+            alt={media.title}
+            className={styles.poster}
+          />
+        </button>
+      ))}
+    </div>
+  </div>
+</div>            
+))}
           </div>
 
           <p className={styles.signature}>

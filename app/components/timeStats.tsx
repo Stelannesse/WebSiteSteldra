@@ -202,9 +202,7 @@ export default function TimeStats({
 
       <div className={styles.timeStatsGrid}>
         <article className={styles.timeStatCard}>
-          <span className={styles.timeStatIcon}>
-            🎬
-          </span>
+          
 
           <div>
             <span className={styles.timeStatLabel}>
@@ -225,9 +223,7 @@ export default function TimeStats({
         </article>
 
         <article className={styles.timeStatCard}>
-          <span className={styles.timeStatIcon}>
-            📺
-          </span>
+          
 
           <div>
             <span className={styles.timeStatLabel}>
@@ -249,9 +245,7 @@ export default function TimeStats({
         </article>
 
         <article className={styles.timeStatCard}>
-          <span className={styles.timeStatIcon}>
-            ✨
-          </span>
+         
 
           <div>
             <span className={styles.timeStatLabel}>
@@ -273,9 +267,7 @@ export default function TimeStats({
         </article>
 
         <article className={styles.timeStatCard}>
-          <span className={styles.timeStatIcon}>
-            🎭
-          </span>
+        
 
           <div>
             <span className={styles.timeStatLabel}>

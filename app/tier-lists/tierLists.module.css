@@ -265,6 +265,100 @@
 
 /* Couleurs conservées */
 
+.addRowButton {
+  padding: 0.75rem 1.1rem;
+  color: #222831;
+  font-weight: 700;
+  background: #7dd3fc;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.addRowButton:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+.rankInput {
+  width: 100%;
+  padding: 0;
+  color: #18202b;
+  font-family: inherit;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.rankInput::selection {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.rowHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.rowTitleInput {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+
+  background: transparent;
+  color: #ffffff;
+
+  border: none;
+  outline: none;
+
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.deleteRowButton {
+  flex-shrink: 0;
+  padding: 0.5rem 0.75rem;
+  color: #fecaca;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 9px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.deleteRowButton:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+@media (max-width: 650px) {
+  .rowHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .deleteRowButton {
+    align-self: flex-end;
+  }
+}
+
 .rankS {
   background: #f87171;
 }
@@ -294,30 +388,19 @@
   padding: 0.8rem 1rem;
 }
 
-.rowTitleInput {
-  width: 100%;
-  margin-bottom: 0.55rem;
-  padding: 0;
-
-  background: transparent;
-  color: #ffffff;
-
-  border: none;
-  outline: none;
-
-  font-family: var(--font-poppins), sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
 .rowMedia {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-start;
 
   min-height: 68px;
   gap: 0.5rem;
 
-  overflow-x: auto;
+  overflow: visible;
+}
+
+.posterButton {
+  animation: posterDrop 0.22s ease;
 }
 
 .emptyRowText {
