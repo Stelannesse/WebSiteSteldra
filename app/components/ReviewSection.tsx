@@ -124,7 +124,7 @@ export default function ReviewSection({
             cursor: 'pointer',
           }}
         >
-          👍 J’aime
+          J’aime
         </button>
 
         <button
@@ -148,7 +148,7 @@ export default function ReviewSection({
             cursor: 'pointer',
           }}
         >
-          👎 Je n’aime pas
+          Je n’aime pas
         </button>
       </div>
 
@@ -290,8 +290,8 @@ export default function ReviewSection({
 
                 <div style={{ marginTop: '0.4rem' }}>
                   {review.rating === 'like'
-                    ? '👍 J’aime'
-                    : '👎 Je n’aime pas'}
+                    ? ' J’aime'
+                    : ' Je n’aime pas'}
                 </div>
 
                 {review.comment && (
