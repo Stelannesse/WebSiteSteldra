@@ -1,107 +1,102 @@
 .page {
-  max-width: 1100px;
-  margin: 0 auto;
+  max-width: 1000px;
+  min-height: 100vh;
+  margin: auto;
   padding: 2.5rem;
+  color: #f8fafc;
+  background: linear-gradient(
+    180deg,
+    #232a35,
+    #222831
+  );
 }
 
 .pageHeader {
-  text-align: center;
   margin-bottom: 2.5rem;
+  text-align: center;
 }
 
 .eyebrow {
   color: #00d4e0;
-  font-size: .9rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  margin-bottom: .5rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
 }
 
 .pageHeader h1 {
-  font-size: 2.4rem;
-  margin-bottom: .8rem;
+  color: #ffffff;
 }
 
 .description {
-  color: #bfc5d2;
-  max-width: 620px;
-  margin: 0 auto;
-  line-height: 1.6;
+  color: #b7c0cf;
 }
-
-/* ---------- Cartes ---------- */
 
 .card {
-  background: #2b313d;
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 18px;
-  padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 10px 25px rgba(0,0,0,.18);
-  transition: .25s;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0,212,224,.25);
+  padding: 1.5rem;
+  background: #303744;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
 }
 
 .card h2 {
-  margin-bottom: 1.2rem;
-  font-size: 1.25rem;
+  color: #ffffff;
 }
 
-/* ---------- Ligne ---------- */
+.cardDescription {
+  color: #aeb7c8;
+}
 
 .setting {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: .9rem 0;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.setting:not(:last-child) {
-  border-bottom: 1px solid rgba(255,255,255,.05);
+.setting div {
+  color: #f8fafc;
 }
 
-.setting span {
-  color: #f2f4f8;
-  font-size: .97rem;
+.setting strong {
+  display: block;
+  color: #ffffff;
 }
 
-/* ---------- Switch ---------- */
-
-.setting input {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: #00d4e0;
+.setting small {
+  display: block;
+  margin-top: 0.3rem;
+  color: #aeb7c8;
 }
 
-/* ---------- Bouton ---------- */
-
-.resetButton {
-  background: #00d4e0;
-  color: #222831;
+.switch {
+  position: relative;
+  width: 58px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  background: #555f6f;
   border: none;
-  border-radius: 12px;
-  padding: .8rem 1.3rem;
-  font-weight: 600;
+  border-radius: 999px;
   cursor: pointer;
-  transition: .25s;
 }
 
-.resetButton:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.08);
+.switchOn {
+  background: #00d4e0;
 }
 
-/* ---------- Footer ---------- */
+.switchThumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: left 0.25s ease;
+}
 
-.footer {
-  text-align: center;
-  margin-top: 3rem;
-  color: #8d97a7;
-  font-size: .85rem;
+.switchOn .switchThumb {
+  left: 30px;
 }
