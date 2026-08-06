@@ -1432,13 +1432,12 @@ textarea:focus-visible {
 ========================================================= */
 
 @media (max-width: 768px) {
-  .mainContainer {
+.mainContainer {
   min-height: 100vh;
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
-  background-color: #ffffff;
-  color: #333333;
+background-color: #181d23;
 }
 
   .header {

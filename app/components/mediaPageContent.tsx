@@ -55,6 +55,14 @@ type MediaPageContentProps = {
   episodeNumber: number,
   episodeNumbers: number[]
 ) => void;
+customLists: {
+  id: string;
+  name: string;
+}[];
+
+addingToList: boolean;
+
+onAddToCustomList: (listId: string) => void;
 
 onToggleWholeSeason: (
   episodeNumbers: number[]
@@ -81,6 +89,9 @@ export default function MediaPageContent({
   seasonEpisodes,
   episodesLoading,
   watchedEpisodes,
+  customLists,
+  addingToList,
+  onAddToCustomList,
   onRatingChange,
   onCommentChange,
   onSubmitReview,
@@ -239,6 +250,82 @@ const wholeSeasonWatched =
                   )}
                 </div>
               )}
+
+
+              <div
+                style={{
+                  marginTop: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Ajouter à une liste
+                </span>
+
+                {customLists.length > 0 ? (
+                  <select
+                    defaultValue=""
+                    disabled={addingToList}
+                    onChange={(event) => {
+                      const listId = event.target.value;
+
+                      if (!listId) return;
+
+                      onAddToCustomList(listId);
+                      event.target.value = '';
+                    }}
+                    style={{
+                      minHeight: '38px',
+                      padding: '0.45rem 0.8rem',
+                      backgroundColor: '#393E46',
+                      color: '#FFFFFF',
+                      border: '1px solid #4b515a',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      cursor: addingToList
+                        ? 'not-allowed'
+                        : 'pointer',
+                    }}
+                  >
+                    <option value="">
+                      {addingToList
+                        ? 'Ajout en cours…'
+                        : '+ Choisir une liste'}
+                    </option>
+
+                    {customLists.map((list) => (
+                      <option key={list.id} value={list.id}>
+                        {list.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => router.push('/lists')}
+                    style={{
+                      minHeight: '38px',
+                      padding: '0.45rem 0.8rem',
+                      backgroundColor: '#00ADB5',
+                      color: '#071012',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Créer une liste
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>

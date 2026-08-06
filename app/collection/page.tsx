@@ -10,6 +10,7 @@ import useMediaProgress from '../hooks/useMediaProgress';
 import Header from '../components/header';
 import type { MediaType } from '../types/media';
 import MainNav from '../components/mainNav';
+import { sortMediaAlphabetically } from "../lib/sortMedia";
 import type {
   MediaItem,
   MyListItem,
@@ -32,6 +33,7 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null); // État pour stocker l'ID de l'utilisateur connecté
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
   const [showScrollTop, setShowScrollTop] = useState(false);
+  
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
 const [typeFilter, setTypeFilter] =useState<MediaType | 'tous'>('tous');  
@@ -114,7 +116,7 @@ const {
 });
 
   const hasStartedProgress = (mediaKey: string) => {
-    const hasWatched = Object.keys(watchedEpisodes).some((key) => key.startsWith(`${mediaKey}_S`) && watchedEpisodes[key]);
+   const hasWatched = Object.keys(watchedEpisodes).some((key) => key.startsWith(`${mediaKey}_S`) && watchedEpisodes[key]);
     const progressValue = mangaProgress[mediaKey] || 0;
     return hasWatched || progressValue > 0;
   };
@@ -510,22 +512,50 @@ const aVoirCount = itemsForCount.filter(item => getFilterStatus(item.media, item
 displayItems = displayItems.filter(item => {
   const mediaType = (item.type || 'unknown').toLowerCase();
   const filterType = typeFilter.toLowerCase();
-    
-  // 1. Filtrage par type : Si on est en "Tout", on affiche tout, sinon on filtre par type.
-  const matchesType = typeFilter === 'tous' || mediaType === filterType;
-    
-  // 2. Filtrage par statut :
-  // Si on est en train de chercher (isSearching), on ignore le filtre de statut 
-  // car les résultats de l'API ne sont pas encore dans "myList".
-  // Si on n'est pas en recherche, on applique le filtre de statut habituel.
+
+  const matchesType =
+    typeFilter === 'tous' || mediaType === filterType;
+
   let matchesStatus = true;
+
   if (!isSearching) {
-    const status = getFilterStatus(item, myList[`${item.type}_${item.id}`]?.status);
-    matchesStatus = statusFilter === 'tout' || status === statusFilter;
+    const status = getFilterStatus(
+      item,
+      myList[`${item.type}_${item.id}`]?.status
+    );
+
+    matchesStatus =
+      statusFilter === 'tout' ||
+      status === statusFilter;
   }
-    
+
   return matchesType && matchesStatus;
 });
+
+if (isSearching) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  displayItems = [...displayItems].sort((a, b) => {
+    const titleA = (a.title || '').trim().toLowerCase();
+    const titleB = (b.title || '').trim().toLowerCase();
+
+    const startsWithA = titleA.startsWith(normalizedQuery);
+    const startsWithB = titleB.startsWith(normalizedQuery);
+
+    // Les titres commençant exactement par la recherche passent en premier
+    if (startsWithA && !startsWithB) return -1;
+    if (!startsWithA && startsWithB) return 1;
+
+    // Puis tri alphabétique naturel
+    return titleA.localeCompare(titleB, 'fr', {
+      numeric: true,
+      sensitivity: 'base',
+      ignorePunctuation: true,
+    });
+  });
+} else {
+  displayItems = sortMediaAlphabetically(displayItems);
+}
 
 return (
   <>
