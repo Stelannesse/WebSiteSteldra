@@ -77,6 +77,9 @@ export default function MediaPageClient({
   const [addingToList, setAddingToList] =
     useState(false);
 
+  const [recommendations, setRecommendations] = useState<Array<MediaItem & { recommendation_reason?: 'collection' | 'recommended'; release_date?: string }>>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+
   const getMediaKey = useCallback(
     (
       media:
@@ -132,6 +135,10 @@ export default function MediaPageClient({
    * Progression des épisodes et des chapitres.
    */
   const {
+    handleMarkWatched,
+    handleToggleInProgress,
+    handleMarkToWatch,
+    handleRemove,
     toggleEpisodeWatched,
     markEpisodesUpTo,
     toggleWholeSeason,
@@ -370,6 +377,58 @@ export default function MediaPageClient({
   }, [media, loadReviews]);
 
   /*
+   * Charge toute la collection afin que la fiche et les recommandations
+   * connaissent immédiatement le statut de chaque média.
+   */
+  useEffect(() => {
+    if (!userId) return;
+
+    let cancelled = false;
+
+    const loadFullCollection = async () => {
+      const { data, error } = await supabase
+        .from('media_progress')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Erreur chargement collection sur la fiche :', error);
+        return;
+      }
+
+      if (cancelled) return;
+
+      const collection: Record<string, MyListItem> = {};
+
+      (data || []).forEach((entry: any) => {
+        const mediaType = entry.media_data?.type || entry.media_type;
+        const mediaId = entry.media_id;
+        if (!mediaType || !mediaId) return;
+
+        const storedMedia = {
+          ...(entry.media_data || {}),
+          id: mediaId,
+          type: mediaType,
+        } as MediaItem;
+
+        collection[`${mediaType}_${mediaId}`] = {
+          media: storedMedia,
+          status: entry.status || 'a_voir',
+          watchCount: Number(entry.watch_count) || 0,
+        };
+      });
+
+      setMyList(collection);
+    };
+
+    void loadFullCollection();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, supabase]);
+
+  /*
    * Chargement des listes personnalisées de l’utilisateur.
    */
   useEffect(() => {
@@ -403,13 +462,54 @@ export default function MediaPageClient({
     void loadCustomLists();
   }, [userId, supabase]);
 
+  useEffect(() => {
+    if (!media) {
+      setRecommendations([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadRecommendations = async () => {
+      setRecommendationsLoading(true);
+
+      try {
+        const response = await fetch(
+          `/api/recommendations?id=${encodeURIComponent(media.id.toString())}&type=${encodeURIComponent(media.type)}`
+        );
+
+        if (!response.ok) {
+          throw new Error('Recommandations indisponibles');
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setRecommendations(data.results || []);
+        }
+      } catch (error) {
+        console.error('Erreur recommandations :', error);
+        if (!cancelled) setRecommendations([]);
+      } finally {
+        if (!cancelled) setRecommendationsLoading(false);
+      }
+    };
+
+    void loadRecommendations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [media]);
+
   /*
    * Ajoute le média à une liste personnalisée.
    */
   const addMediaToCustomList = async (
+    targetMedia: MediaItem,
     listId: string
   ) => {
-    if (!media) {
+    if (!targetMedia) {
       window.alert(
         'Le média n’est pas encore chargé.'
       );
@@ -440,8 +540,8 @@ export default function MediaPageClient({
         .from('custom_list_items')
         .select('id')
         .eq('list_id', listId)
-        .eq('media_id', media.id.toString())
-        .eq('media_type', media.type)
+        .eq('media_id', targetMedia.id.toString())
+        .eq('media_type', targetMedia.type)
         .maybeSingle();
 
       if (existingError) {
@@ -450,7 +550,7 @@ export default function MediaPageClient({
 
       if (existingItem) {
         window.alert(
-          `"${media.title}" est déjà présent dans cette liste.`
+          `"${targetMedia.title}" est déjà présent dans cette liste.`
         );
         return;
       }
@@ -487,9 +587,9 @@ export default function MediaPageClient({
           .from('custom_list_items')
           .insert({
             list_id: listId,
-            media_id: media.id.toString(),
-            media_type: media.type,
-            media_data: media,
+            media_id: targetMedia.id.toString(),
+            media_type: targetMedia.type,
+            media_data: targetMedia,
             position: lastPosition + 1,
           });
 
@@ -504,8 +604,8 @@ export default function MediaPageClient({
 
       window.alert(
         selectedList
-          ? `"${media.title}" a été ajouté à la liste "${selectedList.name}".`
-          : `"${media.title}" a bien été ajouté à la liste.`
+          ? `"${targetMedia.title}" a été ajouté à la liste "${selectedList.name}".`
+          : `"${targetMedia.title}" a bien été ajouté à la liste.`
       );
     } catch (error) {
       console.error(
@@ -606,6 +706,15 @@ export default function MediaPageClient({
         customLists={customLists}
         addingToList={addingToList}
         onAddToCustomList={addMediaToCustomList}
+
+        myList={myList}
+        onMarkWatched={handleMarkWatched}
+        onToggleInProgress={handleToggleInProgress}
+        onMarkToWatch={handleMarkToWatch}
+        onRemoveFromCollection={handleRemove}
+
+        recommendations={recommendations}
+        recommendationsLoading={recommendationsLoading}
 
         onRatingChange={setReviewRating}
         onCommentChange={setReviewComment}

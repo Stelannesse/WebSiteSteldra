@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ReviewSection from './ReviewSection';
 import type { LoadedMediaDetails } from '../hooks/useMediaDetails';
-import type { MediaItem, MediaReview, ReviewRating } from '../types/media';
+import type { MediaItem, MediaReview, ReviewRating, MyListItem } from '../types/media';
+import MediaCard from './mediaCard';
 
 type Actor = {
   id: number | string;
@@ -62,7 +63,16 @@ customLists: {
 
 addingToList: boolean;
 
-onAddToCustomList: (listId: string) => void;
+onAddToCustomList: (media: MediaItem, listId: string) => void;
+
+myList: Record<string, MyListItem>;
+onMarkWatched: (media: MediaItem) => void;
+onToggleInProgress: (media: MediaItem) => void;
+onMarkToWatch: (media: MediaItem) => void;
+onRemoveFromCollection: (media: MediaItem) => void;
+
+recommendations: Array<MediaItem & { recommendation_reason?: 'collection' | 'recommended'; release_date?: string }>;
+recommendationsLoading: boolean;
 
 onToggleWholeSeason: (
   episodeNumbers: number[]
@@ -92,6 +102,13 @@ export default function MediaPageContent({
   customLists,
   addingToList,
   onAddToCustomList,
+  myList,
+  onMarkWatched,
+  onToggleInProgress,
+  onMarkToWatch,
+  onRemoveFromCollection,
+  recommendations,
+  recommendationsLoading,
   onRatingChange,
   onCommentChange,
   onSubmitReview,
@@ -252,6 +269,23 @@ const wholeSeasonWatched =
               )}
 
 
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => onMarkWatched(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'vu' ? '#4CAF50' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+                  {isManga ? 'Lu' : 'Vu'}
+                </button>
+                <button type="button" onClick={() => onToggleInProgress(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'en_cours' ? '#FF4C29' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+                  En cours
+                </button>
+                <button type="button" onClick={() => onMarkToWatch(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'a_voir' ? '#00ADB5' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+                  {isManga ? 'À lire' : 'À voir'}
+                </button>
+                {myList[mediaKey] && (
+                  <button type="button" onClick={() => { if (window.confirm(`Supprimer « ${selectedMedia.title} » de ta collection ?`)) onRemoveFromCollection(selectedMedia); }} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: '1px solid rgba(216,74,74,.65)', borderRadius: '10px', backgroundColor: 'transparent', color: '#ff8f8f', fontWeight: 'bold', cursor: 'pointer' }}>
+                    Retirer de la collection
+                  </button>
+                )}
+              </div>
+
               <div
                 style={{
                   marginTop: '1rem',
@@ -279,7 +313,7 @@ const wholeSeasonWatched =
 
                       if (!listId) return;
 
-                      onAddToCustomList(listId);
+                      onAddToCustomList(selectedMedia, listId);
                       event.target.value = '';
                     }}
                     style={{
@@ -621,6 +655,67 @@ const wholeSeasonWatched =
                 </div>
               ) : <p style={{ opacity: 0.65 }}>Aucun casting disponible.</p>}
             </>
+          )}
+        </section>
+
+        <section style={{ ...panelStyle, marginTop: '1rem', padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>À voir aussi</h2>
+              <p style={{ margin: '0.3rem 0 0', opacity: 0.65, fontSize: '0.8rem' }}>Les autres titres de la saga sont prioritaires, puis viennent des recommandations proches.</p>
+            </div>
+          </div>
+
+          {recommendationsLoading ? (
+            <p style={{ opacity: 0.65 }}>Recherche de recommandations…</p>
+          ) : recommendations.length === 0 ? (
+            <p style={{ opacity: 0.65 }}>Aucune recommandation disponible pour ce média.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(105px, 1fr))', gap: '0.85rem' }}>
+              {recommendations.map((recommendation) => {
+                const recommendationKey = `${recommendation.type}_${recommendation.id}`;
+
+                return (
+                  <div key={recommendationKey} style={{ minWidth: 0 }}>
+                    <div style={{ position: 'relative' }}>
+                      <MediaCard
+                        item={recommendation}
+                        currentItem={myList[recommendationKey]}
+                        onMarkWatched={onMarkWatched}
+                        onToggleInProgress={onToggleInProgress}
+                        onMarkToWatch={onMarkToWatch}
+                        onRemove={onRemoveFromCollection}
+                        navigationMode="replace"
+                        rememberCollectionPosition={false}
+                      />
+                      {recommendation.recommendation_reason === 'collection' && (
+                        <span style={{ position: 'absolute', left: '6px', bottom: '6px', zIndex: 12, padding: '0.25rem 0.45rem', borderRadius: '999px', background: 'rgba(0,173,181,.94)', color: '#071012', fontSize: '0.62rem', fontWeight: 900, pointerEvents: 'none' }}>MÊME SAGA</span>
+                      )}
+                    </div>
+                    <strong style={{ display: 'block', marginTop: '0.45rem', overflow: 'hidden', fontSize: '0.76rem', lineHeight: 1.25, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{recommendation.title}</strong>
+
+                    {customLists.length > 0 && (
+                      <select
+                        defaultValue=""
+                        disabled={addingToList}
+                        onChange={(event) => {
+                          const listId = event.target.value;
+                          if (!listId) return;
+                          onAddToCustomList(recommendation, listId);
+                          event.target.value = '';
+                        }}
+                        style={{ width: '100%', marginTop: '0.4rem', minHeight: '32px', padding: '0.3rem 0.4rem', backgroundColor: '#393E46', color: '#fff', border: '1px solid #4b515a', borderRadius: '8px', fontSize: '0.7rem', cursor: addingToList ? 'not-allowed' : 'pointer' }}
+                      >
+                        <option value="">+ Liste</option>
+                        {customLists.map((list) => (
+                          <option key={list.id} value={list.id}>{list.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </section>
       </div>

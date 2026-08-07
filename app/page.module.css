@@ -1636,6 +1636,11 @@ background-color: #181d23;
     0 22px 55px rgba(0, 0, 0, 0.28);
 }
 
+.modernHeader {
+  font-family: var(--font-inter), Arial, sans-serif;
+}
+
+
 .eyebrow {
   margin: 0 0 12px;
 

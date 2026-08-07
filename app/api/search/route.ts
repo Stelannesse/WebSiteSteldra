@@ -15,15 +15,32 @@ export async function GET(request: Request) {
 
   // --- 1. TMDB (FILMS, SÉRIES, DRAMAS, ANIMES) ---
   try {
-    const tmdbUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodedQuery}&page=1`;
-    const tmdbRes = await fetch(tmdbUrl).then(res => res.json());
-    
+    // TMDB limite chaque page à 20 résultats. Une recherche de saga comme
+    // "Star Wars" dépassait donc facilement la première page. On récupère
+    // plusieurs pages en parallèle puis on déduplique les médias.
+    const tmdbPages = await Promise.all(
+      [1, 2, 3].map(async (page) => {
+        const tmdbUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodedQuery}&page=${page}&include_adult=false`;
+        const response = await fetch(tmdbUrl);
+        return response.ok ? response.json() : { results: [] };
+      })
+    );
 
-    if (tmdbRes.results) {
-      // Pour éviter de faire ramer le serveur, on limite les requêtes de détails lourdes aux 4 premiers résultats TV
+    const uniqueTmdbResults = new Map<string, any>();
+
+    tmdbPages.flatMap((page) => page.results || []).forEach((item: any) => {
+      if (item?.id && (item.media_type === 'movie' || item.media_type === 'tv')) {
+        uniqueTmdbResults.set(`${item.media_type}_${item.id}`, item);
+      }
+    });
+
+    const tmdbResults = Array.from(uniqueTmdbResults.values());
+
+    if (tmdbResults.length > 0) {
+      // Pour éviter de faire ramer le serveur, on limite les requêtes de détails lourdes aux 6 premiers résultats TV
       let tvCount = 0;
 
-      const tvDetailsPromises = tmdbRes.results.map(async (item: any) => {
+      const tvDetailsPromises = tmdbResults.map(async (item: any) => {
         if (item.media_type === 'movie') {
           return {
             id: item.id,
@@ -49,7 +66,7 @@ export async function GET(request: Request) {
           
           tvCount++;
           // Si on a trop de séries dans la recherche, on ne charge les détails en temps réel que pour les 4 premières pour garder de la vitesse
-          if (tvCount > 4) {
+          if (tvCount > 6) {
             return {
               id: item.id,
               title: item.name || item.original_name,

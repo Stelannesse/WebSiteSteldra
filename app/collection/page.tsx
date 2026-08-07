@@ -33,6 +33,8 @@ export default function Home() {
   const [userId, setUserId] = useState<string | null>(null); // État pour stocker l'ID de l'utilisateur connecté
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [initialDataReady, setInitialDataReady] = useState(false);
+  const [pendingScrollRestore, setPendingScrollRestore] = useState<number | null>(null);
   
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
@@ -246,11 +248,63 @@ setMangaProgress(newProgress);
       const savedProgress = localStorage.getItem('steldra_manga_progress_v1');
       if (savedProgress) setMangaProgress(JSON.parse(savedProgress));
     }
+
+    setInitialDataReady(true);
   };
 
       // On met à jour l'état pour indiquer que la vérification est terminée
   loadInitialData();
 }, []);  
+
+useEffect(() => {
+  const savedState = sessionStorage.getItem('steldra_collection_state');
+  const savedScroll = sessionStorage.getItem('steldra_collection_scroll_y');
+
+  if (savedState) {
+    try {
+      const parsed = JSON.parse(savedState) as {
+        query?: string;
+        typeFilter?: MediaType | 'tous';
+        statusFilter?: FilterStatus;
+      };
+
+      if (parsed.typeFilter) setTypeFilter(parsed.typeFilter);
+      if (parsed.statusFilter) setStatusFilter(parsed.statusFilter);
+
+      if (parsed.query && parsed.query.trim().length >= 2) {
+        void handleSearch(parsed.query);
+      } else if (typeof parsed.query === 'string') {
+        setQuery(parsed.query);
+      }
+    } catch (error) {
+      console.error('État de collection illisible :', error);
+    }
+  }
+
+  if (savedScroll) {
+    const value = Number(savedScroll);
+    if (Number.isFinite(value)) setPendingScrollRestore(value);
+  }
+}, []);
+
+useEffect(() => {
+  sessionStorage.setItem(
+    'steldra_collection_state',
+    JSON.stringify({ query, typeFilter, statusFilter })
+  );
+}, [query, typeFilter, statusFilter]);
+
+useEffect(() => {
+  if (!initialDataReady || loading || pendingScrollRestore === null) return;
+
+  const timer = window.setTimeout(() => {
+    window.scrollTo({ top: pendingScrollRestore, behavior: 'auto' });
+    setPendingScrollRestore(null);
+    sessionStorage.removeItem('steldra_collection_scroll_y');
+  }, 80);
+
+  return () => window.clearTimeout(timer);
+}, [initialDataReady, loading, pendingScrollRestore, results.length, Object.keys(myList).length]);
 
 useEffect(() => {
   let scrollTimeout: NodeJS.Timeout;

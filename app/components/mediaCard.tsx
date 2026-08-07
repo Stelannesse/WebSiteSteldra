@@ -12,6 +12,8 @@ type MediaCardProps = {
   onToggleInProgress: (media: MediaItem) => void;
   onMarkToWatch: (media: MediaItem) => void;
   onRemove: (media: MediaItem) => void;
+  navigationMode?: 'push' | 'replace';
+  rememberCollectionPosition?: boolean;
 };
 
 export default function MediaCard({
@@ -21,6 +23,8 @@ export default function MediaCard({
   onToggleInProgress,
   onMarkToWatch,
   onRemove,
+  navigationMode = 'push',
+  rememberCollectionPosition = true,
 }: MediaCardProps) {
       const currentStatus: WatchStatus | undefined =
     currentItem?.status;
@@ -33,7 +37,20 @@ const openDetails = () => {
     JSON.stringify(item)
   );
 
-  router.push(`/media/${item.type}/${item.id}`);
+  if (rememberCollectionPosition) {
+    sessionStorage.setItem(
+      'steldra_collection_scroll_y',
+      String(window.scrollY)
+    );
+  }
+
+  const href = `/media/${item.type}/${item.id}`;
+
+  if (navigationMode === 'replace') {
+    router.replace(href);
+  } else {
+    router.push(href);
+  }
 };
 
   const watchCount =
