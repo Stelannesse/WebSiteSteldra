@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { createClient } from '../../lib/supabase';
 import MainNav from '../../components/mainNav';
@@ -36,6 +36,15 @@ export default function ListDetailsPage() {
 
   const [addingItems, setAddingItems] =
     useState(false);
+
+  const [draggedItemId, setDraggedItemId] =
+    useState<string | null>(null);
+
+  const [savingOrder, setSavingOrder] =
+    useState(false);
+
+  const dragStartItemsRef = useRef<CustomListItem[]>([]);
+  const currentItemsRef = useRef<CustomListItem[]>([]);
 
   const [showPicker, setShowPicker] =
     useState(false);
@@ -155,6 +164,10 @@ export default function ListDetailsPage() {
       cancelled = true;
     };
   }, [listId, supabase]);
+
+  useEffect(() => {
+    currentItemsRef.current = items;
+  }, [items]);
 
   const loadCollection = async () => {
     setLoadingCollection(true);
@@ -303,6 +316,166 @@ export default function ListDetailsPage() {
     searchQuery,
   ]);
 
+
+  const reorderItems = (
+    currentItems: CustomListItem[],
+    draggedId: string,
+    targetId: string
+  ) => {
+    const fromIndex = currentItems.findIndex(
+      (item) => item.id === draggedId
+    );
+    const toIndex = currentItems.findIndex(
+      (item) => item.id === targetId
+    );
+
+    if (
+      fromIndex === -1 ||
+      toIndex === -1 ||
+      fromIndex === toIndex
+    ) {
+      return currentItems;
+    }
+
+    const nextItems = [...currentItems];
+    const [movedItem] = nextItems.splice(fromIndex, 1);
+    nextItems.splice(toIndex, 0, movedItem);
+
+    return nextItems.map((item, index) => ({
+      ...item,
+      position: index,
+    }));
+  };
+
+  const saveOrder = async (
+    orderedItems: CustomListItem[],
+    fallbackItems: CustomListItem[]
+  ) => {
+    if (savingOrder) return;
+
+    setSavingOrder(true);
+    setErrorMessage('');
+
+    try {
+      const updates = orderedItems.map((item, index) =>
+        supabase
+          .from('custom_list_items')
+          .update({ position: index })
+          .eq('id', item.id)
+          .eq('list_id', listId)
+      );
+
+      const results = await Promise.all(updates);
+      const failedUpdate = results.find(
+        (result) => result.error
+      );
+
+      if (failedUpdate?.error) {
+        throw failedUpdate.error;
+      }
+    } catch (error) {
+      console.error(
+        'Erreur enregistrement de l’ordre :',
+        error
+      );
+
+      setItems(fallbackItems);
+      setErrorMessage(
+        'Le nouvel ordre n’a pas pu être enregistré.'
+      );
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const handleDragStart = (
+    itemId: string,
+    event: React.DragEvent<HTMLElement>
+  ) => {
+    dragStartItemsRef.current = items.map((item) => ({
+      ...item,
+    }));
+    setDraggedItemId(itemId);
+
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', itemId);
+  };
+
+  const handleDragOver = (
+    targetId: string,
+    event: React.DragEvent<HTMLElement>
+  ) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+
+    if (!draggedItemId || draggedItemId === targetId) {
+      return;
+    }
+
+    setItems((currentItems) =>
+      reorderItems(
+        currentItems,
+        draggedItemId,
+        targetId
+      )
+    );
+  };
+
+  const handleDragEnd = async () => {
+    if (!draggedItemId) return;
+
+    const fallbackItems = dragStartItemsRef.current;
+    const finalItems = currentItemsRef.current.map((item, index) => ({
+      ...item,
+      position: index,
+    }));
+
+    setDraggedItemId(null);
+    setItems(finalItems);
+
+    const orderChanged = finalItems.some(
+      (item, index) =>
+        fallbackItems[index]?.id !== item.id
+    );
+
+    if (orderChanged) {
+      await saveOrder(finalItems, fallbackItems);
+    }
+  };
+
+  const moveItem = async (
+    itemId: string,
+    direction: -1 | 1
+  ) => {
+    if (savingOrder) return;
+
+    const fromIndex = items.findIndex(
+      (item) => item.id === itemId
+    );
+    const toIndex = fromIndex + direction;
+
+    if (
+      fromIndex === -1 ||
+      toIndex < 0 ||
+      toIndex >= items.length
+    ) {
+      return;
+    }
+
+    const fallbackItems = items.map((item) => ({
+      ...item,
+    }));
+    const targetId = items[toIndex].id;
+    const reorderedItems = reorderItems(
+      items,
+      itemId,
+      targetId
+    );
+
+    setItems(reorderedItems);
+    await saveOrder(reorderedItems, fallbackItems);
+  };
+
   const addSelectedMedia = async () => {
     if (
       !listId ||
@@ -405,27 +578,23 @@ export default function ListDetailsPage() {
         ) : list ? (
           <>
             <header className={styles.header}>
-              <div>
+              <div className={styles.headerContent}>
                 <p className={styles.eyebrow}>
                   Liste personnalisée
                 </p>
 
-                <h1>{list.name}</h1>
+                <div className={styles.titleRow}>
+                  <h1>{list.name}</h1>
+                  <span className={styles.countInline}>
+                    {items.length}{' '}
+                    {items.length > 1 ? 'médias' : 'média'}
+                  </span>
+                </div>
 
                 <p className={styles.description}>
                   {list.description ||
                     'Liste organisée dans votre ordre personnalisé.'}
                 </p>
-              </div>
-
-              <div className={styles.count}>
-                <strong>{items.length}</strong>
-
-                <span>
-                  {items.length > 1
-                    ? 'médias'
-                    : 'média'}
-                </span>
               </div>
             </header>
 
@@ -456,7 +625,16 @@ export default function ListDetailsPage() {
               </section>
             ) : (
               <>
-                <div className={styles.listActions}>
+                <div className={styles.listToolbar}>
+                  <p className={styles.dragHint}>
+                    ↕ Glissez les affiches pour modifier l’ordre
+                    {savingOrder && (
+                      <span className={styles.savingLabel}>
+                        Enregistrement…
+                      </span>
+                    )}
+                  </p>
+
                   <button
                     type="button"
                     className={styles.addMediaButton}
@@ -470,30 +648,76 @@ export default function ListDetailsPage() {
                   {items.map((item, index) => (
                     <article
                       key={item.id}
-                      className={styles.item}
+                      className={`${styles.item} ${
+                        draggedItemId === item.id
+                          ? styles.itemDragging
+                          : ''
+                      }`}
+                      draggable={!savingOrder}
+                      onDragStart={(event) =>
+                        handleDragStart(item.id, event)
+                      }
+                      onDragOver={(event) =>
+                        handleDragOver(item.id, event)
+                      }
+                      onDragEnd={() => {
+                        void handleDragEnd();
+                      }}
+                      aria-label={`${index + 1}. ${item.media_data.title}`}
                     >
-                      <span
-                        className={styles.position}
-                      >
-                        {index + 1}
-                      </span>
+                      <div className={styles.posterWrapper}>
+                        <img
+                          src={getPosterUrl(
+                            item.media_data
+                          )}
+                          alt={item.media_data.title}
+                          className={styles.poster}
+                          draggable={false}
+                        />
 
-                      <img
-                        src={getPosterUrl(
-                          item.media_data
-                        )}
-                        alt={
-                          item.media_data.title
-                        }
-                        className={styles.poster}
-                      />
+                        <span className={styles.position}>
+                          {index + 1}
+                        </span>
+
+                        <span
+                          className={styles.dragHandle}
+                          aria-hidden="true"
+                        >
+                          ⠿
+                        </span>
+                      </div>
 
                       <div className={styles.itemContent}>
-                        <h2>
+                        <h2 title={item.media_data.title}>
                           {item.media_data.title}
                         </h2>
-
                         <p>{item.media_type}</p>
+
+                        <div className={styles.mobileMoveButtons}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void moveItem(item.id, -1);
+                            }}
+                            disabled={index === 0 || savingOrder}
+                            aria-label={`Déplacer ${item.media_data.title} avant`}
+                          >
+                            ←
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void moveItem(item.id, 1);
+                            }}
+                            disabled={
+                              index === items.length - 1 ||
+                              savingOrder
+                            }
+                            aria-label={`Déplacer ${item.media_data.title} après`}
+                          >
+                            →
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}
