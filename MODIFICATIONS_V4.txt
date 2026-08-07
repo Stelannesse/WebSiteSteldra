@@ -1,0 +1,42 @@
+STELDRA - MODIFICATIONS V4
+
+Principales évolutions
+- Accueil entièrement transformé en tableau de bord personnel.
+- Sections : Continuer, Vu récemment, À regarder ensuite, Parce que vous avez aimé, Vos listes, Ajoutés récemment.
+- Progression séries/animes/dramas affichée avec saison, prochain épisode et barre de progression quand les données sont disponibles.
+- Progression mangas/manhwas affichée par chapitre.
+- Recommandations personnalisées à partir des avis J'aime.
+- Ajout direct d'une recommandation en À voir depuis l'accueil.
+- Collection : tri par date d'ajout, titre, année et statut.
+- Collection : filtre par année, favoris uniquement, masquer les terminés.
+- Collection : affichage Grille ou Liste.
+- Favoris persistés directement dans media_data, sans nouvelle table Supabase.
+- Favori disponible dans la Collection et sur les fiches média.
+- Recommandations enrichies : même saga, même réalisateur, casting commun, titres similaires et recommandations TMDB.
+- Correction du bug : J'aime n'est plus sélectionné par défaut lorsqu'aucun avis n'a été donné.
+- Recherche enrichie avec l'année des résultats TMDB.
+- Conservation des correctifs de police Inter/Poppins sur le header et les listes.
+- Les erreurs de recommandations ne provoquent plus volontairement une exception côté fiche.
+
+Fichiers modifiés
+app/api/recommendations/route.ts
+app/api/search/route.ts
+app/collection/page.tsx
+app/components/ReviewSection.tsx
+app/components/mediaCard.tsx
+app/components/mediaModal.tsx
+app/components/mediaPageContent.tsx
+app/hooks/useMediaProgress.ts
+app/hooks/useReviews.ts
+app/layout.tsx
+app/lists/[id]/listDetails.module.css
+app/lists/lists.module.css
+app/media/[type]/[id]/MediaPageClient.tsx
+app/page.module.css
+app/page.tsx
+app/types/media.ts
+
+Base de données
+Aucune nouvelle table ni migration n'est nécessaire pour cette version.
+Le statut Favori est stocké dans media_data.favorite.
+Les nouveaux changements de statut enregistrent aussi une date interne dans media_data pour améliorer les sections récentes.

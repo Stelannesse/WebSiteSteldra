@@ -46,7 +46,7 @@ type MediaPageContentProps = {
   mediaDetails: MediaDetails | null;
 
   reviews: MediaReview[];
-  reviewRating: ReviewRating;
+  reviewRating: ReviewRating | null;
   reviewComment: string;
   userId: string | null;
   userName: string | null;

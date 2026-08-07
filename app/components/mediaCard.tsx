@@ -14,6 +14,7 @@ type MediaCardProps = {
   onRemove: (media: MediaItem) => void;
   navigationMode?: 'push' | 'replace';
   rememberCollectionPosition?: boolean;
+  onToggleFavorite?: (media: MediaItem) => void;
 };
 
 export default function MediaCard({
@@ -25,6 +26,7 @@ export default function MediaCard({
   onRemove,
   navigationMode = 'push',
   rememberCollectionPosition = true,
+  onToggleFavorite,
 }: MediaCardProps) {
       const currentStatus: WatchStatus | undefined =
     currentItem?.status;
@@ -184,6 +186,36 @@ const openDetails = () => {
           borderRadius: '8px',
         }}
       />
+
+      {currentItem && onToggleFavorite && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggleFavorite(item);
+          }}
+          aria-label={currentItem.favorite ? `Retirer ${item.title} des favoris` : `Ajouter ${item.title} aux favoris`}
+          title={currentItem.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          style={{
+            position: 'absolute',
+            left: '8px',
+            bottom: '8px',
+            zIndex: 10,
+            width: '32px',
+            height: '32px',
+            border: '1px solid rgba(255,255,255,.18)',
+            borderRadius: '50%',
+            backgroundColor: currentItem.favorite ? '#00ADB5' : 'rgba(0,0,0,.72)',
+            color: currentItem.favorite ? '#071012' : '#ffffff',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          {currentItem.favorite ? '★' : '☆'}
+        </button>
+      )}
+
 {currentItem && (
   <button
     type="button"

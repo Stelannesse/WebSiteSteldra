@@ -12,12 +12,6 @@
   font-family: var(--font-inter), Arial, sans-serif;
 }
 
-.page h1,
-.page h2,
-.page h3 {
-  font-family: var(--font-poppins), Arial, sans-serif;
-}
-
 .backLink {
   display: block;
   width: 100%;
@@ -312,4 +306,10 @@
   .nextCard button { grid-column: 2; justify-self: start; padding: 0; }
   .picker { padding: 16px; max-height: 92vh; }
   .mediaGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+
+.page h1,
+.page h2,
+.page h3 {
+  font-family: var(--font-poppins), Arial, sans-serif;
 }

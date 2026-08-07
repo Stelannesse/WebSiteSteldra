@@ -14,7 +14,7 @@ type Review = {
 type ReviewSectionProps = {
   media: MediaItem;
   reviews: Review[];
-  reviewRating: ReviewRating;
+  reviewRating: ReviewRating | null;
   reviewComment: string;
   userId: string | null;
   userName: string | null;
@@ -180,6 +180,7 @@ export default function ReviewSection({
         <button
           type="button"
           onClick={onSubmit}
+          disabled={!reviewRating}
           style={{
             padding: '0.6rem 1rem',
             background: '#00ADB5',
@@ -187,7 +188,8 @@ export default function ReviewSection({
             color: '#222831',
             fontWeight: 'bold',
             borderRadius: '8px',
-            cursor: 'pointer',
+            cursor: reviewRating ? 'pointer' : 'not-allowed',
+            opacity: reviewRating ? 1 : 0.5,
           }}
         >
           Envoyer

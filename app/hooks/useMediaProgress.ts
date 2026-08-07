@@ -51,12 +51,25 @@ export default function useMediaProgress({
   ) => {
     const mediaKey = getMediaKey(media);
 
+    const currentItem = myList[mediaKey];
+    const now = new Date().toISOString();
+    const enrichedMedia: MediaItem = {
+      ...media,
+      favorite: currentItem?.favorite ?? media.favorite ?? false,
+      steldra_added_at:
+        currentItem?.addedAt || media.steldra_added_at || now,
+      steldra_last_interaction_at: now,
+    };
+
     const updatedList = {
       ...myList,
       [mediaKey]: {
-        media,
+        media: enrichedMedia,
         status,
         watchCount,
+        favorite: enrichedMedia.favorite,
+        addedAt: enrichedMedia.steldra_added_at,
+        lastInteractionAt: enrichedMedia.steldra_last_interaction_at,
       },
     };
 
@@ -81,7 +94,7 @@ export default function useMediaProgress({
           media_id: String(media.id),
           media_type: media.type,
           status,
-          media_data: media,
+          media_data: enrichedMedia,
           watched_episode: watchedEpisodes,
           manga_progress:
             mangaProgress[mediaKey] ?? 0,

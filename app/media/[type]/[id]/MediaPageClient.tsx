@@ -77,7 +77,7 @@ export default function MediaPageClient({
   const [addingToList, setAddingToList] =
     useState(false);
 
-  const [recommendations, setRecommendations] = useState<Array<MediaItem & { recommendation_reason?: 'collection' | 'recommended'; release_date?: string }>>([]);
+  const [recommendations, setRecommendations] = useState<Array<MediaItem & { recommendation_reason?: 'collection' | 'director' | 'cast' | 'similar' | 'recommended'; recommendation_label?: string; release_date?: string }>>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
 
   const getMediaKey = useCallback(
@@ -256,6 +256,13 @@ export default function MediaPageClient({
                 status: data.status,
                 watchCount:
                   Number(data.watch_count) || 0,
+                favorite: Boolean(storedMedia.favorite),
+                addedAt: storedMedia.steldra_added_at || data.created_at || null,
+                lastInteractionAt:
+                  storedMedia.steldra_last_interaction_at ||
+                  data.updated_at ||
+                  data.created_at ||
+                  null,
               },
             });
 
@@ -415,6 +422,13 @@ export default function MediaPageClient({
           media: storedMedia,
           status: entry.status || 'a_voir',
           watchCount: Number(entry.watch_count) || 0,
+          favorite: Boolean(storedMedia.favorite),
+          addedAt: storedMedia.steldra_added_at || entry.created_at || null,
+          lastInteractionAt:
+            storedMedia.steldra_last_interaction_at ||
+            entry.updated_at ||
+            entry.created_at ||
+            null,
         };
       });
 
@@ -479,7 +493,8 @@ export default function MediaPageClient({
         );
 
         if (!response.ok) {
-          throw new Error('Recommandations indisponibles');
+          if (!cancelled) setRecommendations([]);
+          return;
         }
 
         const data = await response.json();
@@ -488,7 +503,7 @@ export default function MediaPageClient({
           setRecommendations(data.results || []);
         }
       } catch (error) {
-        console.error('Erreur recommandations :', error);
+        console.warn('Recommandations indisponibles :', error);
         if (!cancelled) setRecommendations([]);
       } finally {
         if (!cancelled) setRecommendationsLoading(false);
@@ -505,6 +520,44 @@ export default function MediaPageClient({
   /*
    * Ajoute le média à une liste personnalisée.
    */
+  const handleToggleFavorite = async (targetMedia: MediaItem) => {
+    const key = getMediaKey(targetMedia);
+    const current = myList[key];
+    if (!current) return;
+
+    const favorite = !current.favorite;
+    const now = new Date().toISOString();
+    const enrichedMedia: MediaItem = {
+      ...current.media,
+      favorite,
+      steldra_added_at: current.addedAt || current.media.steldra_added_at || now,
+      steldra_last_interaction_at: now,
+    };
+
+    setMyList((previous) => ({
+      ...previous,
+      [key]: {
+        ...current,
+        media: enrichedMedia,
+        favorite,
+        addedAt: enrichedMedia.steldra_added_at,
+        lastInteractionAt: now,
+      },
+    }));
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('media_progress')
+      .update({ media_data: enrichedMedia })
+      .eq('user_id', user.id)
+      .eq('media_id', String(targetMedia.id))
+      .eq('media_type', targetMedia.type);
+
+    if (error) console.error('Erreur mise à jour favori :', error);
+  };
+
   const addMediaToCustomList = async (
     targetMedia: MediaItem,
     listId: string
@@ -712,6 +765,7 @@ export default function MediaPageClient({
         onToggleInProgress={handleToggleInProgress}
         onMarkToWatch={handleMarkToWatch}
         onRemoveFromCollection={handleRemove}
+        onToggleFavorite={handleToggleFavorite}
 
         recommendations={recommendations}
         recommendationsLoading={recommendationsLoading}
@@ -720,6 +774,7 @@ export default function MediaPageClient({
         onCommentChange={setReviewComment}
 
         onSubmitReview={() => {
+          if (!reviewRating) return;
           void submitReview(
             media,
             reviewRating,
@@ -729,7 +784,7 @@ export default function MediaPageClient({
 
         onCancelReview={() => {
           setReviewComment('');
-          setReviewRating('like');
+          setReviewRating(null);
         }}
 
         onDeleteReview={deleteReview}

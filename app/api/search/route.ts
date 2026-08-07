@@ -47,7 +47,9 @@ export async function GET(request: Request) {
             title: item.title || item.original_title,
             poster_path: item.poster_path || '',
             type: 'movie', 
-            runtime: item.runtime || 0
+            runtime: item.runtime || 0,
+            year: item.release_date ? Number(String(item.release_date).slice(0, 4)) : null,
+            release_date: item.release_date || ''
           };
         } 
         
@@ -74,7 +76,9 @@ export async function GET(request: Request) {
               type: finalType,
               seasons: 1,
               episodes: 0,
-              airing_status: 'en_cours'
+              airing_status: 'en_cours',
+              year: item.first_air_date ? Number(String(item.first_air_date).slice(0, 4)) : null,
+              first_air_date: item.first_air_date || ''
             };
           }
 
@@ -97,7 +101,9 @@ export async function GET(request: Request) {
               type: finalType,
               seasons: detailedData.number_of_seasons || 1,
               episodes: detailedData.number_of_episodes || 0,
-              airing_status: detailedData.status === 'Ended' ? 'termine' : 'en_cours'
+              airing_status: detailedData.status === 'Ended' ? 'termine' : 'en_cours',
+              year: item.first_air_date ? Number(String(item.first_air_date).slice(0, 4)) : null,
+              first_air_date: item.first_air_date || ''
             };
           } catch {
             return {
@@ -107,7 +113,9 @@ export async function GET(request: Request) {
               type: finalType,
               seasons: 1,
               episodes: 0,
-              airing_status: 'en_cours'
+              airing_status: 'en_cours',
+              year: item.first_air_date ? Number(String(item.first_air_date).slice(0, 4)) : null,
+              first_air_date: item.first_air_date || ''
             };
           }
         }

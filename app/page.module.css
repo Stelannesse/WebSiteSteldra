@@ -1,9 +1,3 @@
-/* app/page.module.css */
-
-/* =========================================================
-   BASE
-========================================================= */
-
 :global(*),
 :global(*::before),
 :global(*::after) {
@@ -109,6 +103,7 @@
 ========================================================= */
 
 .appHeader {
+  font-family: var(--font-inter), Arial, sans-serif;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -225,6 +220,7 @@
 }
 
 .brandName {
+  font-family: var(--font-poppins), Arial, sans-serif;
   color: #ffffff;
 
   font-size: 1.08rem;
@@ -235,6 +231,7 @@
 }
 
 .brandSubtitle {
+  font-family: var(--font-inter), Arial, sans-serif;
   overflow: hidden;
 
   color: rgba(255, 255, 255, 0.58);
@@ -280,20 +277,6 @@
 
   gap: 1rem;
   margin-bottom: 1.2rem;
-}
-
-.timeStatsEyebrow {
-  display: block;
-
-  margin-bottom: 0.3rem;
-
-  color: #00c4cd;
-
-  font-size: 0.72rem;
-  font-weight: 900;
-
-  letter-spacing: 0.12rem;
-  text-transform: uppercase;
 }
 
 .timeStatsEyebrow {
@@ -1636,11 +1619,6 @@ background-color: #181d23;
     0 22px 55px rgba(0, 0, 0, 0.28);
 }
 
-.modernHeader {
-  font-family: var(--font-inter), Arial, sans-serif;
-}
-
-
 .eyebrow {
   margin: 0 0 12px;
 
@@ -1869,4 +1847,589 @@ background-color: #181d23;
   .sectionCard {
     min-height: 205px;
   }
+}
+/* =========================================================
+   ACCUEIL PERSONNALISE
+========================================================= */
+
+.dashboardHome {
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  min-height: 100vh;
+
+  padding: clamp(1rem, 3vw, 2rem);
+
+  overflow-x: hidden;
+
+  background: #181d23;
+  color: #f5f7f8;
+  font-family: var(--font-body);
+}
+
+.dashboardIntro,
+.dashboardSection {
+  width: min(1380px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.dashboardIntro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 0 1.6rem;
+}
+
+.dashboardEyebrow {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: #00c6cf;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16rem;
+}
+
+.dashboardIntro h1 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: clamp(1.55rem, 4vw, 2.4rem);
+}
+
+.dashboardIntro p {
+  margin: 0.45rem 0 0;
+  max-width: 680px;
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.55;
+}
+
+.dashboardSearchLink {
+  flex-shrink: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(0, 198, 207, 0.35);
+  border-radius: 12px;
+  background: rgba(0, 198, 207, 0.12);
+  color: #7ce9ee;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dashboardLoading,
+.emptyDashboard {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #222831;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.dashboardSection {
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 1.7rem;
+  overflow: hidden;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.sectionHeading h2 {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 1.12rem;
+}
+
+.sectionHeading p {
+  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.82rem;
+}
+
+.sectionHeading > a {
+  color: #65dce1;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.dashboardRail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 0.8rem;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 0.1rem 0 0.65rem;
+
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.dashboardPosterCard,
+.recommendationCard,
+.nextCard,
+.continueCard,
+.homeListCard {
+  scroll-snap-align: start;
+}
+
+.dashboardPosterCard {
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.dashboardPosterCard img,
+.recommendationCard img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 11px;
+  background: #252b33;
+}
+
+.dashboardPosterCard strong,
+.recommendationCard strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboardPosterCard span {
+  display: block;
+  margin-top: 0.2rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.67rem;
+  text-transform: uppercase;
+}
+
+.continueCard {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  width: 330px;
+  max-width: calc(100vw - 2rem);
+  min-height: 138px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 15px;
+  background: #222831;
+  color: #fff;
+  text-decoration: none;
+}
+
+.continueCard > img {
+  width: 92px;
+  height: 100%;
+  object-fit: cover;
+}
+
+.continueInfo {
+  min-width: 0;
+  padding: 0.85rem;
+}
+
+.mediaTypeLabel {
+  color: #55dbe1;
+  font-size: 0.64rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.continueInfo strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.continueInfo p {
+  margin: 0.45rem 0 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.progressTrack {
+  height: 5px;
+  overflow: hidden;
+  margin-top: 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.progressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #00c6cf;
+}
+
+.continueInfo small {
+  display: block;
+  margin-top: 0.35rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.nextCard {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  width: 285px;
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: #222831;
+  color: #fff;
+  text-decoration: none;
+}
+
+.nextCard img {
+  width: 78px;
+  height: 116px;
+  object-fit: cover;
+}
+
+.nextCard div {
+  min-width: 0;
+  padding: 0.8rem;
+}
+
+.nextCard span,
+.nextCard small {
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.68rem;
+}
+
+.nextCard strong {
+  display: block;
+  overflow: hidden;
+  margin: 0.45rem 0;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendationCard a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.recommendationCard button {
+  width: 100%;
+  min-height: 32px;
+  margin-top: 0.45rem;
+  border: 1px solid rgba(0, 198, 207, 0.35);
+  border-radius: 8px;
+  background: rgba(0, 198, 207, 0.12);
+  color: #7ce9ee;
+  font-size: 0.67rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recommendationCard button:disabled {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.38);
+  cursor: default;
+}
+
+.listPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.8rem;
+}
+
+.homeListCard {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: #222831;
+  color: #fff;
+  text-decoration: none;
+}
+
+.homeListPosters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: 95px;
+  overflow: hidden;
+  margin-bottom: 0.7rem;
+  border-radius: 9px;
+  background: #2b3139;
+}
+
+.homeListPosters img {
+  width: 100%;
+  height: 95px;
+  object-fit: cover;
+}
+
+.homeListPosters span {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+}
+
+.homeListCard strong,
+.homeListCard small {
+  display: block;
+}
+
+.homeListCard small {
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 700px) {
+  .dashboardIntro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboardSearchLink {
+    width: 100%;
+    text-align: center;
+  }
+
+  .continueCard {
+    width: 300px;
+  }
+
+  .continueCard,
+  .nextCard {
+    grid-auto-columns: unset;
+  }
+}
+
+
+@media (max-width: 700px) {
+  .dashboardPosterCard {
+    width: 112px;
+    min-width: 112px;
+    max-width: 112px;
+  }
+}
+
+/* =========================================================
+   OUTILS COLLECTION
+========================================================= */
+
+.collectionToolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(1380px, calc(100% - 2rem));
+  margin: 1rem auto 0.4rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #222831;
+  color: #f4f6f7;
+}
+
+.collectionToolbarGroup,
+.collectionToolbarActions,
+.viewSwitch {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.collectionToolbar label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.collectionToolbar select,
+.collectionToolbar button {
+  min-height: 34px;
+  padding: 0.38rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  background: #2d333b;
+  color: #fff;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.collectionToggleActive {
+  border-color: rgba(0, 198, 207, 0.55) !important;
+  background: rgba(0, 198, 207, 0.16) !important;
+  color: #72e3e8 !important;
+}
+
+.collectionListView {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 1rem auto 2rem;
+}
+
+.collectionListRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 76px;
+  padding: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #222831;
+}
+
+.collectionListOpen {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  gap: 0.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collectionListOpen img {
+  width: 46px;
+  height: 66px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.collectionListOpen span {
+  min-width: 0;
+}
+
+.collectionListOpen strong,
+.collectionListOpen small {
+  display: block;
+}
+
+.collectionListOpen strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collectionListOpen small {
+  margin-top: 0.3rem;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.collectionListActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.collectionListActions button {
+  min-height: 32px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: #2d333b;
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.favoriteActive {
+  border-color: rgba(0, 198, 207, 0.55) !important;
+  background: #00adb5 !important;
+  color: #071012 !important;
+}
+
+@media (max-width: 760px) {
+  .collectionToolbar,
+  .collectionListRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .collectionToolbarGroup,
+  .collectionToolbarActions,
+  .viewSwitch {
+    width: 100%;
+  }
+
+  .collectionToolbar label {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .collectionToolbar select {
+    flex: 1;
+  }
+
+  .collectionToolbarActions > button,
+  .viewSwitch,
+  .viewSwitch button {
+    flex: 1;
+  }
+
+  .collectionListActions {
+    justify-content: stretch;
+  }
+
+  .collectionListActions button {
+    flex: 1;
+  }
+}
+
+/* Empêche l'accueil de dépasser horizontalement */
+.dashboard {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Rangées horizontales de médias */
+.mediaRow {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
 }

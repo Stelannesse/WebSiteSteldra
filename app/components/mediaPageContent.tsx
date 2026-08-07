@@ -35,7 +35,7 @@ type MediaPageContentProps = {
   detailsLoading: boolean;
   mediaDetails: LoadedMediaDetails  | null;
   reviews: MediaReview[];
-  reviewRating: ReviewRating;
+  reviewRating: ReviewRating | null;
   reviewComment: string;
   userId: string | null;
   userName: string | null;
@@ -70,8 +70,9 @@ onMarkWatched: (media: MediaItem) => void;
 onToggleInProgress: (media: MediaItem) => void;
 onMarkToWatch: (media: MediaItem) => void;
 onRemoveFromCollection: (media: MediaItem) => void;
+onToggleFavorite: (media: MediaItem) => void;
 
-recommendations: Array<MediaItem & { recommendation_reason?: 'collection' | 'recommended'; release_date?: string }>;
+recommendations: Array<MediaItem & { recommendation_reason?: 'collection' | 'director' | 'cast' | 'similar' | 'recommended'; recommendation_label?: string; release_date?: string }>;
 recommendationsLoading: boolean;
 
 onToggleWholeSeason: (
@@ -107,6 +108,7 @@ export default function MediaPageContent({
   onToggleInProgress,
   onMarkToWatch,
   onRemoveFromCollection,
+  onToggleFavorite,
   recommendations,
   recommendationsLoading,
   onRatingChange,
@@ -279,6 +281,11 @@ const wholeSeasonWatched =
                 <button type="button" onClick={() => onMarkToWatch(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'a_voir' ? '#00ADB5' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
                   {isManga ? 'À lire' : 'À voir'}
                 </button>
+                {myList[mediaKey] && (
+                  <button type="button" onClick={() => onToggleFavorite(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: '1px solid rgba(0,173,181,.45)', borderRadius: '10px', backgroundColor: myList[mediaKey]?.favorite ? '#00ADB5' : 'transparent', color: myList[mediaKey]?.favorite ? '#071012' : '#7ce9ee', fontWeight: 'bold', cursor: 'pointer' }}>
+                    {myList[mediaKey]?.favorite ? 'Favori' : 'Ajouter aux favoris'}
+                  </button>
+                )}
                 {myList[mediaKey] && (
                   <button type="button" onClick={() => { if (window.confirm(`Supprimer « ${selectedMedia.title} » de ta collection ?`)) onRemoveFromCollection(selectedMedia); }} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: '1px solid rgba(216,74,74,.65)', borderRadius: '10px', backgroundColor: 'transparent', color: '#ff8f8f', fontWeight: 'bold', cursor: 'pointer' }}>
                     Retirer de la collection
@@ -662,7 +669,7 @@ const wholeSeasonWatched =
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem' }}>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.15rem' }}>À voir aussi</h2>
-              <p style={{ margin: '0.3rem 0 0', opacity: 0.65, fontSize: '0.8rem' }}>Les autres titres de la saga sont prioritaires, puis viennent des recommandations proches.</p>
+              <p style={{ margin: '0.3rem 0 0', opacity: 0.65, fontSize: '0.8rem' }}>Même saga, même réalisateur, casting commun et titres similaires sont proposés en priorité.</p>
             </div>
           </div>
 
@@ -685,11 +692,12 @@ const wholeSeasonWatched =
                         onToggleInProgress={onToggleInProgress}
                         onMarkToWatch={onMarkToWatch}
                         onRemove={onRemoveFromCollection}
+                        onToggleFavorite={onToggleFavorite}
                         navigationMode="replace"
                         rememberCollectionPosition={false}
                       />
-                      {recommendation.recommendation_reason === 'collection' && (
-                        <span style={{ position: 'absolute', left: '6px', bottom: '6px', zIndex: 12, padding: '0.25rem 0.45rem', borderRadius: '999px', background: 'rgba(0,173,181,.94)', color: '#071012', fontSize: '0.62rem', fontWeight: 900, pointerEvents: 'none' }}>MÊME SAGA</span>
+                      {recommendation.recommendation_label && (
+                        <span style={{ position: 'absolute', left: '6px', bottom: '6px', zIndex: 12, maxWidth: 'calc(100% - 12px)', overflow: 'hidden', padding: '0.25rem 0.45rem', borderRadius: '999px', background: 'rgba(0,173,181,.94)', color: '#071012', fontSize: '0.58rem', fontWeight: 900, pointerEvents: 'none', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{recommendation.recommendation_label}</span>
                       )}
                     </div>
                     <strong style={{ display: 'block', marginTop: '0.45rem', overflow: 'hidden', fontSize: '0.76rem', lineHeight: 1.25, textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{recommendation.title}</strong>

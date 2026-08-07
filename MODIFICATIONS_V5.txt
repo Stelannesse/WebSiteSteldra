@@ -1,0 +1,34 @@
+STELDRA V5 - COLLECTION : TRI, GENRES ET TAGS
+
+Nouveautés :
+- Tri Collection fiabilisé : Date d'ajout, Titre, Année, Note, Statut.
+- Filtre Genre automatique : Action, Aventure, Comédie, Romance, Fantastique,
+  Science-fiction, Horreur, Thriller, Drame, Mystère, Crime, Animation, etc.
+- Les filtres sont combinables avec Type, Statut, Année, Favoris et Masquer les terminés.
+- Tags personnels BL et GL.
+- Les boutons BL / GL sont disponibles directement sur les affiches de la Collection
+  (et en vue Liste) pour taguer ou détaguer un média.
+- Filtre Tous / BL / GL dans la barre d'outils Collection.
+- Les genres sont maintenant récupérés dès la recherche et stockés avec le média.
+- Les anciens médias sans genres sont enrichis automatiquement en arrière-plan puis
+  mis à jour dans Supabase, sans migration de base.
+- La note TMDB/Jikan est enregistrée quand elle est disponible et permet le tri par Note.
+- Les nouveaux filtres sont mémorisés quand on ouvre une fiche puis qu'on revient.
+- Correction de userId dans Collection pour les fonctions liées aux avis.
+- La barre de navigation mobile conserve le correctif : Accueil accessible + défilement horizontal visible.
+
+FICHIERS MODIFIES POUR LA V5 :
+- app/collection/page.tsx
+- app/components/mediaCard.tsx
+- app/components/mainNav.tsx
+- app/api/search/route.ts
+- app/api/media-details/route.ts
+- app/lib/mediaService.ts
+- app/types/media.ts
+
+FICHIER CONSERVE DANS SA VERSION CORRIGEE PRECEDENTE :
+- app/page.module.css
+
+BASE DE DONNEES :
+- Aucune migration Supabase nécessaire.
+- genres, rating et tags sont stockés dans media_data (JSON existant).

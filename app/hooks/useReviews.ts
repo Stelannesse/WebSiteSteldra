@@ -20,7 +20,7 @@ export default function useReviews({
     useState<Record<string, MediaReview[]>>({});
 
   const [reviewRating, setReviewRating] =
-    useState<ReviewRating>('like');
+    useState<ReviewRating | null>(null);
 
   const [reviewComment, setReviewComment] =
     useState('');
@@ -109,7 +109,7 @@ if (error) {
       }));
 
       setReviewComment('');
-      setReviewRating('like');
+      setReviewRating(null);
     } catch (error) {
       console.error(
         'Erreur submitReview :',
@@ -140,7 +140,7 @@ if (error) {
       }));
 
       setReviewComment('');
-      setReviewRating('like');
+      setReviewRating(null);
     }
   };
     const deleteReview = async (

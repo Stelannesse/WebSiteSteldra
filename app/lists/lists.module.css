@@ -1,21 +1,4 @@
 .page { min-height: 100vh; padding: 32px; background: #181d23; color: #fff; font-family: var(--font-inter), Arial, sans-serif; }
-
-.page h1,
-.page h2,
-.page h3 {
-  font-family: var(--font-poppins), Arial, sans-serif;
-}
-
-.page p,
-.page span,
-.page label,
-.page input,
-.page textarea,
-.page button,
-.page a {
-  font-family: var(--font-inter), Arial, sans-serif;
-}
-
 .heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; max-width: 1200px; margin: 0 auto 28px; }
 .heading h1 { margin: 4px 0 8px; font-size: 2rem; }
 .heading p { margin: 0; color: #aeb6c2; }
@@ -45,3 +28,19 @@
 .message, .error { max-width: 1200px; margin: 20px auto; }
 .error { color: #ff7070; }
 @media (max-width: 700px) { .page { padding: 22px 12px; } .heading { flex-direction: column; } .createButton { width: 100%; } .grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; } .card { min-height: 215px; } .coverText { padding: 12px; } .coverText h2 { font-size: .95rem; } }
+
+.page h1,
+.page h2,
+.page h3 {
+  font-family: var(--font-poppins), Arial, sans-serif;
+}
+
+.page p,
+.page span,
+.page label,
+.page input,
+.page textarea,
+.page button,
+.page a {
+  font-family: var(--font-inter), Arial, sans-serif;
+}

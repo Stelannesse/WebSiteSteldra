@@ -27,13 +27,12 @@ export default function RootLayout({
       lang="fr"
       className={`${inter.variable} ${poppins.variable} h-full antialiased`}
     >
-<body className={`${inter.className} min-h-full`}>
-  {children}
+      <body className={`${inter.className} min-h-full flex flex-col`}>
+        {children}
 
-  <footer className="mt-auto text-center py-2">
-  </footer>
-</body>
-
+        <footer className="mt-auto text-center py-2">
+        </footer>
+      </body>
     </html>
   );
 }

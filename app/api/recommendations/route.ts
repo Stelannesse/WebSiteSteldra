@@ -2,19 +2,29 @@ import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
+type RecommendationReason =
+  | 'collection'
+  | 'director'
+  | 'cast'
+  | 'similar'
+  | 'recommended';
+
 type Recommendation = {
   id: number;
   title: string;
   poster_path: string;
   type: 'movie' | 'tv';
   release_date?: string;
-  recommendation_reason?: 'collection' | 'recommended';
+  year?: number | null;
+  recommendation_reason?: RecommendationReason;
+  recommendation_label?: string;
 };
 
 const formatTmdbItem = (
   item: any,
   type: 'movie' | 'tv',
-  reason: 'collection' | 'recommended'
+  reason: RecommendationReason,
+  label?: string
 ): Recommendation | null => {
   if (!item?.id) return null;
 
@@ -25,16 +35,25 @@ const formatTmdbItem = (
 
   if (!title) return null;
 
+  const releaseDate = item.release_date || item.first_air_date || '';
+
   return {
     id: item.id,
     title,
     poster_path: item.poster_path || '',
     type,
-    release_date:
-      item.release_date || item.first_air_date || undefined,
+    release_date: releaseDate || undefined,
+    year: releaseDate ? Number(String(releaseDate).slice(0, 4)) : null,
     recommendation_reason: reason,
+    recommendation_label: label,
   };
 };
+
+async function fetchTmdb(url: string) {
+  const response = await fetch(url, { next: { revalidate: 3600 } });
+  if (!response.ok) return null;
+  return response.json();
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -54,74 +73,104 @@ export async function GET(request: Request) {
   }
 
   const tmdbType = requestedType === 'movie' ? 'movie' : 'tv';
+  const recommendations: Recommendation[] = [];
 
   try {
-    const detailsUrl =
-      `https://api.themoviedb.org/3/${tmdbType}/${id}` +
-      `?api_key=${TMDB_API_KEY}&language=fr-FR`;
+    const details = await fetchTmdb(
+      `https://api.themoviedb.org/3/${tmdbType}/${id}?api_key=${TMDB_API_KEY}&language=fr-FR`
+    );
 
-    const detailsResponse = await fetch(detailsUrl);
-
-    if (!detailsResponse.ok) {
+    if (!details) {
       return NextResponse.json({ results: [] });
     }
 
-    const details = await detailsResponse.json();
-    const recommendations: Recommendation[] = [];
-
+    // 1. Même saga : toujours prioritaire.
     if (tmdbType === 'movie' && details.belongs_to_collection?.id) {
-      try {
-        const collectionResponse = await fetch(
-          `https://api.themoviedb.org/3/collection/${details.belongs_to_collection.id}` +
-            `?api_key=${TMDB_API_KEY}&language=fr-FR`
-        );
-
-        if (collectionResponse.ok) {
-          const collectionData = await collectionResponse.json();
-
-          const collectionItems = (collectionData.parts || [])
-            .map((item: any) =>
-              formatTmdbItem(item, 'movie', 'collection')
-            )
-            .filter(Boolean) as Recommendation[];
-
-          collectionItems.sort((a, b) =>
-            (a.release_date || '9999').localeCompare(
-              b.release_date || '9999'
-            )
-          );
-
-          recommendations.push(...collectionItems);
-        }
-      } catch (error) {
-        console.error('Erreur collection TMDB :', error);
-      }
-    }
-
-    try {
-      const recommendationsResponse = await fetch(
-        `https://api.themoviedb.org/3/${tmdbType}/${id}/recommendations` +
-          `?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`
+      const collectionData = await fetchTmdb(
+        `https://api.themoviedb.org/3/collection/${details.belongs_to_collection.id}?api_key=${TMDB_API_KEY}&language=fr-FR`
       );
 
-      if (recommendationsResponse.ok) {
-        const recommendationData = await recommendationsResponse.json();
+      const collectionItems = (collectionData?.parts || [])
+        .map((item: any) =>
+          formatTmdbItem(item, 'movie', 'collection', 'Même saga')
+        )
+        .filter(Boolean) as Recommendation[];
+
+      collectionItems.sort((a, b) =>
+        (a.release_date || '9999').localeCompare(b.release_date || '9999')
+      );
+
+      recommendations.push(...collectionItems);
+    }
+
+    // 2. Même réalisateur pour les films.
+    const credits = await fetchTmdb(
+      `https://api.themoviedb.org/3/${tmdbType}/${id}/credits?api_key=${TMDB_API_KEY}&language=fr-FR`
+    );
+
+    if (tmdbType === 'movie') {
+      const director = credits?.crew?.find((person: any) => person.job === 'Director');
+
+      if (director?.id) {
+        const directorMovies = await fetchTmdb(
+          `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&with_crew=${director.id}&include_adult=false&page=1`
+        );
 
         recommendations.push(
-          ...(recommendationData.results || [])
+          ...(directorMovies?.results || [])
+            .slice(0, 8)
             .map((item: any) =>
-              formatTmdbItem(
-                item,
-                tmdbType,
-                'recommended'
-              )
+              formatTmdbItem(item, 'movie', 'director', `Même réalisateur : ${director.name}`)
             )
             .filter(Boolean)
         );
       }
-    } catch (error) {
-      console.error('Erreur recommandations TMDB :', error);
     }
+
+    // 3. Avec un acteur ou une actrice principale.
+    const lead = credits?.cast?.find((person: any) => person.id && person.name);
+
+    if (lead?.id) {
+      const withPeople = await fetchTmdb(
+        `https://api.themoviedb.org/3/discover/${tmdbType}?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&with_people=${lead.id}&include_adult=false&page=1`
+      );
+
+      recommendations.push(
+        ...(withPeople?.results || [])
+          .slice(0, 7)
+          .map((item: any) =>
+            formatTmdbItem(item, tmdbType, 'cast', `Avec ${lead.name}`)
+          )
+          .filter(Boolean)
+      );
+    }
+
+    // 4. Titres similaires.
+    const similarData = await fetchTmdb(
+      `https://api.themoviedb.org/3/${tmdbType}/${id}/similar?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`
+    );
+
+    recommendations.push(
+      ...(similarData?.results || [])
+        .slice(0, 10)
+        .map((item: any) =>
+          formatTmdbItem(item, tmdbType, 'similar', 'Titre similaire')
+        )
+        .filter(Boolean)
+    );
+
+    // 5. Recommandations TMDB générales.
+    const recommendationData = await fetchTmdb(
+      `https://api.themoviedb.org/3/${tmdbType}/${id}/recommendations?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`
+    );
+
+    recommendations.push(
+      ...(recommendationData?.results || [])
+        .map((item: any) =>
+          formatTmdbItem(item, tmdbType, 'recommended', 'Recommandé pour vous')
+        )
+        .filter(Boolean)
+    );
 
     const unique = new Map<string, Recommendation>();
 
@@ -137,7 +186,7 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      results: Array.from(unique.values()).slice(0, 18),
+      results: Array.from(unique.values()).slice(0, 24),
     });
   } catch (error) {
     console.error('Erreur API recommandations :', error);

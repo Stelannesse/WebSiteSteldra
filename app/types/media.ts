@@ -23,20 +23,29 @@ export interface MediaItem {
   id: string | number;
   title: string;
   poster_path?: string;
-  runtime?: number;
+  runtime?: number | null;
   seasons?: number;
   episodes?: number;
   episode_runtime?: number | null;
   chapters?: number;
   volumes?: number;
   synopsis?: string;
+  year?: number | null;
+  release_date?: string;
+  first_air_date?: string;
   type: MediaType;
+  favorite?: boolean;
+  steldra_added_at?: string;
+  steldra_last_interaction_at?: string;
 }
 
 export interface MyListItem {
   media: MediaItem;
   status: WatchStatus;
   watchCount?: number;
+  favorite?: boolean;
+  addedAt?: string | null;
+  lastInteractionAt?: string | null;
 }
 
 export interface MediaDetails {
