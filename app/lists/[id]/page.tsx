@@ -43,6 +43,13 @@ export default function ListDetailsPage() {
   const [savingOrder, setSavingOrder] =
     useState(false);
 
+    const [deletingItemId, setDeletingItemId] =
+  useState<string | null>(null);
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
+
   const dragStartItemsRef = useRef<CustomListItem[]>([]);
   const currentItemsRef = useRef<CustomListItem[]>([]);
 
@@ -476,6 +483,108 @@ export default function ListDetailsPage() {
     await saveOrder(reorderedItems, fallbackItems);
   };
 
+  const removeItem = async (item: CustomListItem) => {
+  if (deletingItemId || savingOrder) return;
+
+  const confirmed = window.confirm(
+    `Retirer "${item.media_data.title}" de cette liste ?`
+  );
+
+  if (!confirmed) return;
+
+  setDeletingItemId(item.id);
+  setErrorMessage('');
+
+  try {
+    const { error } = await supabase
+      .from('custom_list_items')
+      .delete()
+      .eq('id', item.id)
+      .eq('list_id', listId);
+
+    if (error) {
+      throw error;
+    }
+
+    const remainingItems = items
+      .filter((currentItem) => currentItem.id !== item.id)
+      .map((currentItem, index) => ({
+        ...currentItem,
+        position: index,
+      }));
+
+    setItems(remainingItems);
+
+    const updates = remainingItems.map((currentItem, index) =>
+      supabase
+        .from('custom_list_items')
+        .update({ position: index })
+        .eq('id', currentItem.id)
+        .eq('list_id', listId)
+    );
+
+    const results = await Promise.all(updates);
+
+    const failedUpdate = results.find(
+      (result) => result.error
+    );
+
+    if (failedUpdate?.error) {
+      console.error(
+        'Erreur réorganisation après suppression :',
+        failedUpdate.error
+      );
+    }
+  } catch (error) {
+    console.error(
+      'Erreur suppression du média :',
+      error
+    );
+
+    setErrorMessage(
+      'Impossible de retirer ce média de la liste.'
+    );
+  } finally {
+    setDeletingItemId(null);
+  }
+};
+
+const saveListTitle = async () => {
+  const newTitle = editedTitle.trim();
+
+  if (!newTitle || savingTitle) return;
+
+  setSavingTitle(true);
+  setErrorMessage('');
+
+  try {
+    const { error } = await supabase
+      .from('custom_lists')
+      .update({ name: newTitle })
+      .eq('id', listId);
+
+    if (error) {
+      throw error;
+    }
+
+    setList((currentList) =>
+      currentList
+        ? {
+            ...currentList,
+            name: newTitle,
+          }
+        : currentList
+    );
+
+    setIsEditingTitle(false);
+  } catch (error) {
+    console.error('Erreur renommage de la liste :', error);
+    setErrorMessage('Impossible de renommer la liste.');
+  } finally {
+    setSavingTitle(false);
+  }
+};
+
   const addSelectedMedia = async () => {
     if (
       !listId ||
@@ -584,12 +693,63 @@ export default function ListDetailsPage() {
                 </p>
 
                 <div className={styles.titleRow}>
-                  <h1>{list.name}</h1>
-                  <span className={styles.countInline}>
-                    {items.length}{' '}
-                    {items.length > 1 ? 'médias' : 'média'}
-                  </span>
-                </div>
+                {isEditingTitle ? (
+                  <>
+                    <input
+                      className={styles.titleInput}
+                      value={editedTitle}
+                      onChange={(event) => setEditedTitle(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          void saveListTitle();
+                        }
+
+                        if (event.key === 'Escape') {
+                          setIsEditingTitle(false);
+                        }
+                      }}
+                      autoFocus
+                    />
+
+                    <button
+                      type="button"
+                      className={styles.titleAction}
+                      onClick={() => void saveListTitle()}
+                      disabled={savingTitle}
+                      title="Enregistrer"
+                    >
+                      {savingTitle ? '…' : '✓'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.titleAction}
+                      onClick={() => setIsEditingTitle(false)}
+                      disabled={savingTitle}
+                      title="Annuler"
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h1>{list?.name}</h1>
+
+                    <button
+                      type="button"
+                      className={styles.editTitleButton}
+                      onClick={() => {
+                        setEditedTitle(list?.name ?? '');
+                        setIsEditingTitle(true);
+                      }}
+                      title="Renommer la liste"
+                      aria-label="Renommer la liste"
+                    >
+                      ✎
+                    </button>
+                  </>
+                )}
+              </div>
 
                 <p className={styles.description}>
                   {list.description ||
@@ -678,6 +838,27 @@ export default function ListDetailsPage() {
                         <span className={styles.position}>
                           {index + 1}
                         </span>
+
+                        <button
+                          type="button"
+                          className={styles.deleteButton}
+                          onMouseDown={(event) => {
+                            event.stopPropagation();
+                          }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void removeItem(item);
+                          }}
+                          onDragStart={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }}
+                          disabled={deletingItemId === item.id}
+                          aria-label={`Retirer ${item.media_data.title} de la liste`}
+                          title="Retirer de la liste"
+                        >
+                          {deletingItemId === item.id ? '…' : '×'}
+                        </button>
 
                         <span
                           className={styles.dragHandle}

@@ -229,6 +229,101 @@
   font-weight: 900;
 }
 
+.deleteButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+
+  display: grid;
+  place-items: center;
+
+  width: 30px;
+  height: 30px;
+  padding: 0;
+
+  background: rgba(8, 13, 18, 0.82);
+  color: #ffffff;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.deleteButton:hover {
+  background: #d84a4a;
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.titleRow h1 {
+  margin: 0;
+}
+
+.editTitleButton,
+.titleAction {
+  display: grid;
+  place-items: center;
+
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+
+  cursor: pointer;
+}
+
+.editTitleButton:hover,
+.titleAction:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.titleInput {
+  width: min(420px, 70vw);
+  padding: 8px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+
+  font: inherit;
+  font-size: 1.6rem;
+  font-weight: 700;
+
+  outline: none;
+}
+
+.titleInput:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .dragHandle {
   position: absolute;
   right: 8px;
