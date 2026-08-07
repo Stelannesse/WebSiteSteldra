@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 const links = [
   { href: '/', label: 'Accueil', icon: '⌂' },
   { href: '/collection', label: 'Collection', icon: '◫' },
-{ href: '/discover', label: 'Découvrir', icon: '◇' },
+{ href: '/discover', label: 'Explorer', icon: '◇' },
   { href: '/lists', label: 'Mes listes', icon: '☰' },
   { href: '/statistiques', label: 'Statistiques', icon: '⌁' },
   { href: '/tier-lists', label: 'Tier lists', icon: '★' },

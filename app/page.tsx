@@ -98,6 +98,27 @@ function getSeriesProgress(row: ProgressRow) {
   };
 }
 
+
+const formatMinutes = (minutes: number) => {
+  if (minutes <= 0) return '0 min';
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (!hours) return `${rest} min`;
+  return rest ? `${hours} h ${rest.toString().padStart(2, '0')}` : `${hours} h`;
+};
+
+const watchedMinutesFor = (row: ProgressRow | undefined, media: MediaItem) => {
+  if (!row) return 0;
+  if (media.type === 'manga' || media.type === 'manhwa') return 0;
+  if (media.type === 'movie') {
+    const count = Math.max(Number(row.watch_count) || (row.status === 'vu' ? 1 : 0), 0);
+    return Math.round((Number(media.runtime) || 0) * count);
+  }
+  const episodes = row.watched_episode || row.watched_episodes || {};
+  const watchedEpisodes = Object.values(episodes).filter(Boolean).length;
+  const fallbackEpisodes = row.status === 'vu' ? Number(media.episodes) || 0 : 0;
+  return Math.round((Number(media.episode_runtime) || 0) * Math.max(watchedEpisodes, fallbackEpisodes));
+};
 export default function HomePage() {
   const [supabase] = useState(() => createClient());
   const [loading, setLoading] = useState(true);
@@ -335,18 +356,6 @@ export default function HomePage() {
       <MainNav />
 
       <main className={styles.dashboardHome}>
-        <section className={styles.dashboardIntro}>
-          <div>
-            <span className={styles.dashboardEyebrow}>STELDRA</span>
-            <h1>{userName ? `Bonjour ${userName}` : 'Votre espace'}</h1>
-            <p>Reprenez vos contenus, retrouvez vos listes et découvrez quoi regarder ensuite.</p>
-          </div>
-
-          <Link href="/collection" className={styles.dashboardSearchLink}>
-            Rechercher dans la collection
-          </Link>
-        </section>
-
         {loading ? (
           <div className={styles.dashboardLoading}>Chargement de votre espace...</div>
         ) : (
@@ -397,16 +406,6 @@ export default function HomePage() {
                   </Link>
                 );
               })}
-            </DashboardSection>
-
-            <DashboardSection
-              title="Vu récemment"
-              subtitle="Les derniers titres que vous avez terminés"
-              empty="Aucun média terminé récemment."
-            >
-              {recentlyWatched.map((row) => (
-                <PosterCard key={`${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
-              ))}
             </DashboardSection>
 
             <DashboardSection
@@ -480,7 +479,12 @@ export default function HomePage() {
                       .filter((item) => item.list_id === list.id)
                       .filter((item) => progressMap.get(`${item.media_type}_${item.media_id}`)?.status === 'vu').length;
 
-                    const total = customListItems.filter((item) => item.list_id === list.id).length;
+                    const listItems = customListItems.filter((item) => item.list_id === list.id);
+                    const total = listItems.length;
+                    const watchedMinutes = listItems.reduce((sum, item) => {
+                      const row = progressMap.get(`${item.media_type}_${item.media_id}`);
+                      return sum + watchedMinutesFor(row, item.media_data);
+                    }, 0);
 
                     return (
                       <Link key={list.id} href={`/lists/${list.id}`} className={styles.homeListCard}>
@@ -490,7 +494,13 @@ export default function HomePage() {
                           )) : <span>Aucun média</span>}
                         </div>
                         <strong>{list.name}</strong>
-                        <small>{watched} / {total} vus</small>
+                        <small className={styles.homeListCount}>{total} média{total > 1 ? 's' : ''}</small>
+                        <div className={styles.homeListProgressLine}>
+                          <span>{watched} / {total} vus</span>
+                          <span>•</span>
+                          <span>{total > 0 ? Math.round((watched / total) * 100) : 0}%</span>
+                        </div>
+                        <small className={styles.homeListTime}>◷ {formatMinutes(watchedMinutes)} regardées</small>
                       </Link>
                     );
                   })}
@@ -504,6 +514,17 @@ export default function HomePage() {
               empty="Votre collection est encore vide."
             >
               {recentlyAdded.map((row) => (
+                <PosterCard key={`${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
+              ))}
+            </DashboardSection>
+
+
+            <DashboardSection
+              title="Vu récemment"
+              subtitle="Les derniers titres que vous avez terminés"
+              empty="Aucun média terminé récemment."
+            >
+              {recentlyWatched.map((row) => (
                 <PosterCard key={`${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
               ))}
             </DashboardSection>

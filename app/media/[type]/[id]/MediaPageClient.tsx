@@ -138,6 +138,7 @@ export default function MediaPageClient({
     handleMarkWatched,
     handleToggleInProgress,
     handleMarkToWatch,
+    handleSetStatus,
     handleRemove,
     toggleEpisodeWatched,
     markEpisodesUpTo,
@@ -764,6 +765,7 @@ export default function MediaPageClient({
         onMarkWatched={handleMarkWatched}
         onToggleInProgress={handleToggleInProgress}
         onMarkToWatch={handleMarkToWatch}
+      onSetStatus={handleSetStatus}
         onRemoveFromCollection={handleRemove}
         onToggleFavorite={handleToggleFavorite}
 

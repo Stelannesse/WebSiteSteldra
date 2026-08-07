@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ReviewSection from './ReviewSection';
 import type { LoadedMediaDetails } from '../hooks/useMediaDetails';
-import type { MediaItem, MediaReview, ReviewRating, MyListItem } from '../types/media';
+import type { MediaItem, MediaReview, ReviewRating, MyListItem, WatchStatus } from '../types/media';
 import MediaCard from './mediaCard';
 
 type Actor = {
@@ -69,6 +69,7 @@ myList: Record<string, MyListItem>;
 onMarkWatched: (media: MediaItem) => void;
 onToggleInProgress: (media: MediaItem) => void;
 onMarkToWatch: (media: MediaItem) => void;
+onSetStatus: (media: MediaItem, status: WatchStatus) => void;
 onRemoveFromCollection: (media: MediaItem) => void;
 onToggleFavorite: (media: MediaItem) => void;
 
@@ -107,6 +108,7 @@ export default function MediaPageContent({
   onMarkWatched,
   onToggleInProgress,
   onMarkToWatch,
+  onSetStatus,
   onRemoveFromCollection,
   onToggleFavorite,
   recommendations,
@@ -307,6 +309,12 @@ const wholeSeasonWatched =
                 </button>
                 <button type="button" onClick={() => onMarkToWatch(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'a_voir' ? '#00ADB5' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
                   {isManga ? 'À lire' : 'À voir'}
+                </button>
+                <button type="button" onClick={() => onSetStatus(selectedMedia, 'en_pause')} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'en_pause' ? '#d69e2e' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+                  En pause
+                </button>
+                <button type="button" onClick={() => onSetStatus(selectedMedia, 'abandonne')} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: 'none', borderRadius: '10px', backgroundColor: myList[mediaKey]?.status === 'abandonne' ? '#8b5cf6' : '#393E46', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Abandonné
                 </button>
                 {myList[mediaKey] && (
                   <button type="button" onClick={() => onToggleFavorite(selectedMedia)} style={{ minHeight: '38px', padding: '0.45rem 0.8rem', border: '1px solid rgba(0,173,181,.45)', borderRadius: '10px', backgroundColor: myList[mediaKey]?.favorite ? '#00ADB5' : 'transparent', color: myList[mediaKey]?.favorite ? '#071012' : '#7ce9ee', fontWeight: 'bold', cursor: 'pointer' }}>

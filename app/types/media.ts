@@ -9,13 +9,17 @@ export type MediaType =
 export type WatchStatus =
   | 'vu'
   | 'a_voir'
-  | 'en_cours';
+  | 'en_cours'
+  | 'en_pause'
+  | 'abandonne';
 
 export type FilterStatus =
   | 'tout'
   | 'termine'
   | 'en_cours'
-  | 'a_voir';
+  | 'a_voir'
+  | 'en_pause'
+  | 'abandonne';
 
 export type ReviewRating = 'like' | 'dislike';
 

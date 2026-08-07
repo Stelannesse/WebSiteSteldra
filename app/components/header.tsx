@@ -18,6 +18,8 @@ type HeaderProps = {
   termineCount: number;
   enCoursCount: number;
   aVoirCount: number;
+  enPauseCount: number;
+  abandonneCount: number;
 
   onSearchChange: (text: string) => void;
 
@@ -56,6 +58,8 @@ export default function Header({
   termineCount,
   enCoursCount,
   aVoirCount,
+  enPauseCount,
+  abandonneCount,
 
   onSearchChange,
   onTypeFilterChange,
@@ -91,6 +95,8 @@ export default function Header({
       label: 'À voir',
       count: aVoirCount,
     },
+    { value: 'en_pause', label: 'En pause', count: enPauseCount },
+    { value: 'abandonne', label: 'Abandonnés', count: abandonneCount },
   ];
 
   const handleClearSearch = () => {

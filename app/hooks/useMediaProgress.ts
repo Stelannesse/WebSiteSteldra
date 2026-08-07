@@ -160,6 +160,11 @@ export default function useMediaProgress({
     );
   };
 
+  const handleSetStatus = async (media: MediaItem, status: WatchStatus) => {
+    const currentItem = myList[getMediaKey(media)];
+    await updateMediaInList(media, status, currentItem?.watchCount || 0);
+  };
+
   const handleMarkToWatch = async (
     media: MediaItem
   ) => {
@@ -489,6 +494,7 @@ export default function useMediaProgress({
     handleMarkWatched,
     handleToggleInProgress,
     handleMarkToWatch,
+    handleSetStatus,
     handleRemove,
     toggleEpisodeWatched,
     markEpisodesUpTo,

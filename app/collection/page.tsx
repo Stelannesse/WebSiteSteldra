@@ -35,6 +35,7 @@ export default function Home() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [initialDataReady, setInitialDataReady] = useState(false);
   const [pendingScrollRestore, setPendingScrollRestore] = useState<number | null>(null);
+  const [collectionStateRestored, setCollectionStateRestored] = useState(false);
   
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
@@ -237,9 +238,9 @@ const getFilterStatus = (
     return 'termine';
   }
 
-  if (status === 'en_cours') {
-    return 'en_cours';
-  }
+  if (status === 'en_cours') { return 'en_cours'; }
+  if (status === 'en_pause') { return 'en_pause'; }
+  if (status === 'abandonne') { return 'abandonne'; }
 
   if (hasStartedProgress(getMediaKey(media))) {
     return 'en_cours';
@@ -548,25 +549,42 @@ useEffect(() => {
     const value = Number(savedScroll);
     if (Number.isFinite(value)) setPendingScrollRestore(value);
   }
+
+  // Important : on ne commence à sauvegarder les préférences qu'après
+  // avoir relu l'état précédent. Sinon le premier rendu (A–Z par défaut)
+  // écrase immédiatement le tri mémorisé avant que React applique "Ajout récent".
+  setCollectionStateRestored(true);
 }, []);
 
 useEffect(() => {
+  if (!collectionStateRestored) return;
+
   sessionStorage.setItem(
     'steldra_collection_state',
     JSON.stringify({ query, typeFilter, statusFilter, sortBy, viewMode, favoritesOnly, hideCompleted, yearFilter })
   );
-}, [query, typeFilter, statusFilter, sortBy, viewMode, favoritesOnly, hideCompleted, yearFilter]);
+}, [collectionStateRestored, query, typeFilter, statusFilter, sortBy, viewMode, favoritesOnly, hideCompleted, yearFilter]);
 
 useEffect(() => {
   if (!initialDataReady || loading || pendingScrollRestore === null) return;
 
-  const timer = window.setTimeout(() => {
-    window.scrollTo({ top: pendingScrollRestore, behavior: 'auto' });
-    setPendingScrollRestore(null);
-    sessionStorage.removeItem('steldra_collection_scroll_y');
-  }, 80);
+  // Les affiches distantes continuent parfois à modifier la hauteur de la grille
+  // après le premier rendu. On restaure donc plusieurs fois la position mémorisée
+  // pendant un court instant afin de revenir réellement à la carte quittée.
+  const targetY = pendingScrollRestore;
+  const delays = [0, 80, 180, 350, 650, 1000];
+  const timers = delays.map((delay, index) =>
+    window.setTimeout(() => {
+      window.scrollTo({ top: targetY, behavior: 'auto' });
 
-  return () => window.clearTimeout(timer);
+      if (index === delays.length - 1) {
+        setPendingScrollRestore(null);
+        sessionStorage.removeItem('steldra_collection_scroll_y');
+      }
+    }, delay)
+  );
+
+  return () => timers.forEach((timer) => window.clearTimeout(timer));
 }, [initialDataReady, loading, pendingScrollRestore, results.length, Object.keys(myList).length]);
 
 useEffect(() => {
@@ -875,6 +893,8 @@ const totalCount = itemsForCount.length;
 const termineCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'termine').length;
 const enCoursCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'en_cours').length;
 const aVoirCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'a_voir').length;
+const enPauseCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'en_pause').length;
+const abandonneCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'abandonne').length;
 
 const collectionItemsForFacets = useMemo(
   () =>
@@ -985,7 +1005,7 @@ displayItems = displayItems.filter(item => {
   );
 });
 
-const statusOrder: Record<string, number> = { en_cours: 0, a_voir: 1, termine: 2 };
+const statusOrder: Record<string, number> = { en_cours: 0, en_pause: 1, a_voir: 2, termine: 3, abandonne: 4 };
 
 displayItems = [...displayItems].sort((a, b) => {
   if (isSearching) {
@@ -1045,6 +1065,8 @@ return (
   termineCount={termineCount}
   enCoursCount={enCoursCount}
   aVoirCount={aVoirCount}
+  enPauseCount={enPauseCount}
+  abandonneCount={abandonneCount}
   onSearchChange={handleSearch}
   onTypeFilterChange={setTypeFilter}
   onStatusFilterChange={setStatusFilter}
@@ -1058,263 +1080,24 @@ return (
           <div className={styles.collectionSimpleBar}>
             <label className={styles.collectionSortField}>
               Trier par
-              <select
-                value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value as typeof sortBy)
-                }
-              >
-                <option value="added">Date d’ajout</option>
-                <option value="title">Titre</option>
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}>
+                <option value="title">A–Z</option>
+                <option value="added">Ajout récent</option>
                 <option value="year">Année</option>
                 <option value="rating">Note</option>
                 <option value="status">Statut</option>
               </select>
             </label>
 
-            <button
-              type="button"
-              className={`${styles.collectionFilterButton} ${
-                activeAdvancedFiltersCount > 0
-                  ? styles.collectionToggleActive
-                  : ''
-              }`}
-              onClick={() => setFiltersOpen((value) => !value)}
-              aria-expanded={filtersOpen}
-            >
-              Filtres
-              {activeAdvancedFiltersCount > 0 && (
-                <span className={styles.collectionFilterBadge}>
-                  {activeAdvancedFiltersCount}
-                </span>
-              )}
+            <button type="button" className={favoritesOnly ? styles.collectionToggleActive : styles.collectionFilterButton} onClick={() => setFavoritesOnly(value => !value)}>
+              ★ Favoris
             </button>
 
             <div className={styles.viewSwitch}>
-              <button
-                type="button"
-                className={
-                  viewMode === 'grid'
-                    ? styles.collectionToggleActive
-                    : ''
-                }
-                onClick={() => setViewMode('grid')}
-              >
-                Grille
-              </button>
-
-              <button
-                type="button"
-                className={
-                  viewMode === 'list'
-                    ? styles.collectionToggleActive
-                    : ''
-                }
-                onClick={() => setViewMode('list')}
-              >
-                Liste
-              </button>
+              <button type="button" className={viewMode === 'grid' ? styles.collectionToggleActive : ''} onClick={() => setViewMode('grid')}>Grille</button>
+              <button type="button" className={viewMode === 'list' ? styles.collectionToggleActive : ''} onClick={() => setViewMode('list')}>Liste</button>
             </div>
           </div>
-
-          {activeAdvancedFiltersCount > 0 && (
-            <div className={styles.collectionActiveFilters}>
-              <span>Filtres actifs :</span>
-
-              {yearFilter !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => setYearFilter('all')}
-                >
-                  {yearFilter} ×
-                </button>
-              )}
-
-              {favoritesOnly && (
-                <button
-                  type="button"
-                  onClick={() => setFavoritesOnly(false)}
-                >
-                  Favoris ×
-                </button>
-              )}
-
-              {hideCompleted && (
-                <button
-                  type="button"
-                  onClick={() => setHideCompleted(false)}
-                >
-                  Terminés masqués ×
-                </button>
-              )}
-
-              <button
-                type="button"
-                className={styles.collectionClearFilters}
-                onClick={clearAdvancedFilters}
-              >
-                Tout effacer
-              </button>
-            </div>
-          )}
-
-          {filtersOpen && (
-            <div className={styles.collectionFiltersPanel}>
-              <div className={styles.collectionFiltersPanelHeader}>
-                <strong>Affiner</strong>
-
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen(false)}
-                  aria-label="Fermer les filtres"
-                  title="Fermer"
-                >
-                  ×
-                </button>
-              </div>
-
-              {metadataIndexing && (
-                <div className={styles.collectionIndexingNotice}>
-                  <div>
-                    <strong>Mise à jour des informations</strong>
-                    <span>
-                      Années de sortie et genres
-                    </span>
-                  </div>
-
-                  <small>
-                    {metadataIndexedCount} / {metadataMissingCount}
-                  </small>
-                </div>
-              )}
-
-              <div className={styles.collectionFilterSection}>
-                <div className={styles.collectionGenreCompactHeader}>
-                  <span>Année de sortie</span>
-
-                  {(selectedDecade !== null || yearFilter !== 'all') && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDecade(null);
-                        setYearFilter('all');
-                      }}
-                    >
-                      Effacer
-                    </button>
-                  )}
-                </div>
-
-                <div className={styles.collectionDecadeChips}>
-                  <button
-                    type="button"
-                    className={
-                      selectedDecade === null && yearFilter === 'all'
-                        ? styles.collectionToggleActive
-                        : ''
-                    }
-                    onClick={() => {
-                      setSelectedDecade(null);
-                      setYearFilter('all');
-                    }}
-                  >
-                    Toutes
-                  </button>
-
-                  {availableDecades.map(({ decade, count }) => (
-                    <button
-                      key={decade}
-                      type="button"
-                      className={
-                        selectedDecade === decade
-                          ? styles.collectionToggleActive
-                          : ''
-                      }
-                      onClick={() => {
-                        setSelectedDecade(decade);
-                        setYearFilter('all');
-                      }}
-                    >
-                      {decade}s ({count})
-                    </button>
-                  ))}
-                </div>
-
-                {selectedDecade !== null && (
-                  <div className={styles.collectionYearChips}>
-                    {yearsForSelectedDecade.map(({ year, count }) => (
-                      <button
-                        key={year}
-                        type="button"
-                        className={
-                          yearFilter === String(year)
-                            ? styles.collectionToggleActive
-                            : ''
-                        }
-                        onClick={() =>
-                          setYearFilter(
-                            yearFilter === String(year)
-                              ? 'all'
-                              : String(year)
-                          )
-                        }
-                      >
-                        {year} ({count})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.collectionFilterOptions}>
-                <button
-                  type="button"
-                  className={
-                    favoritesOnly
-                      ? styles.collectionToggleActive
-                      : ''
-                  }
-                  onClick={() =>
-                    setFavoritesOnly((value) => !value)
-                  }
-                >
-                  Favoris uniquement
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    hideCompleted
-                      ? styles.collectionToggleActive
-                      : ''
-                  }
-                  onClick={() =>
-                    setHideCompleted((value) => !value)
-                  }
-                >
-                  Masquer les terminés
-                </button>
-              </div>
-
-              <div className={styles.collectionFiltersPanelFooter}>
-                <button
-                  type="button"
-                  onClick={clearAdvancedFilters}
-                >
-                  Réinitialiser
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.collectionApplyFilters}
-                  onClick={() => setFiltersOpen(false)}
-                >
-                  Voir {displayItems.length} résultat
-                  {displayItems.length > 1 ? 's' : ''}
-                </button>
-              </div>
-            </div>
-          )}
         </section>
       )}
 
@@ -1347,7 +1130,7 @@ return (
             <img src={poster} alt={item.title} />
             <span>
               <strong>{item.title}</strong>
-              <small>{item.type}{year ? ` · ${year}` : ''} · {status === 'termine' ? 'Terminé' : status === 'en_cours' ? 'En cours' : 'À voir'}</small>
+              <small>{item.type}{year ? ` · ${year}` : ''} · {status === 'termine' ? 'Terminé' : status === 'en_cours' ? 'En cours' : status === 'en_pause' ? 'En pause' : status === 'abandonne' ? 'Abandonné' : 'À voir'}</small>
             </span>
           </button>
           <div className={styles.collectionListActions}>

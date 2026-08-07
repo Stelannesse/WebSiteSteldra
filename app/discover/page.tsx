@@ -1,648 +1,324 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import MainNav from '../components/mainNav';
 import MediaCard from '../components/mediaCard';
 import { createClient } from '../lib/supabase';
 import type { MediaItem, MyListItem, WatchStatus } from '../types/media';
 import styles from '../page.module.css';
 
-const GENRES = [
-  { label: 'Action', aliases: ['action'] },
-  { label: 'Romance', aliases: ['romance'] },
-  { label: 'Fantastique', aliases: ['fantastique', 'fantasy'] },
-  {
-    label: 'Science-fiction',
-    aliases: ['science-fiction', 'science fiction', 'sci-fi'],
-  },
-  { label: 'Comédie', aliases: ['comédie', 'comedie', 'comedy'] },
-  { label: 'Horreur', aliases: ['horreur', 'horror'] },
-  { label: 'Thriller', aliases: ['thriller'] },
-  {
-    label: 'BL',
-    aliases: ['bl', 'boys love', 'boy love', 'yaoi', 'shounen ai'],
-  },
-  {
-    label: 'GL',
-    aliases: [
-      'gl',
-      'girls love',
-      "girls' love",
-      'girl love',
-      'yuri',
-      'shoujo ai',
-    ],
-  },
-];
+type ExploreItem = MediaItem & { recommendation_label?: string; recommendation_reason?: string; collection_id?: number };
+type ExploreGroup = { label: string; items: ExploreItem[]; collectionId?: number };
+type SagaInfo = { id: number; name: string; overview?: string; poster_path?: string; backdrop_path?: string };
+type SelectedSaga = { info: SagaInfo; items: ExploreItem[] };
+type PersonSearchResult = { id: number; name: string; profile_path: string; department: string; known_for: string[] };
+type SelectedPerson = { id: number; name: string; profile_path: string; department: string; biography?: string };
 
-const normalize = (value: string) =>
-  value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+const keyOf = (m: MediaItem) => `${m.type}_${m.id}`;
 
-const keyOf = (media: MediaItem) =>
-  `${media.type}_${media.id}`;
-
-const yearOf = (media: MediaItem) => {
-  const direct = Number(media.year);
-  if (Number.isFinite(direct) && direct > 1900) return direct;
-
-  const date = media.release_date || media.first_air_date || '';
-  const parsed = Number(String(date).slice(0, 4));
-
-  return Number.isFinite(parsed) && parsed > 1900
-    ? parsed
-    : null;
-};
-
-const matchesGenre = (media: MediaItem, label: string) => {
-  const group = GENRES.find((item) => item.label === label);
-  if (!group) return false;
-
-  const values = [
-    ...(media.genres || []),
-    ...(media.tags || []),
-  ].map(normalize);
-
-  return group.aliases
-    .map(normalize)
-    .some((alias) => values.includes(alias));
-};
-
-export default function DiscoverPage() {
-  const supabase = createClient();
-
-  const [myList, setMyList] =
-    useState<Record<string, MyListItem>>({});
-
-  const [selectedGenre, setSelectedGenre] =
-    useState('Action');
-
+export default function ExplorePage() {
+  const [supabase] = useState(() => createClient());
+  const [myList, setMyList] = useState<Record<string, MyListItem>>({});
+  const [results, setResults] = useState<ExploreItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [suggestions, setSuggestions] =
-    useState<MediaItem[]>([]);
-  const [suggestionsLoading, setSuggestionsLoading] =
-    useState(false);
+
+  const [personQuery, setPersonQuery] = useState('');
+  const [people, setPeople] = useState<PersonSearchResult[]>([]);
+  const [personSearching, setPersonSearching] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState<SelectedPerson | null>(null);
+  const [personCredits, setPersonCredits] = useState<ExploreItem[]>([]);
+  const [creditsLoading, setCreditsLoading] = useState(false);
+
+  const [selectedSaga, setSelectedSaga] = useState<SelectedSaga | null>(null);
+  const [sagaLoading, setSagaLoading] = useState(false);
 
   useEffect(() => {
-    const loadCollection = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        window.location.href = '/login';
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('media_progress')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error(
-          'Erreur chargement Découvrir :',
-          error
-        );
-        setLoading(false);
-        return;
-      }
-
+    let cancelled = false;
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { window.location.href = '/login'; return; }
+      const [{ data: progress }, { data: likes }] = await Promise.all([
+        supabase.from('media_progress').select('*').eq('user_id', user.id),
+        supabase.from('media_reviews').select('media_id,media_type').eq('user_id', user.id).eq('rating', 'like').order('created_at', { ascending: false }).limit(8),
+      ]);
+      if (cancelled) return;
       const next: Record<string, MyListItem> = {};
-
-      (data || []).forEach((row: any) => {
-        const media: MediaItem = {
-          ...(row.media_data || {}),
-          id: row.media_id,
-          type:
-            row.media_data?.type ||
-            row.media_type,
-        };
-
-        next[keyOf(media)] = {
-          media,
-          status: row.status,
-          watchCount: Number(row.watch_count) || 0,
-          favorite: Boolean(
-            row.media_data?.favorite
-          ),
-          addedAt:
-            row.media_data?.steldra_added_at ||
-            row.created_at ||
-            null,
-          lastInteractionAt:
-            row.media_data?.steldra_last_interaction_at ||
-            row.updated_at ||
-            row.created_at ||
-            null,
-        };
+      (progress || []).forEach((row: any) => {
+        const media: MediaItem = { ...(row.media_data || {}), id: row.media_id, type: row.media_data?.type || row.media_type };
+        next[keyOf(media)] = { media, status: row.status, watchCount: Number(row.watch_count) || 0, favorite: Boolean(row.media_data?.favorite), addedAt: row.created_at, lastInteractionAt: row.updated_at };
       });
-
       setMyList(next);
+      const seeds = (likes || []).filter((like: any) => !['manga','manhwa'].includes(like.media_type)).slice(0, 5);
+      const payloads = await Promise.all(seeds.map(async (seed: any) => {
+        try {
+          const r = await fetch(`/api/recommendations?id=${encodeURIComponent(seed.media_id)}&type=${encodeURIComponent(seed.media_type)}`);
+          return r.ok ? (await r.json()).results || [] : [];
+        } catch { return []; }
+      }));
+      const unique = new Map<string, ExploreItem>();
+      payloads.flat().forEach((item: ExploreItem) => {
+        const k = keyOf(item);
+        if (!next[k] && !unique.has(k)) unique.set(k, item);
+      });
+      setResults([...unique.values()]);
       setLoading(false);
     };
+    void load();
+    return () => { cancelled = true; };
+  }, [supabase]);
 
-    void loadCollection();
-  }, []);
-
-  const collection = useMemo(
-    () =>
-      Object.values(myList).map(
-        (entry) => entry.media
-      ),
-    [myList]
-  );
-
-  const selectedCollection = useMemo(
-    () =>
-      collection.filter((media) =>
-        matchesGenre(media, selectedGenre)
-      ),
-    [collection, selectedGenre]
-  );
-
-  const completedInGenre = useMemo(
-    () =>
-      selectedCollection.filter(
-        (media) =>
-          myList[keyOf(media)]?.status === 'vu'
-      ),
-    [selectedCollection, myList]
-  );
-
-  const favoritesInGenre = useMemo(
-    () =>
-      selectedCollection.filter(
-        (media) =>
-          Boolean(myList[keyOf(media)]?.favorite)
-      ),
-    [selectedCollection, myList]
-  );
-
-  const recentByRelease = useMemo(
-    () =>
-      [...selectedCollection]
-        .sort(
-          (a, b) =>
-            (yearOf(b) || 0) -
-            (yearOf(a) || 0)
-        )
-        .slice(0, 16),
-    [selectedCollection]
-  );
-
-  const decades = useMemo(() => {
-    const map = new Map<number, MediaItem[]>();
-
-    selectedCollection.forEach((media) => {
-      const year = yearOf(media);
-      if (!year) return;
-
-      const decade =
-        Math.floor(year / 10) * 10;
-
-      const current = map.get(decade) || [];
-      current.push(media);
-      map.set(decade, current);
-    });
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => b - a)
-      .slice(0, 4);
-  }, [selectedCollection]);
-
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      /*
-       * On choisit comme point de départ :
-       * 1. un favori du genre,
-       * 2. sinon un média vu,
-       * 3. sinon n'importe quel média du genre.
-       */
-      const seed =
-        favoritesInGenre[0] ||
-        completedInGenre[0] ||
-        selectedCollection[0];
-
-      if (!seed) {
-        setSuggestions([]);
-        return;
-      }
-
-      if (
-        seed.type === 'manga' ||
-        seed.type === 'manhwa'
-      ) {
-        setSuggestions([]);
-        return;
-      }
-
-      setSuggestionsLoading(true);
-
-      try {
-        const response = await fetch(
-          `/api/recommendations?id=${encodeURIComponent(
-            String(seed.id)
-          )}&type=${encodeURIComponent(seed.type)}`
-        );
-
-        if (!response.ok) {
-          setSuggestions([]);
-          return;
-        }
-
-        const data = await response.json();
-
-        const collectionKeys = new Set(
-          Object.keys(myList)
-        );
-
-        const normalized: MediaItem[] =
-          (data.results || [])
-            .map((item: any) => ({
-              id: item.id,
-              title: item.title,
-              poster_path:
-                item.poster_path || '',
-              type:
-                item.type === 'movie'
-                  ? 'movie'
-                  : 'tv',
-              year:
-                item.year ?? null,
-              release_date:
-                item.release_date || undefined,
-            }))
-            .filter(
-              (item: MediaItem) =>
-                !collectionKeys.has(
-                  keyOf(item)
-                )
-            );
-
-        setSuggestions(normalized.slice(0, 18));
-      } catch (error) {
-        console.error(
-          'Suggestions Découvrir indisponibles :',
-          error
-        );
-        setSuggestions([]);
-      } finally {
-        setSuggestionsLoading(false);
-      }
-    };
-
-    void loadSuggestions();
-  }, [
-    selectedGenre,
-    favoritesInGenre,
-    completedInGenre,
-    selectedCollection,
-  ]);
-
-  const saveStatus = async (
-    media: MediaItem,
-    status: WatchStatus
-  ) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return;
-
-    const key = keyOf(media);
-    const current = myList[key];
-
-    const now = new Date().toISOString();
-
-    const mediaData: MediaItem = {
-      ...media,
-      steldra_added_at:
-        current?.addedAt ||
-        media.steldra_added_at ||
-        now,
-      steldra_last_interaction_at: now,
-      favorite:
-        current?.favorite ||
-        media.favorite ||
-        false,
-    };
-
-    const { error } = await supabase
-      .from('media_progress')
-      .upsert({
-        user_id: user.id,
-        media_id: String(media.id),
-        media_type: media.type,
-        status,
-        media_data: mediaData,
+  const groups = useMemo(() => {
+    const make = (reason: string): ExploreGroup[] => {
+      const map = new Map<string, ExploreItem[]>();
+      results.filter(r => r.recommendation_reason === reason).forEach(item => {
+        const label = item.recommendation_label || (reason === 'collection' ? 'Même univers' : reason === 'cast' ? 'Acteur ou actrice' : 'Réalisateur');
+        map.set(label, [...(map.get(label) || []), item]);
       });
+      return [...map.entries()].map(([label, items]) => ({
+        label,
+        items: items.slice(0, 14),
+        collectionId: items.find(item => item.collection_id)?.collection_id,
+      }));
+    };
+    return { universes: make('collection'), actors: make('cast'), directors: make('director') };
+  }, [results]);
 
-    if (error) {
-      console.error(
-        'Erreur ajout depuis Découvrir :',
-        error
-      );
-      return;
-    }
-
-    setMyList((currentList) => ({
-      ...currentList,
-      [key]: {
-        media: mediaData,
-        status,
-        watchCount:
-          status === 'vu'
-            ? Math.max(
-                current?.watchCount || 0,
-                1
-              )
-            : current?.watchCount || 0,
-        favorite:
-          current?.favorite || false,
-        addedAt:
-          current?.addedAt || now,
-        lastInteractionAt: now,
-      },
-    }));
-
-    setSuggestions((items) =>
-      items.filter(
-        (item) => keyOf(item) !== key
-      )
-    );
+  const saveStatus = async (media: MediaItem, status: WatchStatus) => {
+    const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
+    const now = new Date().toISOString(); const current = myList[keyOf(media)];
+    const mediaData = { ...media, steldra_added_at: current?.addedAt || now, steldra_last_interaction_at: now, favorite: current?.favorite || false };
+    const { error } = await supabase.from('media_progress').upsert({ user_id: user.id, media_id: String(media.id), media_type: media.type, status, media_data: mediaData });
+    if (!error) setMyList(v => ({ ...v, [keyOf(media)]: { media: mediaData, status, watchCount: status === 'vu' ? 1 : 0, favorite: current?.favorite || false, addedAt: current?.addedAt || now, lastInteractionAt: now } }));
   };
 
   const remove = async (media: MediaItem) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return;
-
-    await supabase
-      .from('media_progress')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('media_id', String(media.id))
-      .eq('media_type', media.type);
-
-    setMyList((current) => {
-      const copy = { ...current };
-      delete copy[keyOf(media)];
-      return copy;
-    });
+    const { data:{user} } = await supabase.auth.getUser(); if(!user)return;
+    await supabase.from('media_progress').delete().eq('user_id',user.id).eq('media_id',String(media.id)).eq('media_type',media.type);
+    setMyList(v=>{const n={...v};delete n[keyOf(media)];return n;});
   };
 
-  const toggleFavorite = async (
-    media: MediaItem
-  ) => {
-    const key = keyOf(media);
-    const current = myList[key];
-    if (!current) return;
+  const searchPeople = async (event: FormEvent) => {
+    event.preventDefault();
+    const q = personQuery.trim();
+    if (q.length < 2) return;
+    setPersonSearching(true);
+    setSelectedPerson(null);
+    setPersonCredits([]);
+    try {
+      const response = await fetch(`/api/people-search?q=${encodeURIComponent(q)}`);
+      const payload = response.ok ? await response.json() : { people: [] };
+      setPeople(payload.people || []);
+    } catch {
+      setPeople([]);
+    } finally {
+      setPersonSearching(false);
+    }
+  };
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const openPerson = async (person: PersonSearchResult) => {
+    setCreditsLoading(true);
+    setSelectedPerson({ id: person.id, name: person.name, profile_path: person.profile_path, department: person.department });
+    setPersonCredits([]);
+    try {
+      const response = await fetch(`/api/people-search?id=${person.id}`);
+      const payload = response.ok ? await response.json() : { person: null, results: [] };
+      if (payload.person) setSelectedPerson(payload.person);
+      setPersonCredits(payload.results || []);
+    } catch {
+      setPersonCredits([]);
+    } finally {
+      setCreditsLoading(false);
+    }
+  };
 
-    if (!user) return;
+  const openSaga = async (group: ExploreGroup) => {
+    if (!group.collectionId) return;
+    setSagaLoading(true);
+    setSelectedSaga(null);
+    try {
+      const response = await fetch(`/api/collection?id=${group.collectionId}`);
+      const payload = response.ok ? await response.json() : { collection: null, results: [] };
+      if (payload.collection) {
+        setSelectedSaga({ info: payload.collection, items: payload.results || [] });
+      }
+    } catch {
+      setSelectedSaga(null);
+    } finally {
+      setSagaLoading(false);
+    }
+  };
 
-    const favorite = !current.favorite;
+  const formatMinutes = (minutes: number) => {
+    const safe = Math.max(0, Math.round(minutes));
+    const hours = Math.floor(safe / 60);
+    const mins = safe % 60;
+    if (!hours) return `${mins} min`;
+    return `${hours} h ${String(mins).padStart(2, '0')}`;
+  };
 
-    const mediaData: MediaItem = {
-      ...current.media,
-      favorite,
-      steldra_last_interaction_at:
-        new Date().toISOString(),
+  const sagaStats = useMemo(() => {
+    if (!selectedSaga) return null;
+    const watched = selectedSaga.items.filter(item => myList[keyOf(item)]?.status === 'vu');
+    const total = selectedSaga.items.length;
+    const watchedMinutes = watched.reduce((sum, item) => {
+      const entry = myList[keyOf(item)];
+      const runtime = Number(entry?.media.runtime || item.runtime) || 0;
+      const count = Math.max(1, Number(entry?.watchCount) || 1);
+      return sum + runtime * count;
+    }, 0);
+    const totalMinutes = selectedSaga.items.reduce((sum, item) => sum + (Number(item.runtime) || 0), 0);
+    const next = selectedSaga.items.find(item => myList[keyOf(item)]?.status !== 'vu') || null;
+    return {
+      watched: watched.length,
+      total,
+      percent: total ? Math.round((watched.length / total) * 100) : 0,
+      watchedMinutes,
+      totalMinutes,
+      next,
     };
+  }, [selectedSaga, myList]);
 
-    const { error } = await supabase
-      .from('media_progress')
-      .update({
-        media_data: mediaData,
-      })
-      .eq('user_id', user.id)
-      .eq('media_id', String(media.id))
-      .eq('media_type', media.type);
+  const renderMediaRail = (items: ExploreItem[]) => (
+    <div className={styles.discoverRail}>
+      {items.map(media => (
+        <article key={keyOf(media)} className={styles.discoverCard}>
+          <MediaCard item={media} currentItem={myList[keyOf(media)]} onMarkWatched={m=>void saveStatus(m,'vu')} onToggleInProgress={m=>void saveStatus(m,'en_cours')} onMarkToWatch={m=>void saveStatus(m,'a_voir')} onRemove={m=>void remove(m)} rememberCollectionPosition={false}/>
+          <strong>{media.title}</strong>
+          {media.year && <small>{media.year}</small>}
+        </article>
+      ))}
+    </div>
+  );
 
-    if (error) return;
-
-    setMyList((list) => ({
-      ...list,
-      [key]: {
-        ...current,
-        media: mediaData,
-        favorite,
-      },
-    }));
-  };
-
-  const mediaRow = (
-    title: string,
-    subtitle: string,
-    items: MediaItem[],
-    allowCollectionActions = true
-  ) => {
-    if (items.length === 0) return null;
-
-    return (
-      <section className={styles.discoverSection}>
-        <div
-          className={
-            styles.discoverSectionHeading
-          }
-        >
-          <div>
-            <h2>{title}</h2>
-            <p>{subtitle}</p>
+  const renderGroups = (title: string, intro: string, data: ExploreGroup[], sagaMode = false) => (
+    <section className={styles.discoverSection}>
+      <div className={styles.discoverSectionHeading}><div><h2>{title}</h2><p>{intro}</p></div></div>
+      {data.length === 0 ? <div className={styles.discoverEmpty}>Steldra complétera cette rubrique à mesure que vous aimez des titres.</div> : data.map(group => (
+        <div key={group.label} className={styles.exploreGroupBlock}>
+          <div className={styles.exploreGroupTitleRow}>
+            <h3>{group.label}</h3>
+            {sagaMode && group.collectionId && (
+              <button type="button" className={styles.sagaOpenButton} onClick={() => void openSaga(group)}>
+                Voir la saga
+              </button>
+            )}
           </div>
+          {renderMediaRail(group.items)}
         </div>
+      ))}
+    </section>
+  );
 
-        <div className={styles.discoverRail}>
-          {items.map((media) => {
-            const current =
-              myList[keyOf(media)];
+  return <><MainNav/><main className={styles.discoverPage}>
+    <header className={styles.discoverHero}>
+      <span>EXPLORER</span>
+      <h1>Explorez selon ce que vous aimez</h1>
+      <p>Sagas, acteurs et réalisateurs : Steldra part de vos coups de cœur pour vous ouvrir de nouvelles pistes.</p>
+    </header>
 
-            return (
-              <article
-                key={keyOf(media)}
-                className={styles.discoverCard}
-              >
-                <MediaCard
-                  item={media}
-                  currentItem={current}
-                  onMarkWatched={(item) =>
-                    void saveStatus(
-                      item,
-                      'vu'
-                    )
-                  }
-                  onToggleInProgress={(item) =>
-                    void saveStatus(
-                      item,
-                      'en_cours'
-                    )
-                  }
-                  onMarkToWatch={(item) =>
-                    void saveStatus(
-                      item,
-                      'a_voir'
-                    )
-                  }
-                  onRemove={(item) =>
-                    void remove(item)
-                  }
-                  onToggleFavorite={
-                    allowCollectionActions
-                      ? (item) =>
-                          void toggleFavorite(
-                            item
-                          )
-                      : undefined
-                  }
-                  rememberCollectionPosition={false}
-                />
+    {(sagaLoading || selectedSaga) && (
+      <section className={styles.sagaDetailSection}>
+        {sagaLoading ? (
+          <div className={styles.discoverEmpty}>Steldra prépare la saga…</div>
+        ) : selectedSaga && sagaStats ? (
+          <>
+            <div className={styles.sagaDetailTop}>
+              <div>
+                <span className={styles.sagaEyebrow}>UNIVERS / SAGA</span>
+                <h2>{selectedSaga.info.name}</h2>
+                {selectedSaga.info.overview && <p>{selectedSaga.info.overview}</p>}
+              </div>
+              <button type="button" className={styles.sagaCloseButton} onClick={() => setSelectedSaga(null)}>Fermer</button>
+            </div>
 
-                <strong title={media.title}>
-                  {media.title}
-                </strong>
+            <div className={styles.sagaStatsGrid}>
+              <div><span>Progression</span><strong>{sagaStats.watched} / {sagaStats.total} vus</strong></div>
+              <div><span>Avancement</span><strong>{sagaStats.percent} %</strong></div>
+              <div><span>Temps regardé</span><strong>{formatMinutes(sagaStats.watchedMinutes)}</strong></div>
+              <div><span>Durée totale</span><strong>{formatMinutes(sagaStats.totalMinutes)}</strong></div>
+            </div>
 
-                {yearOf(media) && (
-                  <small>
-                    {yearOf(media)}
-                  </small>
-                )}
-              </article>
-            );
-          })}
-        </div>
+            <div className={styles.sagaProgressTrack} aria-label={`Progression ${sagaStats.percent} %`}>
+              <div style={{ width: `${sagaStats.percent}%` }} />
+            </div>
+
+            {sagaStats.next && (
+              <div className={styles.sagaNextCard}>
+                <span>▶ PROCHAIN</span>
+                <strong>{sagaStats.next.title}</strong>
+                {sagaStats.next.year && <small>{sagaStats.next.year}</small>}
+              </div>
+            )}
+
+            <div className={styles.sagaMoviesRail}>
+              {selectedSaga.items.map((media, index) => {
+                const entry = myList[keyOf(media)];
+                const isWatched = entry?.status === 'vu';
+                const isNext = sagaStats.next && keyOf(sagaStats.next) === keyOf(media);
+                return (
+                  <article key={keyOf(media)} className={`${styles.sagaMovieCard} ${isWatched ? styles.sagaMovieWatched : ''} ${isNext ? styles.sagaMovieNext : ''}`}>
+                    <div className={styles.sagaOrderBadge}>{isWatched ? '✓' : index + 1}</div>
+                    {isNext && <div className={styles.sagaNextBadge}>▶ Prochain</div>}
+                    <MediaCard item={media} currentItem={entry} onMarkWatched={m=>void saveStatus(m,'vu')} onToggleInProgress={m=>void saveStatus(m,'en_cours')} onMarkToWatch={m=>void saveStatus(m,'a_voir')} onRemove={m=>void remove(m)} rememberCollectionPosition={false}/>
+                    <strong>{media.title}</strong>
+                    <small>{media.year || '—'}{media.runtime ? ` · ${media.runtime} min` : ''}</small>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
       </section>
-    );
-  };
+    )}
 
-  return (
-    <>
-      <MainNav />
+    <section className={styles.discoverPersonSearch}>
+      <div className={styles.discoverSectionHeading}>
+        <h2> Rechercher un acteur ou un réalisateur</h2>
+        <p>Tapez un nom pour retrouver sa filmographie et voir ce que vous avez déjà dans votre collection.</p>
+      </div>
+      <form onSubmit={searchPeople} className={styles.discoverSearchForm}>
+        <input
+          value={personQuery}
+          onChange={event => setPersonQuery(event.target.value)}
+          placeholder="Ex. Charlize Theron, Christopher Nolan…"
+          aria-label="Rechercher un acteur ou un réalisateur"
+        />
+        <button type="submit" disabled={personSearching || personQuery.trim().length < 2}>
+          {personSearching ? 'Recherche…' : 'Rechercher'}
+        </button>
+      </form>
 
-      <main className={styles.discoverPage}>
-        <header className={styles.discoverHero}>
-          <span>DÉCOUVRIR</span>
-          <h1>
-            Qu’avez-vous envie de regarder ?
-          </h1>
-          <p>
-            Choisissez un univers. Steldra
-            s’appuie sur votre collection pour
-            vous proposer des pistes à explorer.
-          </p>
-        </header>
-
-        <nav
-          className={styles.discoverGenreRail}
-          aria-label="Genres à découvrir"
-        >
-          {GENRES.map((genre) => (
-            <button
-              key={genre.label}
-              type="button"
-              className={
-                selectedGenre === genre.label
-                  ? styles.discoverGenreActive
-                  : ''
-              }
-              onClick={() =>
-                setSelectedGenre(genre.label)
-              }
-            >
-              {genre.label}
+      {people.length > 0 && !selectedPerson && (
+        <div className={styles.discoverPeopleGrid}>
+          {people.map(person => (
+            <button key={person.id} type="button" className={styles.discoverPersonCard} onClick={() => void openPerson(person)}>
+              {person.profile_path ? <img src={person.profile_path} alt="" /> : <div className={styles.discoverPersonPlaceholder}>👤</div>}
+              <span><strong>{person.name}</strong><small>{person.department}</small>{person.known_for.length > 0 && <em>{person.known_for.join(' · ')}</em>}</span>
             </button>
           ))}
-        </nav>
+        </div>
+      )}
 
-        {loading ? (
-          <div className={styles.discoverEmpty}>
-            Chargement de votre univers...
+      {!personSearching && personQuery.trim().length >= 2 && people.length === 0 && !selectedPerson && (
+        <div className={styles.discoverEmpty}>Aucun acteur ou réalisateur trouvé pour « {personQuery.trim()} ».</div>
+      )}
+
+      {selectedPerson && (
+        <div className={styles.discoverPersonResult}>
+          <div className={styles.discoverPersonHeader}>
+            {selectedPerson.profile_path ? <img src={selectedPerson.profile_path} alt="" /> : <div className={styles.discoverPersonPlaceholder}>👤</div>}
+            <div><strong>{selectedPerson.name}</strong><span>{selectedPerson.department}</span></div>
+            <button type="button" onClick={() => { setSelectedPerson(null); setPersonCredits([]); }}>Changer</button>
           </div>
-        ) : (
-          <>
-            {suggestionsLoading ? (
-              <section
-                className={
-                  styles.discoverSection
-                }
-              >
-                <div
-                  className={
-                    styles.discoverSectionHeading
-                  }
-                >
-                  <div>
-                    <h2>
-                      {selectedGenre} pour vous
-                    </h2>
-                    <p>
-                      Recherche de suggestions...
-                    </p>
-                  </div>
-                </div>
-              </section>
-            ) : (
-              mediaRow(
-                `${selectedGenre} pour vous`,
-                'Des titres que vous n’avez pas encore ajoutés',
-                suggestions,
-                false
-              )
-            )}
+          {creditsLoading ? <div className={styles.discoverEmpty}>Chargement de la filmographie…</div> : personCredits.length > 0 ? renderMediaRail(personCredits) : <div className={styles.discoverEmpty}>Aucun film ou série disponible pour cette personne.</div>}
+        </div>
+      )}
+    </section>
 
-            {mediaRow(
-              `Vos ${selectedGenre}`,
-              `${selectedCollection.length} titre${
-                selectedCollection.length > 1
-                  ? 's'
-                  : ''
-              } dans votre collection`,
-              recentByRelease
-            )}
-
-            {favoritesInGenre.length > 0 &&
-              mediaRow(
-                `Vos favoris ${selectedGenre}`,
-                'Les titres que vous avez mis en favoris',
-                favoritesInGenre.slice(0, 14)
-              )}
-
-            {decades.map(
-              ([decade, items]) =>
-                mediaRow(
-                  `${selectedGenre} · années ${decade}`,
-                  `${items.length} titre${
-                    items.length > 1 ? 's' : ''
-                  }`,
-                  items.slice(0, 14)
-                )
-            )}
-
-            {selectedCollection.length === 0 &&
-              suggestions.length === 0 && (
-                <div
-                  className={
-                    styles.discoverEmpty
-                  }
-                >
-                  Aucun contenu {selectedGenre} 
-                  n’est encore identifié. À
-                  mesure que Steldra enrichit
-                  votre collection, cette rubrique
-                  se complétera.
-                </div>
-              )}
-          </>
-        )}
-      </main>
-    </>
-  );
+    {loading ? <div className={styles.discoverEmpty}>Steldra prépare votre espace Explorer...</div> : <>
+      {renderGroups(' Univers & sagas','Retrouvez les autres titres des univers que vous aimez.',groups.universes, true)}
+      {renderGroups(' Acteurs & actrices','D’autres films et séries avec les visages qui reviennent dans vos coups de cœur.',groups.actors)}
+      {renderGroups(' Réalisateurs','Explorez la filmographie des réalisateurs derrière vos films préférés.',groups.directors)}
+    </>}
+  </main></>;
 }

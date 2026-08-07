@@ -18,6 +18,7 @@ type Recommendation = {
   year?: number | null;
   recommendation_reason?: RecommendationReason;
   recommendation_label?: string;
+  collection_id?: number;
 };
 
 const formatTmdbItem = (
@@ -90,10 +91,13 @@ export async function GET(request: Request) {
         `https://api.themoviedb.org/3/collection/${details.belongs_to_collection.id}?api_key=${TMDB_API_KEY}&language=fr-FR`
       );
 
+      const collectionName = collectionData?.name || details.belongs_to_collection?.name || 'Même saga';
+      const collectionId = Number(details.belongs_to_collection.id);
       const collectionItems = (collectionData?.parts || [])
-        .map((item: any) =>
-          formatTmdbItem(item, 'movie', 'collection', 'Même saga')
-        )
+        .map((item: any) => {
+          const formatted = formatTmdbItem(item, 'movie', 'collection', collectionName);
+          return formatted ? { ...formatted, collection_id: collectionId } : null;
+        })
         .filter(Boolean) as Recommendation[];
 
       collectionItems.sort((a, b) =>
