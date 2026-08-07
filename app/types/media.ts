@@ -33,6 +33,10 @@ export interface MediaItem {
   year?: number | null;
   release_date?: string;
   first_air_date?: string;
+  genre_ids?: number[];
+  genres?: string[];
+  tags?: string[];
+  rating?: number | null;
   type: MediaType;
   favorite?: boolean;
   steldra_added_at?: string;

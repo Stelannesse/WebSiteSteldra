@@ -37,6 +37,12 @@ export type LoadedMediaDetails = {
   authors?: unknown[];
   runtime?: number | null;
   episode_runtime?: number | null;
+  genres?: string[];
+  genre_ids?: number[];
+  rating?: number | null;
+  year?: number | null;
+  release_date?: string | null;
+  first_air_date?: string | null;
 };
 
 type UseMediaDetailsOptions = {
@@ -150,6 +156,35 @@ export default function useMediaDetails({
             data?.episode_runtime ??
             mediaToLoad.episode_runtime ??
             null,
+
+          genres:
+            Array.isArray(data?.genres) && data.genres.length > 0
+              ? data.genres
+              : mediaToLoad.genres,
+
+          genre_ids:
+            data?.genre_ids ??
+            mediaToLoad.genre_ids,
+
+          rating:
+            data?.rating ??
+            mediaToLoad.rating ??
+            null,
+
+          year:
+            data?.year ??
+            mediaToLoad.year ??
+            null,
+
+          release_date:
+            data?.release_date ??
+            mediaToLoad.release_date ??
+            null,
+
+          first_air_date:
+            data?.first_air_date ??
+            mediaToLoad.first_air_date ??
+            null,
         };
 
         const loadedDetails: LoadedMediaDetails = {
@@ -177,6 +212,35 @@ export default function useMediaDetails({
           episode_runtime:
             data?.episode_runtime ??
             enrichedMedia.episode_runtime ??
+            null,
+
+          genres:
+            Array.isArray(data?.genres)
+              ? data.genres
+              : enrichedMedia.genres,
+
+          genre_ids:
+            data?.genre_ids ??
+            enrichedMedia.genre_ids,
+
+          rating:
+            data?.rating ??
+            enrichedMedia.rating ??
+            null,
+
+          year:
+            data?.year ??
+            enrichedMedia.year ??
+            null,
+
+          release_date:
+            data?.release_date ??
+            enrichedMedia.release_date ??
+            null,
+
+          first_air_date:
+            data?.first_air_date ??
+            enrichedMedia.first_air_date ??
             null,
         };
 
@@ -211,6 +275,12 @@ export default function useMediaDetails({
             mediaToLoad.runtime ?? null,
           episode_runtime:
             mediaToLoad.episode_runtime ?? null,
+          genres: mediaToLoad.genres || [],
+          genre_ids: mediaToLoad.genre_ids || [],
+          rating: mediaToLoad.rating ?? null,
+          year: mediaToLoad.year ?? null,
+          release_date: mediaToLoad.release_date ?? null,
+          first_air_date: mediaToLoad.first_air_date ?? null,
         });
 
         setDetailsError(

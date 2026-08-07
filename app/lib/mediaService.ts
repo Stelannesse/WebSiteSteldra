@@ -24,6 +24,12 @@ export type MediaDetailsResult = {
 
   runtime?: number | null;
   episode_runtime?: number | null;
+  genres?: string[];
+  genre_ids?: number[];
+  rating?: number | null;
+  year?: number | null;
+  release_date?: string | null;
+  first_air_date?: string | null;
 };
 
 export async function getMediaDetails(

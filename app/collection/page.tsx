@@ -39,11 +39,16 @@ export default function Home() {
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
 const [typeFilter, setTypeFilter] =useState<MediaType | 'tous'>('tous');  
-const [sortBy, setSortBy] = useState<'title' | 'added' | 'year' | 'status'>('title');
+const [sortBy, setSortBy] = useState<'title' | 'added' | 'year' | 'rating' | 'status'>('title');
 const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 const [favoritesOnly, setFavoritesOnly] = useState(false);
 const [hideCompleted, setHideCompleted] = useState(false);
 const [yearFilter, setYearFilter] = useState('all');
+const [filtersOpen, setFiltersOpen] = useState(false);
+const [selectedDecade, setSelectedDecade] = useState<number | null>(null);
+const [metadataIndexing, setMetadataIndexing] = useState(false);
+const [metadataIndexedCount, setMetadataIndexedCount] = useState(0);
+const [metadataMissingCount, setMetadataMissingCount] = useState(0);
 const [myList, setMyList] = useState<{
   [key: string]: MyListItem;
 }>({});
@@ -101,6 +106,97 @@ const distribution = useMemo(() => {
   const [mangaProgress, setMangaProgress] = useState<{ [key: string]: number }>({});  
 
   const getMediaKey = (media: MediaItem | { type: string; id: string | number }) => `${media.type}_${media.id}`;
+
+  // Année de SORTIE du média uniquement.
+  // Elle ne dépend jamais de steldra_added_at / created_at.
+  const getMediaYear = (media: MediaItem): number | null => {
+    const directYear = Number(media.year);
+
+    if (Number.isFinite(directYear) && directYear > 1900) {
+      return directYear;
+    }
+
+    const date = media.release_date || media.first_air_date || '';
+    const parsedYear = Number(String(date).slice(0, 4));
+
+    return Number.isFinite(parsedYear) && parsedYear > 1900
+      ? parsedYear
+      : null;
+  };
+
+
+
+const normalizeGenre = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+
+  const aliases: Record<string, string> = {
+    comedy: 'Comédie',
+    comedie: 'Comédie',
+    romance: 'Romance',
+
+    bl: 'BL',
+    'boys love': 'BL',
+    'boy love': 'BL',
+    yaoi: 'BL',
+    'shounen ai': 'BL',
+    'shounen-ai': 'BL',
+
+    gl: 'GL',
+    'girls love': 'GL',
+    "girls' love": 'GL',
+    'girl love': 'GL',
+    yuri: 'GL',
+    'shoujo ai': 'GL',
+    'shoujo-ai': 'GL',
+
+    action: 'Action',
+    adventure: 'Aventure',
+    aventure: 'Aventure',
+    fantasy: 'Fantastique',
+    fantastique: 'Fantastique',
+    horror: 'Horreur',
+    horreur: 'Horreur',
+    thriller: 'Thriller',
+    mystery: 'Mystère',
+    mystere: 'Mystère',
+    crime: 'Crime',
+    drama: 'Drame',
+    drame: 'Drame',
+    animation: 'Animation',
+    family: 'Famille',
+    famille: 'Famille',
+    documentary: 'Documentaire',
+    documentaire: 'Documentaire',
+    history: 'Histoire',
+    histoire: 'Histoire',
+    music: 'Musique',
+    musique: 'Musique',
+    western: 'Western',
+    war: 'Guerre',
+    guerre: 'Guerre',
+    'science fiction': 'Science-fiction',
+    'science-fiction': 'Science-fiction',
+    'sci-fi': 'Science-fiction',
+  };
+
+  return aliases[normalized] || value.trim();
+};
+
+const getMediaGenres = (media: MediaItem) => {
+  const officialGenres = (media.genres || [])
+    .map(normalizeGenre)
+    .filter(Boolean);
+
+  // Compatibilité avec l'ancien système :
+  // les anciens tags BL/GL sont désormais lus comme des genres.
+  const legacyGenres = (media.tags || [])
+    .filter((tag) => tag === 'BL' || tag === 'GL')
+    .map(normalizeGenre);
+
+  return Array.from(
+    new Set([...officialGenres, ...legacyGenres])
+  );
+};
 
 const {
   handleMarkWatched,
@@ -176,6 +272,151 @@ const saveToSupabase = async (mediaData: MediaItem, status: string, user: any) =
   if (error) console.error("Erreur de sauvegarde globale:", error);
 };
 
+const enrichMissingMetadata = async (
+  list: Record<string, MyListItem>,
+  currentUserId: string
+) => {
+  const missing = Object.entries(list).filter(([, entry]) => {
+    const hasGenres =
+      Array.isArray(entry.media.genres) &&
+      entry.media.genres.length > 0;
+
+    const hasYear = getMediaYear(entry.media) !== null;
+
+    return !hasGenres || !hasYear;
+  });
+
+  setMetadataMissingCount(missing.length);
+  setMetadataIndexedCount(0);
+
+  if (missing.length === 0) {
+    setMetadataIndexing(false);
+    return;
+  }
+
+  setMetadataIndexing(true);
+
+  /*
+   * Mise à jour progressive des anciens médias.
+   * L'année est enregistrée même lorsque l'API ne retourne aucun genre.
+   * Les données sont sauvegardées dans Supabase : le travail n'est donc
+   * effectué qu'une fois pour les médias déjà enrichis.
+   */
+  for (let index = 0; index < missing.length; index += 6) {
+    const chunk = missing.slice(index, index + 6);
+
+    await Promise.allSettled(
+      chunk.map(async ([key, entry]) => {
+        try {
+          const details = await getMediaDetails(entry.media);
+
+          const genres = Array.isArray(details.genres)
+            ? details.genres
+                .map(normalizeGenre)
+                .filter(Boolean)
+            : [];
+
+          const detailsYear =
+            Number(details.year) ||
+            Number(
+              String(
+                details.release_date ||
+                details.first_air_date ||
+                ''
+              ).slice(0, 4)
+            ) ||
+            null;
+
+          const existingYear = getMediaYear(entry.media);
+
+          const enrichedMedia: MediaItem = {
+            ...entry.media,
+
+            genres:
+              genres.length > 0
+                ? Array.from(new Set(genres))
+                : entry.media.genres,
+
+            genre_ids:
+              details.genre_ids ||
+              entry.media.genre_ids,
+
+            rating:
+              details.rating ??
+              entry.media.rating ??
+              null,
+
+            year:
+              detailsYear &&
+              detailsYear > 1900
+                ? detailsYear
+                : existingYear ||
+                  entry.media.year,
+
+            release_date:
+              details.release_date ||
+              entry.media.release_date,
+
+            first_air_date:
+              details.first_air_date ||
+              entry.media.first_air_date,
+          };
+
+          setMyList((current) => {
+            const currentEntry = current[key];
+
+            if (!currentEntry) return current;
+
+            return {
+              ...current,
+              [key]: {
+                ...currentEntry,
+                media: enrichedMedia,
+              },
+            };
+          });
+
+          await supabase
+            .from('media_progress')
+            .update({
+              media_data: enrichedMedia,
+            })
+            .eq('user_id', currentUserId)
+            .eq(
+              'media_id',
+              String(entry.media.id)
+            )
+            .eq(
+              'media_type',
+              entry.media.type
+            );
+        } catch (error) {
+          console.error(
+            `Métadonnées indisponibles pour ${entry.media.title}:`,
+            error
+          );
+        } finally {
+          setMetadataIndexedCount(
+            (current) => current + 1
+          );
+        }
+      })
+    );
+
+    /*
+     * Petite pause entre les groupes afin de ne pas envoyer
+     * des centaines de requêtes simultanément.
+     */
+    if (index + 6 < missing.length) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, 120)
+      );
+    }
+  }
+
+  setMetadataIndexing(false);
+};
+
 const handleAddToMyList = async (media: MediaItem, status: 'vu' | 'a_voir') => {
   const mediaKey = `${media.type}_${media.id}`;
   const updatedList = { ...myList, [mediaKey]: { media, status } };
@@ -197,6 +438,7 @@ useEffect(() => {
     if (user) {
       // Si connecté : on récupère tout depuis Supabase
       setUserName(user.user_metadata?.full_name || user.email?.split('@')[0] || "Utilisateur");
+      setUserId(user.id);
 
       
     const { data, error } = await supabase
@@ -243,6 +485,7 @@ useEffect(() => {
 setMyList(newList);
 setWatchedEpisodes(newEpisodes);
 setMangaProgress(newProgress);
+void enrichMissingMetadata(newList, user.id);
 
       }
     } else {
@@ -285,7 +528,7 @@ useEffect(() => {
 
       if (parsed.typeFilter) setTypeFilter(parsed.typeFilter);
       if (parsed.statusFilter) setStatusFilter(parsed.statusFilter);
-      if (parsed.sortBy) setSortBy(parsed.sortBy as 'title' | 'added' | 'year' | 'status');
+      if (parsed.sortBy) setSortBy(parsed.sortBy as 'title' | 'added' | 'year' | 'rating' | 'status');
       if (parsed.viewMode) setViewMode(parsed.viewMode as 'grid' | 'list');
       if (typeof parsed.favoritesOnly === 'boolean') setFavoritesOnly(parsed.favoritesOnly);
       if (typeof parsed.hideCompleted === 'boolean') setHideCompleted(parsed.hideCompleted);
@@ -356,6 +599,11 @@ const handleReset = () => {
   setResults([]);
   setTypeFilter('tous');
   setStatusFilter('tout');
+  setSelectedDecade(null);
+  setFiltersOpen(false);
+  setYearFilter('all');
+  setFavoritesOnly(false);
+  setHideCompleted(false);
   setSelectedMedia(null);
 };
 
@@ -398,6 +646,11 @@ const enrichedMedia: MediaItem = {
     data.episode_runtime ??
     media.episode_runtime ??
     null,
+  genres: Array.isArray(data.genres) && data.genres.length > 0
+    ? Array.from(new Set(data.genres.map(normalizeGenre)))
+    : media.genres,
+  genre_ids: data.genre_ids || media.genre_ids,
+  rating: data.rating ?? media.rating ?? null,
 };
 
 setSelectedMedia(enrichedMedia);
@@ -587,6 +840,7 @@ const handleToggleFavorite = async (media: MediaItem) => {
   if (error) console.error('Erreur mise à jour favori :', error);
 };
 
+
 // Fonction pour effectuer la recherche de médias via l'API interne
 const handleSearch = async (text: string) => {
   setQuery(text);
@@ -622,14 +876,91 @@ const termineCount = itemsForCount.filter(item => getFilterStatus(item.media, it
 const enCoursCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'en_cours').length;
 const aVoirCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'a_voir').length;
 
-const availableYears = Array.from(
-  new Set(
+const collectionItemsForFacets = useMemo(
+  () =>
     Object.values(myList)
-      .map((entry) => entry.media.year || Number((entry.media.release_date || entry.media.first_air_date || '').slice(0, 4)))
-      .filter((year) => Number.isFinite(year) && Number(year) > 1900)
-      .map(Number)
-  )
-).sort((a, b) => b - a);
+      .map((entry) => entry.media)
+      .filter(
+        (media) =>
+          typeFilter === 'tous' ||
+          media.type === typeFilter
+      ),
+  [myList, typeFilter]
+);
+
+const activeAdvancedFiltersCount =
+  (yearFilter !== 'all' ? 1 : 0) +
+  (favoritesOnly ? 1 : 0) +
+  (hideCompleted ? 1 : 0);
+
+const clearAdvancedFilters = () => {
+  setYearFilter('all');
+  setFavoritesOnly(false);
+  setHideCompleted(false);
+  setSelectedDecade(null);
+};
+
+const availableYears = useMemo(() => {
+  const counts = new Map<number, number>();
+
+  collectionItemsForFacets.forEach((media) => {
+    const year = getMediaYear(media);
+    if (!year) return;
+
+    counts.set(year, (counts.get(year) || 0) + 1);
+  });
+
+  return Array.from(counts.entries())
+    .map(([year, count]) => ({ year, count }))
+    .sort((a, b) => b.year - a.year);
+}, [collectionItemsForFacets]);
+
+useEffect(() => {
+  if (yearFilter === 'all') return;
+
+  const stillAvailable = availableYears.some(
+    ({ year }) => String(year) === yearFilter
+  );
+
+  if (!stillAvailable) {
+    setYearFilter('all');
+  }
+}, [availableYears, yearFilter]);
+
+const availableDecades = useMemo(() => {
+  const counts = new Map<number, number>();
+
+  availableYears.forEach(({ year, count }) => {
+    const decade = Math.floor(year / 10) * 10;
+    counts.set(decade, (counts.get(decade) || 0) + count);
+  });
+
+  return Array.from(counts.entries())
+    .map(([decade, count]) => ({ decade, count }))
+    .sort((a, b) => b.decade - a.decade);
+}, [availableYears]);
+
+const yearsForSelectedDecade = useMemo(() => {
+  if (selectedDecade === null) return [];
+
+  return availableYears.filter(
+    ({ year }) =>
+      Math.floor(year / 10) * 10 === selectedDecade
+  );
+}, [availableYears, selectedDecade]);
+
+useEffect(() => {
+  if (selectedDecade === null) return;
+
+  const decadeStillExists = availableDecades.some(
+    ({ decade }) => decade === selectedDecade
+  );
+
+  if (!decadeStillExists) {
+    setSelectedDecade(null);
+    setYearFilter('all');
+  }
+}, [availableDecades, selectedDecade]);
 
 displayItems = displayItems.filter(item => {
   const mediaType = (item.type || 'unknown').toLowerCase();
@@ -641,10 +972,17 @@ displayItems = displayItems.filter(item => {
   const matchesStatus = isSearching || statusFilter === 'tout' || itemStatus === statusFilter;
   const matchesFavorite = isSearching || !favoritesOnly || Boolean(listItem?.favorite);
   const matchesCompleted = isSearching || !hideCompleted || itemStatus !== 'termine';
-  const itemYear = item.year || Number((item.release_date || item.first_air_date || '').slice(0, 4));
-  const matchesYear = isSearching || yearFilter === 'all' || Number(yearFilter) === Number(itemYear);
-
-  return matchesType && matchesStatus && matchesFavorite && matchesCompleted && matchesYear;
+  const itemYear = getMediaYear(item);
+  const matchesYear = isSearching || yearFilter === 'all' || Number(yearFilter) === itemYear;
+  const matchesGenre = true;
+  return (
+    matchesType &&
+    matchesStatus &&
+    matchesFavorite &&
+    matchesCompleted &&
+    matchesYear &&
+    matchesGenre
+  );
 });
 
 const statusOrder: Record<string, number> = { en_cours: 0, a_voir: 1, termine: 2 };
@@ -669,9 +1007,19 @@ displayItems = [...displayItems].sort((a, b) => {
   }
 
   if (sortBy === 'year') {
-    const yearA = a.year || Number((a.release_date || a.first_air_date || '').slice(0, 4)) || 0;
-    const yearB = b.year || Number((b.release_date || b.first_air_date || '').slice(0, 4)) || 0;
-    return yearB - yearA || a.title.localeCompare(b.title, 'fr');
+    const yearA = getMediaYear(a) || 0;
+    const yearB = getMediaYear(b) || 0;
+
+    return (
+      yearB - yearA ||
+      a.title.localeCompare(b.title, 'fr')
+    );
+  }
+
+  if (sortBy === 'rating') {
+    const ratingA = Number(a.rating) || 0;
+    const ratingB = Number(b.rating) || 0;
+    return ratingB - ratingA || a.title.localeCompare(b.title, 'fr');
   }
 
   if (sortBy === 'status') {
@@ -707,38 +1055,266 @@ return (
 
       {!isSearching && (
         <section className={styles.collectionToolbar}>
-          <div className={styles.collectionToolbarGroup}>
-            <label>
+          <div className={styles.collectionSimpleBar}>
+            <label className={styles.collectionSortField}>
               Trier par
-              <select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}>
+              <select
+                value={sortBy}
+                onChange={(event) =>
+                  setSortBy(event.target.value as typeof sortBy)
+                }
+              >
                 <option value="added">Date d’ajout</option>
                 <option value="title">Titre</option>
                 <option value="year">Année</option>
+                <option value="rating">Note</option>
                 <option value="status">Statut</option>
               </select>
             </label>
 
-            <label>
-              Année
-              <select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}>
-                <option value="all">Toutes</option>
-                {availableYears.map((year) => <option key={year} value={year}>{year}</option>)}
-              </select>
-            </label>
-          </div>
+            <button
+              type="button"
+              className={`${styles.collectionFilterButton} ${
+                activeAdvancedFiltersCount > 0
+                  ? styles.collectionToggleActive
+                  : ''
+              }`}
+              onClick={() => setFiltersOpen((value) => !value)}
+              aria-expanded={filtersOpen}
+            >
+              Filtres
+              {activeAdvancedFiltersCount > 0 && (
+                <span className={styles.collectionFilterBadge}>
+                  {activeAdvancedFiltersCount}
+                </span>
+              )}
+            </button>
 
-          <div className={styles.collectionToolbarActions}>
-            <button type="button" className={favoritesOnly ? styles.collectionToggleActive : ''} onClick={() => setFavoritesOnly((value) => !value)}>
-              Favoris uniquement
-            </button>
-            <button type="button" className={hideCompleted ? styles.collectionToggleActive : ''} onClick={() => setHideCompleted((value) => !value)}>
-              Masquer les terminés
-            </button>
             <div className={styles.viewSwitch}>
-              <button type="button" className={viewMode === 'grid' ? styles.collectionToggleActive : ''} onClick={() => setViewMode('grid')}>Grille</button>
-              <button type="button" className={viewMode === 'list' ? styles.collectionToggleActive : ''} onClick={() => setViewMode('list')}>Liste</button>
+              <button
+                type="button"
+                className={
+                  viewMode === 'grid'
+                    ? styles.collectionToggleActive
+                    : ''
+                }
+                onClick={() => setViewMode('grid')}
+              >
+                Grille
+              </button>
+
+              <button
+                type="button"
+                className={
+                  viewMode === 'list'
+                    ? styles.collectionToggleActive
+                    : ''
+                }
+                onClick={() => setViewMode('list')}
+              >
+                Liste
+              </button>
             </div>
           </div>
+
+          {activeAdvancedFiltersCount > 0 && (
+            <div className={styles.collectionActiveFilters}>
+              <span>Filtres actifs :</span>
+
+              {yearFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setYearFilter('all')}
+                >
+                  {yearFilter} ×
+                </button>
+              )}
+
+              {favoritesOnly && (
+                <button
+                  type="button"
+                  onClick={() => setFavoritesOnly(false)}
+                >
+                  Favoris ×
+                </button>
+              )}
+
+              {hideCompleted && (
+                <button
+                  type="button"
+                  onClick={() => setHideCompleted(false)}
+                >
+                  Terminés masqués ×
+                </button>
+              )}
+
+              <button
+                type="button"
+                className={styles.collectionClearFilters}
+                onClick={clearAdvancedFilters}
+              >
+                Tout effacer
+              </button>
+            </div>
+          )}
+
+          {filtersOpen && (
+            <div className={styles.collectionFiltersPanel}>
+              <div className={styles.collectionFiltersPanelHeader}>
+                <strong>Affiner</strong>
+
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  aria-label="Fermer les filtres"
+                  title="Fermer"
+                >
+                  ×
+                </button>
+              </div>
+
+              {metadataIndexing && (
+                <div className={styles.collectionIndexingNotice}>
+                  <div>
+                    <strong>Mise à jour des informations</strong>
+                    <span>
+                      Années de sortie et genres
+                    </span>
+                  </div>
+
+                  <small>
+                    {metadataIndexedCount} / {metadataMissingCount}
+                  </small>
+                </div>
+              )}
+
+              <div className={styles.collectionFilterSection}>
+                <div className={styles.collectionGenreCompactHeader}>
+                  <span>Année de sortie</span>
+
+                  {(selectedDecade !== null || yearFilter !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDecade(null);
+                        setYearFilter('all');
+                      }}
+                    >
+                      Effacer
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.collectionDecadeChips}>
+                  <button
+                    type="button"
+                    className={
+                      selectedDecade === null && yearFilter === 'all'
+                        ? styles.collectionToggleActive
+                        : ''
+                    }
+                    onClick={() => {
+                      setSelectedDecade(null);
+                      setYearFilter('all');
+                    }}
+                  >
+                    Toutes
+                  </button>
+
+                  {availableDecades.map(({ decade, count }) => (
+                    <button
+                      key={decade}
+                      type="button"
+                      className={
+                        selectedDecade === decade
+                          ? styles.collectionToggleActive
+                          : ''
+                      }
+                      onClick={() => {
+                        setSelectedDecade(decade);
+                        setYearFilter('all');
+                      }}
+                    >
+                      {decade}s ({count})
+                    </button>
+                  ))}
+                </div>
+
+                {selectedDecade !== null && (
+                  <div className={styles.collectionYearChips}>
+                    {yearsForSelectedDecade.map(({ year, count }) => (
+                      <button
+                        key={year}
+                        type="button"
+                        className={
+                          yearFilter === String(year)
+                            ? styles.collectionToggleActive
+                            : ''
+                        }
+                        onClick={() =>
+                          setYearFilter(
+                            yearFilter === String(year)
+                              ? 'all'
+                              : String(year)
+                          )
+                        }
+                      >
+                        {year} ({count})
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.collectionFilterOptions}>
+                <button
+                  type="button"
+                  className={
+                    favoritesOnly
+                      ? styles.collectionToggleActive
+                      : ''
+                  }
+                  onClick={() =>
+                    setFavoritesOnly((value) => !value)
+                  }
+                >
+                  Favoris uniquement
+                </button>
+
+                <button
+                  type="button"
+                  className={
+                    hideCompleted
+                      ? styles.collectionToggleActive
+                      : ''
+                  }
+                  onClick={() =>
+                    setHideCompleted((value) => !value)
+                  }
+                >
+                  Masquer les terminés
+                </button>
+              </div>
+
+              <div className={styles.collectionFiltersPanelFooter}>
+                <button
+                  type="button"
+                  onClick={clearAdvancedFilters}
+                >
+                  Réinitialiser
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.collectionApplyFilters}
+                  onClick={() => setFiltersOpen(false)}
+                >
+                  Voir {displayItems.length} résultat
+                  {displayItems.length > 1 ? 's' : ''}
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -750,7 +1326,7 @@ return (
 
     if (!isSearching && viewMode === 'list') {
       const status = getFilterStatus(item, currentItem?.status);
-      const year = item.year || Number((item.release_date || item.first_air_date || '').slice(0, 4)) || '';
+      const year = getMediaYear(item) || '';
       const poster = item.poster_path
         ? item.poster_path.startsWith('http')
           ? item.poster_path
@@ -775,8 +1351,7 @@ return (
             </span>
           </button>
           <div className={styles.collectionListActions}>
-            <button type="button" className={currentItem?.favorite ? styles.favoriteActive : ''} onClick={() => void handleToggleFavorite(item)}>{currentItem?.favorite ? '★' : '☆'}</button>
-            <button type="button" onClick={() => void handleToggleInProgress(item)}>En cours</button>
+            <button type="button" className={currentItem?.favorite ? styles.favoriteActive : ''} onClick={() => void handleToggleFavorite(item)}>{currentItem?.favorite ? '★' : '☆'}</button>            <button type="button" onClick={() => void handleToggleInProgress(item)}>En cours</button>
             <button type="button" onClick={() => void handleMarkWatched(item)}>Vu</button>
             <button type="button" onClick={() => void handleMarkToWatch(item)}>À voir</button>
           </div>

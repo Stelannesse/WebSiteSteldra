@@ -73,6 +73,26 @@ export async function GET(request: Request) {
           episodeRuntime > 0
             ? episodeRuntime
             : null,
+        genres: [
+          ...(jikanData.data?.genres || []).map((genre: any) => genre.name),
+          ...(jikanData.data?.themes || []).map((theme: any) => theme.name),
+        ].filter(Boolean),
+        rating:
+          typeof jikanData.data?.score === 'number'
+            ? jikanData.data.score
+            : null,
+
+        year:
+          Number(jikanData.data?.year) ||
+          Number(
+            String(
+              jikanData.data?.aired?.from || ''
+            ).slice(0, 4)
+          ) ||
+          null,
+
+        first_air_date:
+          jikanData.data?.aired?.from || null,
       });
     } catch {
       return NextResponse.json({
@@ -86,6 +106,7 @@ export async function GET(request: Request) {
         runtime: null,
 
         episode_runtime: null,
+        genres: [],
       });
     }
   }
@@ -116,6 +137,10 @@ export async function GET(request: Request) {
         descriptions.en ||
         'Aucun résumé disponible pour ce manga.';
 
+      const mangaTags = (dexData.data?.attributes?.tags || [])
+        .map((tag: any) => tag.attributes?.name?.fr || tag.attributes?.name?.en)
+        .filter(Boolean);
+
       return NextResponse.json({
         synopsis,
 
@@ -126,6 +151,12 @@ export async function GET(request: Request) {
         runtime: null,
 
         episode_runtime: null,
+
+        genres: mangaTags,
+
+        year:
+          Number(dexData.data?.attributes?.year) ||
+          null,
       });
     } catch {
       return NextResponse.json({
@@ -139,6 +170,7 @@ export async function GET(request: Request) {
         runtime: null,
 
         episode_runtime: null,
+        genres: [],
       });
     }
   }
@@ -246,6 +278,31 @@ return NextResponse.json({
   runtime,
 
   episode_runtime: episodeRuntime,
+  genres: (data.genres || []).map((genre: any) => genre.name).filter(Boolean),
+  genre_ids: (data.genres || []).map((genre: any) => genre.id).filter(Boolean),
+  rating:
+    typeof data.vote_average === 'number'
+      ? data.vote_average
+      : null,
+
+  year:
+    Number(
+      String(
+        tmdbType === 'movie'
+          ? data.release_date || ''
+          : data.first_air_date || ''
+      ).slice(0, 4)
+    ) || null,
+
+  release_date:
+    tmdbType === 'movie'
+      ? data.release_date || null
+      : null,
+
+  first_air_date:
+    tmdbType === 'tv'
+      ? data.first_air_date || null
+      : null,
 });
 
   } catch (error) {

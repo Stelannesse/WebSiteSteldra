@@ -2,6 +2,40 @@ import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 
+const TMDB_GENRES: Record<number, string> = {
+  12: 'Aventure',
+  14: 'Fantastique',
+  16: 'Animation',
+  18: 'Drame',
+  27: 'Horreur',
+  28: 'Action',
+  35: 'Comédie',
+  36: 'Histoire',
+  37: 'Western',
+  53: 'Thriller',
+  80: 'Crime',
+  99: 'Documentaire',
+  878: 'Science-fiction',
+  9648: 'Mystère',
+  10402: 'Musique',
+  10749: 'Romance',
+  10751: 'Famille',
+  10752: 'Guerre',
+  10759: 'Action & Aventure',
+  10762: 'Jeunesse',
+  10763: 'Actualités',
+  10764: 'Télé-réalité',
+  10765: 'Science-fiction & Fantastique',
+  10766: 'Soap',
+  10767: 'Talk-show',
+  10768: 'Guerre & Politique',
+};
+
+const genreNamesFromIds = (ids: unknown): string[] =>
+  Array.isArray(ids)
+    ? ids.map((id) => TMDB_GENRES[Number(id)]).filter(Boolean)
+    : [];
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
@@ -49,7 +83,10 @@ export async function GET(request: Request) {
             type: 'movie', 
             runtime: item.runtime || 0,
             year: item.release_date ? Number(String(item.release_date).slice(0, 4)) : null,
-            release_date: item.release_date || ''
+            release_date: item.release_date || '',
+            genre_ids: item.genre_ids || [],
+            genres: genreNamesFromIds(item.genre_ids),
+            rating: typeof item.vote_average === 'number' ? item.vote_average : null
           };
         } 
         
@@ -78,7 +115,10 @@ export async function GET(request: Request) {
               episodes: 0,
               airing_status: 'en_cours',
               year: item.first_air_date ? Number(String(item.first_air_date).slice(0, 4)) : null,
-              first_air_date: item.first_air_date || ''
+              first_air_date: item.first_air_date || '',
+              genre_ids: item.genre_ids || [],
+              genres: genreNamesFromIds(item.genre_ids),
+              rating: typeof item.vote_average === 'number' ? item.vote_average : null
             };
           }
 
@@ -103,7 +143,10 @@ export async function GET(request: Request) {
               episodes: detailedData.number_of_episodes || 0,
               airing_status: detailedData.status === 'Ended' ? 'termine' : 'en_cours',
               year: item.first_air_date ? Number(String(item.first_air_date).slice(0, 4)) : null,
-              first_air_date: item.first_air_date || ''
+              first_air_date: item.first_air_date || '',
+              genre_ids: item.genre_ids || [],
+              genres: genreNamesFromIds(item.genre_ids),
+              rating: typeof item.vote_average === 'number' ? item.vote_average : null
             };
           } catch {
             return {
@@ -115,7 +158,10 @@ export async function GET(request: Request) {
               episodes: 0,
               airing_status: 'en_cours',
               year: item.first_air_date ? Number(String(item.first_air_date).slice(0, 4)) : null,
-              first_air_date: item.first_air_date || ''
+              first_air_date: item.first_air_date || '',
+              genre_ids: item.genre_ids || [],
+              genres: genreNamesFromIds(item.genre_ids),
+              rating: typeof item.vote_average === 'number' ? item.vote_average : null
             };
           }
         }
@@ -157,7 +203,12 @@ export async function GET(request: Request) {
               type: 'anime',
               episodes: anime.episodes || 0,
               seasons: 1, 
-              airing_status: anime.airing ? 'en_cours' : 'termine'
+              airing_status: anime.airing ? 'en_cours' : 'termine',
+              genres: [
+                ...(anime.genres || []).map((genre: any) => genre.name),
+                ...(anime.themes || []).map((theme: any) => theme.name),
+              ].filter(Boolean),
+              rating: typeof anime.score === 'number' ? anime.score : null
             });
           }
         });
@@ -192,7 +243,10 @@ export async function GET(request: Request) {
           poster_path: coverUrl, 
           type: finalMangaType,
           chapters: manga.attributes?.lastChapter || 0,
-          airing_status: manga.attributes?.status === 'ongoing' ? 'en_cours' : 'termine'
+          airing_status: manga.attributes?.status === 'ongoing' ? 'en_cours' : 'termine',
+          genres: (manga.attributes?.tags || [])
+            .map((tag: any) => tag.attributes?.name?.en || tag.attributes?.name?.fr)
+            .filter(Boolean)
         });
       });
     }

@@ -146,6 +146,20 @@ export default function MediaPageContent({
       : `https://image.tmdb.org/t/p/w300${selectedMedia.poster_path}`
     : 'https://via.placeholder.com/200x300';
 
+  const releaseYear =
+    Number(mediaDetails?.year) ||
+    Number(selectedMedia.year) ||
+    Number(
+      String(
+        mediaDetails?.release_date ||
+        mediaDetails?.first_air_date ||
+        selectedMedia.release_date ||
+        selectedMedia.first_air_date ||
+        ''
+      ).slice(0, 4)
+    ) ||
+    null;
+
   const watchedCount = seasonEpisodes.filter((episode) => {
     const key = `${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${episode.episode_number}`;
     return Boolean(watchedEpisodes[key]);
@@ -220,6 +234,19 @@ const wholeSeasonWatched =
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem' }}>
                 <span style={{ padding: '0.3rem 0.65rem', borderRadius: '20px', backgroundColor: '#393E46', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' }}>{selectedMedia.type}</span>
+                {releaseYear && (
+                  <span
+                    title="Année de sortie"
+                    style={{
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: '20px',
+                      backgroundColor: '#393E46',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    {releaseYear}
+                  </span>
+                )}
                 {mediaDetails?.runtime ? (
                   <span style={{ padding: '0.3rem 0.65rem', borderRadius: '20px', backgroundColor: '#393E46', fontSize: '0.75rem' }}>
                     {Math.floor(mediaDetails.runtime / 60) > 0 ? `${Math.floor(mediaDetails.runtime / 60)} h ${mediaDetails.runtime % 60} min` : `${mediaDetails.runtime} min`}

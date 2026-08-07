@@ -2433,3 +2433,191 @@ background-color: #181d23;
   scrollbar-width: thin;
   overscroll-behavior-inline: contain;
 }
+/* =========================================================
+   COLLECTION - VERSION SIMPLE
+========================================================= */
+
+@media (max-width: 760px) {
+  .collectionFiltersPanel {
+    max-height: 48vh;
+  }
+
+  .collectionFiltersPanelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+
+  .collectionFiltersPanelHeader > strong {
+    color: #ffffff;
+    font-size: 0.78rem;
+  }
+}
+
+/* =========================================================
+   DÉCOUVRIR
+========================================================= */
+
+.discoverPage {
+  width: min(1240px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+  box-sizing: border-box;
+  background: #181d23;
+}
+
+.discoverHero {
+  padding: 1rem 0 0.6rem;
+}
+
+.discoverHero > span {
+  color: #00adb5;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.discoverHero h1 {
+  margin: 0.3rem 0;
+  color: #ffffff;
+  font-family: var(--font-poppins), Arial, sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.35rem);
+  line-height: 1.08;
+}
+
+.discoverHero p {
+  max-width: 670px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.discoverGenreRail {
+  display: flex;
+  gap: 0.42rem;
+  width: 100%;
+  overflow-x: auto;
+  padding: 0.65rem 0 0.85rem;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+
+.discoverGenreRail button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0.4rem 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: #29313a;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.discoverGenreRail .discoverGenreActive {
+  border-color: #00adb5;
+  background: #00adb5;
+  color: #071012;
+}
+
+.discoverSection {
+  margin-top: 1.35rem;
+  min-width: 0;
+}
+
+.discoverSectionHeading {
+  margin-bottom: 0.58rem;
+}
+
+.discoverSectionHeading h2 {
+  margin: 0;
+  color: #ffffff;
+  font-family: var(--font-poppins), Arial, sans-serif;
+  font-size: 1.02rem;
+}
+
+.discoverSectionHeading p {
+  margin: 0.12rem 0 0;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.68rem;
+}
+
+.discoverRail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 138px;
+  gap: 0.68rem;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.08rem 0 0.55rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.discoverCard {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.discoverCard > strong {
+  display: block;
+  margin-top: 0.35rem;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.69rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discoverCard > small {
+  display: block;
+  margin-top: 0.12rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.62rem;
+}
+
+.discoverEmpty {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #242b33;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.76rem;
+}
+
+@media (max-width: 760px) {
+  .discoverPage {
+    padding: 0.75rem 0.7rem 2.5rem;
+  }
+
+  .discoverHero {
+    padding-top: 0.65rem;
+  }
+
+  .discoverHero h1 {
+    font-size: 1.45rem;
+  }
+
+  .discoverGenreRail {
+    width: calc(100% + 0.7rem);
+    margin-right: -0.7rem;
+  }
+
+  .discoverRail {
+    grid-auto-columns: 112px;
+    width: calc(100% + 0.7rem);
+    margin-right: -0.7rem;
+    padding-right: 0.7rem;
+  }
+
+  .discoverSection {
+    margin-top: 1.05rem;
+  }
+}
