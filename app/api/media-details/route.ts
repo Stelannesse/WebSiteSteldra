@@ -123,7 +123,7 @@ export async function GET(request: Request) {
   if (type === 'manga' || type === 'manhwa') {
     try {
       const res = await fetch(
-        `https://api.mangadex.org/manga/${id}`
+        `https://api.mangadex.org/manga/${id}?includes[]=cover_art`
       );
 
       if (!res.ok) {
@@ -146,6 +146,14 @@ export async function GET(request: Request) {
         .map((tag: any) => tag.attributes?.name?.fr || tag.attributes?.name?.en)
         .filter(Boolean);
 
+      const coverRelationship = (dexData.data?.relationships || []).find(
+        (relationship: any) => relationship.type === 'cover_art'
+      );
+      const coverFileName = coverRelationship?.attributes?.fileName || '';
+      const posterPath = coverFileName
+        ? `https://uploads.mangadex.org/covers/${id}/${coverFileName}`
+        : null;
+
       return NextResponse.json({
         synopsis,
 
@@ -162,6 +170,8 @@ export async function GET(request: Request) {
         year:
           Number(dexData.data?.attributes?.year) ||
           null,
+
+        poster_path: posterPath,
       });
     } catch {
       return NextResponse.json({
