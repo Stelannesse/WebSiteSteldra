@@ -2940,7 +2940,6 @@ background-color: #181d23;
   font-size: 0.79rem;
   white-space: normal;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
