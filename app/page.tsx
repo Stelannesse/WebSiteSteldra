@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import MainNav from './components/mainNav';
 import { createClient } from './lib/supabase';
 import styles from './page.module.css';
 import type { MediaItem, WatchStatus } from './types/media';
+import { getPosterUrl, usePosterFallback } from './lib/poster';
 
 type ProgressRow = {
   id?: string | number;
@@ -44,15 +45,7 @@ type Recommendation = MediaItem & {
 const mediaKey = (media: { type: string; id: string | number }) =>
   `${media.type}_${media.id}`;
 
-const posterUrl = (media: MediaItem) => {
-  if (!media.poster_path) {
-    return 'https://via.placeholder.com/300x450?text=Steldra';
-  }
-
-  return media.poster_path.startsWith('http')
-    ? media.poster_path
-    : `https://image.tmdb.org/t/p/w342${media.poster_path}`;
-};
+const posterUrl = (media: MediaItem) => getPosterUrl(media, 'w342');
 
 const dateValue = (row: ProgressRow, mode: 'added' | 'activity') => {
   const media = row.media_data || ({} as MediaItem);
@@ -129,12 +122,38 @@ export default function HomePage() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [recommendationSource, setRecommendationSource] = useState<string>('');
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
+  const hasLoadedDashboard = useRef(false);
+
+  useEffect(() => {
+    const refreshDashboard = () => {
+      setDashboardRefreshToken((value) => value + 1);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshDashboard();
+      }
+    };
+
+    window.addEventListener('steldra:progress-updated', refreshDashboard);
+    window.addEventListener('focus', refreshDashboard);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('steldra:progress-updated', refreshDashboard);
+      window.removeEventListener('focus', refreshDashboard);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     const loadDashboard = async () => {
-      setLoading(true);
+      if (!hasLoadedDashboard.current) {
+        setLoading(true);
+      }
 
       const {
         data: { user },
@@ -226,6 +245,7 @@ export default function HomePage() {
         }
       }
 
+      hasLoadedDashboard.current = true;
       setLoading(false);
     };
 
@@ -234,7 +254,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [supabase, dashboardRefreshToken]);
 
   const progressMap = useMemo(() => {
     const map = new Map<string, ProgressRow>();
@@ -385,7 +405,7 @@ export default function HomePage() {
                     href={`/media/${media.type}/${media.id}`}
                     className={styles.continueCard}
                   >
-                    <img src={posterUrl(media)} alt={media.title} />
+                    <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                     <div className={styles.continueInfo}>
                       <span className={styles.mediaTypeLabel}>{media.type}</span>
                       <strong>{media.title}</strong>
@@ -419,7 +439,7 @@ export default function HomePage() {
                   href={`/media/${item.media_data.type}/${item.media_data.id}`}
                   className={styles.nextCard}
                 >
-                  <img src={posterUrl(item.media_data)} alt={item.media_data.title} />
+                  <img src={posterUrl(item.media_data)} alt={item.media_data.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                   <div>
                     <span>{list.name}</span>
                     <strong>{item.media_data.title}</strong>
@@ -441,7 +461,7 @@ export default function HomePage() {
                 return (
                   <div key={key} className={styles.recommendationCard}>
                     <Link href={`/media/${media.type}/${media.id}`}>
-                      <img src={posterUrl(media)} alt={media.title} />
+                      <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                       <strong>{media.title}</strong>
                     </Link>
                     <button
@@ -490,7 +510,7 @@ export default function HomePage() {
                       <Link key={list.id} href={`/lists/${list.id}`} className={styles.homeListCard}>
                         <div className={styles.homeListPosters}>
                           {preview.length > 0 ? preview.map((item) => (
-                            <img key={item.id} src={posterUrl(item.media_data)} alt="" />
+                            <img key={item.id} src={posterUrl(item.media_data)} alt="" onError={(event) => usePosterFallback(event.currentTarget)} />
                           )) : <span>Aucun média</span>}
                         </div>
                         <strong>{list.name}</strong>
@@ -569,7 +589,7 @@ function DashboardSection({
 function PosterCard({ media }: { media: MediaItem }) {
   return (
     <Link href={`/media/${media.type}/${media.id}`} className={styles.dashboardPosterCard}>
-      <img src={posterUrl(media)} alt={media.title} />
+      <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
       <strong>{media.title}</strong>
       <span>{media.type}</span>
     </Link>

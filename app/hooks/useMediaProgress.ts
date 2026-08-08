@@ -4,6 +4,13 @@ import type {
   WatchStatus,
 } from '../types/media';
 
+
+const notifyProgressUpdated = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('steldra:progress-updated'));
+  }
+};
+
 type UseMediaProgressProps = {
   supabase: any;
 
@@ -115,7 +122,10 @@ export default function useMediaProgress({
           hint: error.hint,
         }
       );
+      return;
     }
+
+    notifyProgressUpdated();
   };
 
   const handleMarkWatched = async (
@@ -201,6 +211,42 @@ export default function useMediaProgress({
     if (!user) return;
 
     const currentItem = myList[mediaKey];
+    const episodePrefix = `${mediaKey}_S`;
+    const hasWatchedEpisode = Object.entries(updatedEpisodes).some(
+      ([key, watched]) => key.startsWith(episodePrefix) && watched
+    );
+    const nextStatus: WatchStatus =
+      currentItem?.status === 'vu'
+        ? 'vu'
+        : hasWatchedEpisode
+          ? 'en_cours'
+          : currentItem?.status || 'a_voir';
+    const now = new Date().toISOString();
+    const enrichedMedia: MediaItem = {
+      ...selectedMedia,
+      favorite: currentItem?.favorite ?? selectedMedia.favorite ?? false,
+      steldra_added_at:
+        currentItem?.addedAt || selectedMedia.steldra_added_at || now,
+      steldra_last_interaction_at: now,
+    };
+
+    const updatedList = {
+      ...myList,
+      [mediaKey]: {
+        media: enrichedMedia,
+        status: nextStatus,
+        watchCount: currentItem?.watchCount ?? 0,
+        favorite: enrichedMedia.favorite,
+        addedAt: enrichedMedia.steldra_added_at,
+        lastInteractionAt: now,
+      },
+    };
+
+    setMyList(updatedList);
+    localStorage.setItem(
+      'steldra_multimedia_list_v1',
+      JSON.stringify(updatedList)
+    );
 
     const { error } = await supabase
       .from('media_progress')
@@ -209,9 +255,8 @@ export default function useMediaProgress({
           user_id: user.id,
           media_id: String(selectedMedia.id),
           media_type: selectedMedia.type,
-          media_data: selectedMedia,
-          status:
-            currentItem?.status || 'a_voir',
+          media_data: enrichedMedia,
+          status: nextStatus,
           watched_episode: updatedEpisodes,
           manga_progress:
             mangaProgress[mediaKey] ?? 0,
@@ -233,7 +278,10 @@ export default function useMediaProgress({
           hint: error.hint,
         }
       );
+      return;
     }
+
+    notifyProgressUpdated();
   };
 
   const toggleEpisodeWatched = async (
