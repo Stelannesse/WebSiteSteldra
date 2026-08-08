@@ -269,29 +269,35 @@ export default function ListDetailsPage() {
     if (savingOrder) return;
     setSavingOrder(true);
     setErrorMessage('');
-    try {
-      // Décale d’abord toutes les positions dans une plage temporaire.
-      // Cela évite les collisions si la base impose une unicité sur (list_id, position).
-      const temporaryOffset = Math.max(10000, orderedItems.length * 10 + 1000);
-      for (let index = 0; index < orderedItems.length; index += 1) {
-        const item = orderedItems[index];
-        const { error } = await supabase
-          .from('custom_list_items')
-          .update({ position: temporaryOffset + index })
-          .eq('id', item.id)
-          .eq('list_id', listId);
-        if (error) throw error;
-      }
 
-      for (let index = 0; index < orderedItems.length; index += 1) {
-        const item = orderedItems[index];
-        const { error } = await supabase
-          .from('custom_list_items')
-          .update({ position: index })
-          .eq('id', item.id)
-          .eq('list_id', listId);
-        if (error) throw error;
-      }
+    try {
+      const temporaryOffset = Math.max(10000, orderedItems.length * 10 + 1000);
+
+      const temporaryResults = await Promise.all(
+        orderedItems.map((item, index) =>
+          supabase
+            .from('custom_list_items')
+            .update({ position: temporaryOffset + index })
+            .eq('id', item.id)
+            .eq('list_id', listId)
+        )
+      );
+
+      const temporaryError = temporaryResults.find((result) => result.error)?.error;
+      if (temporaryError) throw temporaryError;
+
+      const finalResults = await Promise.all(
+        orderedItems.map((item, index) =>
+          supabase
+            .from('custom_list_items')
+            .update({ position: index })
+            .eq('id', item.id)
+            .eq('list_id', listId)
+        )
+      );
+
+      const finalError = finalResults.find((result) => result.error)?.error;
+      if (finalError) throw finalError;
 
       currentItemsRef.current = orderedItems;
     } catch (error) {

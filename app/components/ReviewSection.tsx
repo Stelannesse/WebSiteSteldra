@@ -49,13 +49,13 @@ export default function ReviewSection({
     const belongsToCurrentUser =
       Boolean(
         review.user_id &&
-        userId &&
-        review.user_id === userId
+          userId &&
+          review.user_id === userId
       ) ||
       Boolean(
         review.user_name &&
-        userName &&
-        review.user_name === userName
+          userName &&
+          review.user_name === userName
       );
 
     if (belongsToCurrentUser) {
@@ -92,7 +92,7 @@ export default function ReviewSection({
           marginBottom: '0.6rem',
         }}
       >
-        Avis des utilisateurs
+        Avis Steldra
       </h3>
 
       <div
@@ -188,7 +188,9 @@ export default function ReviewSection({
             color: '#222831',
             fontWeight: 'bold',
             borderRadius: '8px',
-            cursor: reviewRating ? 'pointer' : 'not-allowed',
+            cursor: reviewRating
+              ? 'pointer'
+              : 'not-allowed',
             opacity: reviewRating ? 1 : 0.5,
           }}
         >
@@ -241,7 +243,8 @@ export default function ReviewSection({
                   }}
                 >
                   <strong>
-                    {review.user_name || 'Utilisateur'}
+                    {review.user_name ||
+                      'Utilisateur'}
                   </strong>
 
                   <div
@@ -274,11 +277,13 @@ export default function ReviewSection({
                           )
                         }
                         style={{
-                          background: 'transparent',
+                          background:
+                            'transparent',
                           border:
                             '1px solid rgba(255,255,255,0.08)',
                           color: '#EEE',
-                          padding: '0.25rem 0.5rem',
+                          padding:
+                            '0.25rem 0.5rem',
                           borderRadius: '6px',
                           cursor: 'pointer',
                           fontSize: '0.8rem',
@@ -290,10 +295,14 @@ export default function ReviewSection({
                   </div>
                 </div>
 
-                <div style={{ marginTop: '0.4rem' }}>
+                <div
+                  style={{
+                    marginTop: '0.4rem',
+                  }}
+                >
                   {review.rating === 'like'
-                    ? ' J’aime'
-                    : ' Je n’aime pas'}
+                    ? 'J’aime'
+                    : 'Je n’aime pas'}
                 </div>
 
                 {review.comment && (
