@@ -45,6 +45,9 @@ export default function ListDetailsPage() {
   const pointerDraggedItemIdRef = useRef<string | null>(null);
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
   const pointerMovedRef = useRef(false);
+  const pointerIdRef = useRef<number | null>(null);
+  const pointerLastPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const autoScrollFrameRef = useRef<number | null>(null);
   const suppressOpenRef = useRef(false);
 
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
@@ -265,17 +268,36 @@ export default function ListDetailsPage() {
   const saveOrder = async (orderedItems: CustomListItem[], fallbackItems: CustomListItem[]) => {
     if (savingOrder) return;
     setSavingOrder(true);
+    setErrorMessage('');
     try {
-      const results = await Promise.all(
-        orderedItems.map((item, index) =>
-          supabase.from('custom_list_items').update({ position: index }).eq('id', item.id).eq('list_id', listId)
-        )
-      );
-      const failed = results.find((result) => result.error);
-      if (failed?.error) throw failed.error;
+      // Décale d’abord toutes les positions dans une plage temporaire.
+      // Cela évite les collisions si la base impose une unicité sur (list_id, position).
+      const temporaryOffset = Math.max(10000, orderedItems.length * 10 + 1000);
+      for (let index = 0; index < orderedItems.length; index += 1) {
+        const item = orderedItems[index];
+        const { error } = await supabase
+          .from('custom_list_items')
+          .update({ position: temporaryOffset + index })
+          .eq('id', item.id)
+          .eq('list_id', listId);
+        if (error) throw error;
+      }
+
+      for (let index = 0; index < orderedItems.length; index += 1) {
+        const item = orderedItems[index];
+        const { error } = await supabase
+          .from('custom_list_items')
+          .update({ position: index })
+          .eq('id', item.id)
+          .eq('list_id', listId);
+        if (error) throw error;
+      }
+
+      currentItemsRef.current = orderedItems;
     } catch (error) {
       console.error(error);
       setItems(fallbackItems);
+      currentItemsRef.current = fallbackItems;
       setErrorMessage('Le nouvel ordre n’a pas pu être enregistré.');
     } finally {
       setSavingOrder(false);
@@ -306,32 +328,18 @@ export default function ListDetailsPage() {
     }
   };
 
-  const handlePointerDown = (itemId: string, event: React.PointerEvent<HTMLElement>) => {
-    if (!isTouchDevice || event.pointerType === 'mouse' || savingOrder) return;
-    if ((event.target as HTMLElement).closest('button')) return;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragStartItemsRef.current = currentItemsRef.current.map((item) => ({ ...item }));
-    pointerDraggedItemIdRef.current = itemId;
-    pointerStartRef.current = { x: event.clientX, y: event.clientY };
-    pointerMovedRef.current = false;
+  const stopAutoScroll = () => {
+    if (autoScrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(autoScrollFrameRef.current);
+      autoScrollFrameRef.current = null;
+    }
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+  const updatePointerReorder = (clientX: number, clientY: number) => {
     const itemId = pointerDraggedItemIdRef.current;
-    if (!itemId || event.pointerType === 'mouse') return;
+    if (!itemId) return;
 
-    const start = pointerStartRef.current;
-    if (!start) return;
-
-    const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-    if (!pointerMovedRef.current && distance < 8) return;
-
-    pointerMovedRef.current = true;
-    setDraggedItemId(itemId);
-    event.preventDefault();
-
-    const target = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
+    const target = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
     const targetItem = target?.closest<HTMLElement>('[data-list-item-id]');
     const targetId = targetItem?.dataset.listItemId;
     if (!targetId || targetId === itemId) return;
@@ -343,39 +351,133 @@ export default function ListDetailsPage() {
     });
   };
 
-  const finishPointerDrag = async (event: React.PointerEvent<HTMLElement>) => {
+  const runAutoScroll = () => {
+    stopAutoScroll();
+
+    const tick = () => {
+      if (!pointerDraggedItemIdRef.current || !pointerMovedRef.current) {
+        autoScrollFrameRef.current = null;
+        return;
+      }
+
+      const pointer = pointerLastPositionRef.current;
+      if (!pointer) {
+        autoScrollFrameRef.current = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      const edge = 90;
+      const maxSpeed = 18;
+      let speed = 0;
+      if (pointer.y < edge) {
+        speed = -maxSpeed * (1 - pointer.y / edge);
+      } else if (pointer.y > window.innerHeight - edge) {
+        speed = maxSpeed * (1 - (window.innerHeight - pointer.y) / edge);
+      }
+
+      if (Math.abs(speed) > 0.5) {
+        window.scrollBy(0, speed);
+        updatePointerReorder(pointer.x, pointer.y);
+      }
+
+      autoScrollFrameRef.current = window.requestAnimationFrame(tick);
+    };
+
+    autoScrollFrameRef.current = window.requestAnimationFrame(tick);
+  };
+
+  const cleanupPointerDrag = () => {
+    stopAutoScroll();
+    pointerDraggedItemIdRef.current = null;
+    pointerStartRef.current = null;
+    pointerLastPositionRef.current = null;
+    pointerMovedRef.current = false;
+    pointerIdRef.current = null;
+    setDraggedItemId(null);
+  };
+
+  const finishPointerDrag = async () => {
     const itemId = pointerDraggedItemIdRef.current;
-    if (!itemId || event.pointerType === 'mouse') return;
+    if (!itemId) return;
 
     const moved = pointerMovedRef.current;
     const fallback = dragStartItemsRef.current;
     const finalItems = currentItemsRef.current.map((item, index) => ({ ...item, position: index }));
 
-    pointerDraggedItemIdRef.current = null;
-    pointerStartRef.current = null;
-    pointerMovedRef.current = false;
-    setDraggedItemId(null);
+    cleanupPointerDrag();
 
     if (!moved) return;
 
     suppressOpenRef.current = true;
     window.setTimeout(() => { suppressOpenRef.current = false; }, 350);
     setItems(finalItems);
+    currentItemsRef.current = finalItems;
 
     if (finalItems.some((item, index) => fallback[index]?.id !== item.id)) {
       await saveOrder(finalItems, fallback);
     }
   };
 
-  const handlePointerCancel = () => {
-    pointerDraggedItemIdRef.current = null;
-    pointerStartRef.current = null;
-    pointerMovedRef.current = false;
-    setDraggedItemId(null);
-    if (dragStartItemsRef.current.length) {
-      setItems(dragStartItemsRef.current);
-      currentItemsRef.current = dragStartItemsRef.current;
+  const cancelPointerDrag = () => {
+    const fallback = dragStartItemsRef.current;
+    cleanupPointerDrag();
+    if (fallback.length) {
+      setItems(fallback);
+      currentItemsRef.current = fallback;
     }
+  };
+
+  const handlePointerDown = (itemId: string, event: React.PointerEvent<HTMLElement>) => {
+    if (!isTouchDevice || event.pointerType === 'mouse' || savingOrder) return;
+
+    event.preventDefault();
+    dragStartItemsRef.current = currentItemsRef.current.map((item) => ({ ...item }));
+    pointerDraggedItemIdRef.current = itemId;
+    pointerIdRef.current = event.pointerId;
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    pointerLastPositionRef.current = { x: event.clientX, y: event.clientY };
+    pointerMovedRef.current = false;
+
+    const onMove = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId !== pointerIdRef.current || !pointerDraggedItemIdRef.current) return;
+      pointerLastPositionRef.current = { x: pointerEvent.clientX, y: pointerEvent.clientY };
+
+      const start = pointerStartRef.current;
+      if (!start) return;
+      const distance = Math.hypot(pointerEvent.clientX - start.x, pointerEvent.clientY - start.y);
+      if (!pointerMovedRef.current && distance < 7) return;
+
+      if (!pointerMovedRef.current) {
+        pointerMovedRef.current = true;
+        setDraggedItemId(itemId);
+        runAutoScroll();
+      }
+
+      pointerEvent.preventDefault();
+      updatePointerReorder(pointerEvent.clientX, pointerEvent.clientY);
+    };
+
+    const removeListeners = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+    };
+
+    const onUp = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId !== pointerIdRef.current) return;
+      removeListeners();
+      void finishPointerDrag();
+    };
+
+    const onCancel = (pointerEvent: PointerEvent) => {
+      if (pointerEvent.pointerId !== pointerIdRef.current) return;
+      removeListeners();
+      cancelPointerDrag();
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
   };
 
   const moveItem = async (itemId: string, direction: -1 | 1) => {
@@ -618,7 +720,7 @@ export default function ListDetailsPage() {
             ) : (
               <>
                 <div className={styles.listToolbar}>
-                  <p className={styles.dragHint}>↕ {isTouchDevice ? 'Glissez la poignée ⠿ pour modifier l’ordre' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
+                  <p className={styles.dragHint}>↕ {isTouchDevice ? 'Glissez ⠿ pour déplacer · approchez du bord pour faire défiler' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
                   <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
                 </div>
 
@@ -661,9 +763,6 @@ export default function ListDetailsPage() {
                             aria-label={`Déplacer ${item.media_data.title}`}
                             title="Maintenir et glisser pour déplacer"
                             onPointerDown={(event) => handlePointerDown(item.id, event)}
-                            onPointerMove={handlePointerMove}
-                            onPointerUp={(event) => void finishPointerDrag(event)}
-                            onPointerCancel={handlePointerCancel}
                           >⠿</span>
                         </div>
 
