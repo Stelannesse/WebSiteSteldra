@@ -1,0 +1,104 @@
+.card {
+  position: relative;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.poster {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: linear-gradient(110deg, #222831 8%, #2d343d 18%, #222831 33%);
+  background-size: 200% 100%;
+  animation: posterPulse 1.4s linear infinite;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.card:hover .poster {
+  transform: scale(1.015);
+  filter: brightness(.92);
+}
+
+.action {
+  position: absolute;
+  top: 8px;
+  z-index: 10;
+  min-height: 28px;
+  padding: .22rem .48rem;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 7px;
+  background: rgba(12,15,18,.72);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,.2);
+}
+
+.action:hover { background: rgba(12,15,18,.9); }
+.left { left: 8px; }
+.center { left: 50%; transform: translateX(-50%); min-width: 30px; }
+.right { right: 8px; }
+.watched { background: rgba(76,175,80,.94); }
+.inProgress { background: rgba(255,76,41,.94); }
+.toWatch { background: rgba(0,173,181,.94); }
+
+.roundAction {
+  position: absolute;
+  bottom: 8px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.favorite {
+  left: 8px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.72);
+}
+
+.favoriteActive {
+  background: #00ADB5;
+  color: #071012;
+}
+
+.remove {
+  right: 8px;
+  border: 0;
+  background: rgba(190,35,35,.9);
+}
+
+@media (max-width: 520px) {
+  .action {
+    top: 6px;
+    padding: .18rem .36rem;
+    font-size: .64rem;
+  }
+  .left { left: 6px; }
+  .right { right: 6px; }
+  .roundAction { width: 29px; height: 29px; bottom: 6px; }
+  .favorite { left: 6px; }
+  .remove { right: 6px; }
+}
+
+@keyframes posterPulse {
+  to { background-position-x: -200%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster { animation: none; }
+}

@@ -11,6 +11,7 @@ import Header from '../components/header';
 import type { MediaType } from '../types/media';
 import MainNav from '../components/mainNav';
 import { sortMediaAlphabetically } from "../lib/sortMedia";
+import { usePosterFallback } from '../lib/poster';
 import type {
   MediaItem,
   MyListItem,
@@ -284,7 +285,11 @@ const enrichMissingMetadata = async (
 
     const hasYear = getMediaYear(entry.media) !== null;
 
-    return !hasGenres || !hasYear;
+    const needsPoster =
+      ['movie', 'tv', 'drama', 'anime'].includes(entry.media.type) &&
+      !entry.media.poster_path;
+
+    return !hasGenres || !hasYear || needsPoster;
   });
 
   setMetadataMissingCount(missing.length);
@@ -332,6 +337,11 @@ const enrichMissingMetadata = async (
 
           const enrichedMedia: MediaItem = {
             ...entry.media,
+
+            poster_path:
+              details.poster_path ||
+              entry.media.poster_path ||
+              '',
 
             genres:
               genres.length > 0
@@ -1114,7 +1124,7 @@ return (
         ? item.poster_path.startsWith('http')
           ? item.poster_path
           : `https://image.tmdb.org/t/p/w154${item.poster_path}`
-        : 'https://via.placeholder.com/100x150?text=Steldra';
+        : '/steldra-poster-placeholder.svg';
 
       return (
         <article key={mediaKey} className={styles.collectionListRow}>
@@ -1127,7 +1137,7 @@ return (
               window.location.href = `/media/${item.type}/${item.id}`;
             }}
           >
-            <img src={poster} alt={item.title} />
+            <img src={poster} alt={item.title} onError={(event) => usePosterFallback(event.currentTarget)} />
             <span>
               <strong>{item.title}</strong>
               <small>{item.type}{year ? ` · ${year}` : ''} · {status === 'termine' ? 'Terminé' : status === 'en_cours' ? 'En cours' : status === 'en_pause' ? 'En pause' : status === 'abandonne' ? 'Abandonné' : 'À voir'}</small>

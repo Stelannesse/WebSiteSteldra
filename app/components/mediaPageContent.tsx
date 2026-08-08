@@ -6,6 +6,7 @@ import ReviewSection from './ReviewSection';
 import type { LoadedMediaDetails } from '../hooks/useMediaDetails';
 import type { MediaItem, MediaReview, ReviewRating, MyListItem, WatchStatus } from '../types/media';
 import MediaCard from './mediaCard';
+import { getPosterUrl, usePosterFallback } from '../lib/poster';
 
 type Actor = {
   id: number | string;
@@ -142,11 +143,7 @@ export default function MediaPageContent({
     ? `${synopsis.slice(0, synopsisLimit).trim()}...`
     : synopsis;
 
-  const posterUrl = selectedMedia.poster_path
-    ? selectedMedia.poster_path.startsWith('http')
-      ? selectedMedia.poster_path
-      : `https://image.tmdb.org/t/p/w300${selectedMedia.poster_path}`
-    : 'https://via.placeholder.com/200x300';
+  const posterUrl = getPosterUrl(selectedMedia, 'w342');
 
   const releaseYear =
     Number(mediaDetails?.year) ||
@@ -229,7 +226,7 @@ const wholeSeasonWatched =
 
         <section style={{ ...panelStyle, padding: 'clamp(1rem, 3vw, 1.5rem)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(95px, 130px) minmax(0, 1fr)', gap: 'clamp(1rem, 3vw, 1.5rem)', alignItems: 'start' }}>
-            <img src={posterUrl} alt={`Affiche de ${selectedMedia.title}`} referrerPolicy="no-referrer" style={{ width: '100%', borderRadius: '10px', objectFit: 'cover', aspectRatio: '2 / 3' }} />
+            <img src={posterUrl} alt={`Affiche de ${selectedMedia.title}`} referrerPolicy="no-referrer" onError={(event) => usePosterFallback(event.currentTarget)} style={{ width: '100%', borderRadius: '10px', objectFit: 'cover', aspectRatio: '2 / 3', backgroundColor: '#252b33' }} />
 
             <div style={{ minWidth: 0 }}>
               <h1 style={{ margin: 0, color: '#00ADB5', fontSize: 'clamp(1.45rem, 4vw, 2rem)', lineHeight: 1.15 }}>{selectedMedia.title}</h1>
@@ -256,6 +253,11 @@ const wholeSeasonWatched =
                 ) : mediaDetails?.episode_runtime ? (
                   <span style={{ padding: '0.3rem 0.65rem', borderRadius: '20px', backgroundColor: '#393E46', fontSize: '0.75rem' }}>{mediaDetails.episode_runtime} min / épisode</span>
                 ) : null}
+                {typeof mediaDetails?.rating === 'number' && mediaDetails.rating > 0 && (
+                  <span style={{ padding: '0.3rem 0.65rem', borderRadius: '20px', backgroundColor: '#393E46', fontSize: '0.75rem' }}>
+                    ★ {mediaDetails.rating.toFixed(1)}
+                  </span>
+                )}
                 {hasEpisodes && (mediaDetails?.seasons_count ?? 0) > 0 && (
                 <span
                     style={{
@@ -272,6 +274,16 @@ const wholeSeasonWatched =
                 </span>
                 )}
               </div>
+
+              {(mediaDetails?.genres?.length || selectedMedia.genres?.length) ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.7rem' }}>
+                  {(mediaDetails?.genres?.length ? mediaDetails.genres : selectedMedia.genres || []).slice(0, 6).map((genre) => (
+                    <span key={genre} style={{ padding: '0.25rem 0.55rem', borderRadius: '999px', border: '1px solid rgba(0,173,181,.3)', color: '#9be9ed', fontSize: '0.72rem' }}>
+                      {genre}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
 
               {hasEpisodes && seasonEpisodes.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>

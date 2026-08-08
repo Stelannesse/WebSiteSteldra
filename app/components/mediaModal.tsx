@@ -3,6 +3,7 @@
 import ReviewSection from './ReviewSection';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getPosterUrl, usePosterFallback } from '../lib/poster';
 import type {
   MediaItem,
   MediaReview,
@@ -171,11 +172,7 @@ const mangaProgressPercentage =
       )
     : 0;
 
-  const posterUrl = selectedMedia.poster_path
-    ? selectedMedia.poster_path.startsWith('http')
-      ? selectedMedia.poster_path
-      : `https://image.tmdb.org/t/p/w200${selectedMedia.poster_path}`
-    : 'https://via.placeholder.com/150x225';
+  const posterUrl = getPosterUrl(selectedMedia, 'w342');
 
 const watchedCount = seasonEpisodes.filter(
   (episode) => {
@@ -282,6 +279,7 @@ return (
               }}
               referrerPolicy="no-referrer"
               src={posterUrl}
+        onError={(event) => usePosterFallback(event.currentTarget)}
               alt={`Affiche de ${selectedMedia.title}`}
             />
           </div>

@@ -93,6 +93,11 @@ export async function GET(request: Request) {
 
         first_air_date:
           jikanData.data?.aired?.from || null,
+
+        poster_path:
+          jikanData.data?.images?.jpg?.large_image_url ||
+          jikanData.data?.images?.jpg?.image_url ||
+          null,
       });
     } catch {
       return NextResponse.json({
@@ -303,6 +308,8 @@ return NextResponse.json({
     tmdbType === 'tv'
       ? data.first_air_date || null
       : null,
+
+  poster_path: data.poster_path || null,
 });
 
   } catch (error) {

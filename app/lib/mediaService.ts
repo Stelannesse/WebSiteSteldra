@@ -30,6 +30,7 @@ export type MediaDetailsResult = {
   year?: number | null;
   release_date?: string | null;
   first_air_date?: string | null;
+  poster_path?: string | null;
 };
 
 export async function getMediaDetails(

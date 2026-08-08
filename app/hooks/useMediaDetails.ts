@@ -43,6 +43,7 @@ export type LoadedMediaDetails = {
   year?: number | null;
   release_date?: string | null;
   first_air_date?: string | null;
+  poster_path?: string | null;
 };
 
 type UseMediaDetailsOptions = {
@@ -147,6 +148,11 @@ export default function useMediaDetails({
         const enrichedMedia: MediaItem = {
           ...mediaToLoad,
 
+          poster_path:
+            data?.poster_path ??
+            mediaToLoad.poster_path ??
+            '',
+
           runtime:
             data?.runtime ??
             mediaToLoad.runtime ??
@@ -241,6 +247,11 @@ export default function useMediaDetails({
           first_air_date:
             data?.first_air_date ??
             enrichedMedia.first_air_date ??
+            null,
+
+          poster_path:
+            data?.poster_path ??
+            enrichedMedia.poster_path ??
             null,
         };
 

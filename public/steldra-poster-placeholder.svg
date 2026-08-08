@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#222831"/>
+      <stop offset="1" stop-color="#11151a"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" rx="28" fill="url(#bg)"/>
+  <circle cx="300" cy="385" r="112" fill="#00ADB5" opacity=".12"/>
+  <text x="300" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="150" font-weight="700" fill="#00ADB5">S</text>
+  <text x="300" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#EEEEEE">STELDRA</text>
+  <text x="300" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" fill="#9ea7b3">Affiche indisponible</text>
+</svg>

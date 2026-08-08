@@ -4,6 +4,8 @@ import type {
   WatchStatus,
 } from '../types/media';
 import { useRouter } from 'next/navigation';
+import styles from './mediaCard.module.css';
+import { getPosterUrl, usePosterFallback } from '../lib/poster';
 
 type MediaCardProps = {
   item: MediaItem;
@@ -70,48 +72,17 @@ const openDetails = () => {
       ? `Vu x${watchCount}`
       : 'Vu';
 
-  const posterUrl = item.poster_path
-    ? item.poster_path.startsWith('http')
-      ? item.poster_path
-      : `https://image.tmdb.org/t/p/w200${item.poster_path}`
-    : 'https://via.placeholder.com/150x225?text=Pas+d’affiche';
+  const posterUrl = getPosterUrl(item, 'w342');
 
   return (
-    <div
-        onClick={openDetails}      
-        style={{
-        position: 'relative',
-        cursor: 'pointer',
-        backgroundColor: 'transparent',
-        border: 'none',
-        boxShadow: 'none',
-        padding: 0,
-        margin: 0,
-      }}
-    >
+    <div onClick={openDetails} className={styles.card}>
       <button
         type="button"
         onClick={(event) => {
           event.stopPropagation();
           onMarkWatched(item);
         }}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px',
-          zIndex: 10,
-          padding: '0.3rem 0.6rem',
-          fontSize: '0.75rem',
-          cursor: 'pointer',
-          borderRadius: '6px',
-          border: 'none',
-          backgroundColor:
-            currentStatus === 'vu'
-              ? '#4CAF50'
-              : 'rgba(0,0,0,0.7)',
-          color: '#FFF',
-          fontWeight: 'bold',
-        }}
+        className={`${styles.action} ${styles.left} ${currentStatus === 'vu' ? styles.watched : ''}`}
       >
         {watchedLabel}
       </button>
@@ -122,29 +93,9 @@ const openDetails = () => {
           event.stopPropagation();
           onToggleInProgress(item);
         }}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 10,
-          padding: '0.3rem 0.6rem',
-          fontSize: '0.75rem',
-          cursor: 'pointer',
-          borderRadius: '6px',
-          border: 'none',
-          backgroundColor:
-            currentStatus === 'en_cours'
-              ? '#FF4C29'
-              : 'rgba(0,0,0,0.7)',
-          color: '#FFF',
-          fontWeight: 'bold',
-        }}
-        aria-label={
-          currentStatus === 'en_cours'
-            ? 'Retirer des médias en cours'
-            : 'Marquer comme en cours'
-        }
+        className={`${styles.action} ${styles.center} ${currentStatus === 'en_cours' ? styles.inProgress : ''}`}
+        aria-label={currentStatus === 'en_cours' ? 'Retirer des médias en cours' : 'Marquer comme en cours'}
+        title={currentStatus === 'en_cours' ? 'Retirer des médias en cours' : 'Marquer comme en cours'}
       >
         {currentStatus === 'en_cours' ? '−' : '+'}
       </button>
@@ -155,23 +106,7 @@ const openDetails = () => {
           event.stopPropagation();
           onMarkToWatch(item);
         }}
-        style={{
-          position: 'absolute',
-          top: '10px',
-          right: '10px',
-          zIndex: 10,
-          padding: '0.3rem 0.6rem',
-          fontSize: '0.75rem',
-          cursor: 'pointer',
-          borderRadius: '6px',
-          border: 'none',
-          backgroundColor:
-            currentStatus === 'a_voir'
-              ? '#00ADB5'
-              : 'rgba(0,0,0,0.7)',
-          color: '#FFF',
-          fontWeight: 'bold',
-        }}
+        className={`${styles.action} ${styles.right} ${currentStatus === 'a_voir' ? styles.toWatch : ''}`}
       >
         {isReadingType ? 'À lire' : 'À voir'}
       </button>
@@ -180,11 +115,8 @@ const openDetails = () => {
         src={posterUrl}
         alt={`Affiche de ${item.title}`}
         referrerPolicy="no-referrer"
-        style={{
-          display: 'block',
-          width: '100%',
-          borderRadius: '8px',
-        }}
+        className={styles.poster}
+        onError={(event) => usePosterFallback(event.currentTarget)}
       />
 
       {currentItem && onToggleFavorite && (
@@ -196,61 +128,27 @@ const openDetails = () => {
           }}
           aria-label={currentItem.favorite ? `Retirer ${item.title} des favoris` : `Ajouter ${item.title} aux favoris`}
           title={currentItem.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-          style={{
-            position: 'absolute',
-            left: '8px',
-            bottom: '8px',
-            zIndex: 10,
-            width: '32px',
-            height: '32px',
-            border: '1px solid rgba(255,255,255,.18)',
-            borderRadius: '50%',
-            backgroundColor: currentItem.favorite ? '#00ADB5' : 'rgba(0,0,0,.72)',
-            color: currentItem.favorite ? '#071012' : '#ffffff',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-          }}
+          className={`${styles.roundAction} ${styles.favorite} ${currentItem.favorite ? styles.favoriteActive : ''}`}
         >
           {currentItem.favorite ? '★' : '☆'}
         </button>
       )}
 
-{currentItem && (
-  <button
-    type="button"
-    onClick={(event) => {
-      event.stopPropagation();
-
-      const confirmed = window.confirm(
-        `Supprimer « ${item.title} » de ta collection ?`
-      );
-
-      if (confirmed) {
-        onRemove(item);
-      }
-    }}
-    aria-label={`Supprimer ${item.title}`}
-    title="Supprimer de ma collection"
-    style={{
-      position: 'absolute',
-      right: '8px',
-      bottom: '8px',
-      zIndex: 10,
-      width: '32px',
-      height: '32px',
-      border: 'none',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(190, 35, 35, 0.9)',
-      color: '#ffffff',
-      fontSize: '1rem',
-      fontWeight: 'bold',
-      cursor: 'pointer',
-    }}
-  >
-    ×
-  </button>
-)}
+      {currentItem && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            const confirmed = window.confirm(`Supprimer « ${item.title} » de ta collection ?`);
+            if (confirmed) onRemove(item);
+          }}
+          aria-label={`Supprimer ${item.title}`}
+          title="Supprimer de ma collection"
+          className={`${styles.roundAction} ${styles.remove}`}
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }

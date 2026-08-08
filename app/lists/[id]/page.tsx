@@ -8,6 +8,7 @@ import { createClient } from '../../lib/supabase';
 import MainNav from '../../components/mainNav';
 import type { CustomList, CustomListItem, MediaItem, WatchStatus } from '../../types/media';
 import styles from './listDetails.module.css';
+import { getPosterUrl, usePosterFallback } from '../../lib/poster';
 
 const TYPE_LABELS: Record<string, string> = {
   movie: 'Film',
@@ -53,11 +54,6 @@ export default function ListDetailsPage() {
   const getMediaKey = (media: MediaItem | { id: string | number; type: string }) =>
     `${media.type}_${media.id}`;
 
-  const getPosterUrl = (media: MediaItem) => {
-    if (!media.poster_path) return 'https://via.placeholder.com/200x300?text=Pas+d%27affiche';
-    if (media.poster_path.startsWith('http')) return media.poster_path;
-    return `https://image.tmdb.org/t/p/w300${media.poster_path}`;
-  };
 
   useEffect(() => {
     currentItemsRef.current = items;
@@ -517,7 +513,7 @@ export default function ListDetailsPage() {
 
             {nextItem && (
               <section className={styles.nextCard}>
-                <img src={getPosterUrl(nextItem.media_data)} alt={nextItem.media_data.title} />
+                <img src={getPosterUrl(nextItem.media_data)} alt={nextItem.media_data.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                 <div>
                   <p className={styles.eyebrow}>À regarder ensuite</p>
                   <h2>{nextItem.media_data.title}</h2>
@@ -554,7 +550,7 @@ export default function ListDetailsPage() {
                         onDragEnd={() => void handleDragEnd()}
                       >
                         <div className={styles.posterWrapper} onDoubleClick={() => openMedia(item)}>
-                          <img src={getPosterUrl(item.media_data)} alt={item.media_data.title} className={styles.poster} draggable={false} />
+                          <img src={getPosterUrl(item.media_data, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={item.media_data.title} className={styles.poster} draggable={false} />
                           <span className={styles.position}>{index + 1}</span>
                           <button
                             type="button"
@@ -607,7 +603,7 @@ export default function ListDetailsPage() {
                         return (
                           <button type="button" key={key} className={`${styles.mediaChoice} ${selected ? styles.mediaChoiceSelected : ''}`} onClick={() => toggleMediaSelection(key)}>
                             <div className={styles.mediaPosterWrapper}>
-                              <img src={getPosterUrl(media)} alt={media.title} className={styles.mediaChoicePoster} />
+                              <img src={getPosterUrl(media, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={media.title} className={styles.mediaChoicePoster} />
                               {selected && <span className={styles.selectedMark}>✓</span>}
                             </div>
                             <strong>{media.title}</strong>
