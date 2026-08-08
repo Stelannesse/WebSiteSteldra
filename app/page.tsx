@@ -170,42 +170,64 @@ export default function HomePage() {
           ''
       );
 
-      const [progressResponse, listsResponse, listItemsResponse, likesResponse] =
-        await Promise.all([
-          supabase
-            .from('media_progress')
-            .select('*')
-            .eq('user_id', user.id),
-          supabase
-            .from('custom_lists')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('updated_at', { ascending: false }),
-          supabase
-            .from('custom_list_items')
-            .select('*')
-            .order('position', { ascending: true }),
-          supabase
-            .from('media_reviews')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('rating', 'like')
-            .order('created_at', { ascending: false })
-            .limit(5),
-        ]);
+      const [progressResponse, listsResponse, likesResponse] =
+  await Promise.all([
+    supabase
+      .from('media_progress')
+      .select('*')
+      .eq('user_id', user.id),
 
-      if (cancelled) return;
+    supabase
+      .from('custom_lists')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false }),
 
-      const rows = (progressResponse.data || []) as ProgressRow[];
-      const lists = (listsResponse.data || []) as CustomListRow[];
-      const listIds = new Set(lists.map((list) => list.id));
-      const items = ((listItemsResponse.data || []) as CustomListItemRow[]).filter(
-        (item) => listIds.has(item.list_id)
-      );
+    supabase
+      .from('media_reviews')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('rating', 'like')
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ]);
 
-      setProgressRows(rows);
-      setCustomLists(lists);
-      setCustomListItems(items);
+if (cancelled) return;
+
+const rows = (progressResponse.data || []) as ProgressRow[];
+const lists = (listsResponse.data || []) as CustomListRow[];
+
+let items: CustomListItemRow[] = [];
+
+/*
+ * On récupère UNIQUEMENT les éléments appartenant
+ * aux listes de l'utilisateur connecté.
+ */
+if (lists.length > 0) {
+  const listIds = lists.map((list) => list.id);
+
+  const { data: listItemsData, error: listItemsError } =
+    await supabase
+      .from('custom_list_items')
+      .select('*')
+      .in('list_id', listIds)
+      .order('position', { ascending: true });
+
+  if (listItemsError) {
+    console.error(
+      'Erreur chargement éléments des listes :',
+      listItemsError
+    );
+  } else {
+    items = (listItemsData || []) as CustomListItemRow[];
+  }
+}
+
+if (cancelled) return;
+
+setProgressRows(rows);
+setCustomLists(lists);
+setCustomListItems(items);
 
       const likedRows = (likesResponse.data || []) as Array<{
         media_id: string;

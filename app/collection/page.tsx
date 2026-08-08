@@ -26,7 +26,7 @@ import {
 } from '../lib/mediaService';
 
 export default function Home() {
-  const supabase = createClient();
+const [supabase] = useState(() => createClient());
   const [query, setQuery] = useState(''); // État pour la recherche
   const [results, setResults] = useState<MediaItem[]>([]); // État pour les résultats de recherche
   const [loading, setLoading] = useState(false); // État pour indiquer si la recherche est en cours
@@ -300,132 +300,191 @@ const enrichMissingMetadata = async (
     return;
   }
 
+  /*
+   * Évite de relancer tout l'enrichissement plusieurs fois
+   * pendant la même session navigateur.
+   */
+  const sessionKey = `steldra_metadata_enrichment_${currentUserId}`;
+
+  if (sessionStorage.getItem(sessionKey) === 'running') {
+    return;
+  }
+
+  sessionStorage.setItem(sessionKey, 'running');
   setMetadataIndexing(true);
 
-  /*
-   * Mise à jour progressive des anciens médias.
-   * L'année est enregistrée même lorsque l'API ne retourne aucun genre.
-   * Les données sont sauvegardées dans Supabase : le travail n'est donc
-   * effectué qu'une fois pour les médias déjà enrichis.
-   */
-  for (let index = 0; index < missing.length; index += 6) {
-    const chunk = missing.slice(index, index + 6);
+  try {
+    /*
+     * On traite seulement 4 médias simultanément.
+     * C'est suffisamment rapide, mais beaucoup moins violent
+     * pour l'API, Supabase et React.
+     */
+    const BATCH_SIZE = 4;
 
-    await Promise.allSettled(
-      chunk.map(async ([key, entry]) => {
-        try {
-          const details = await getMediaDetails(entry.media);
+    for (let index = 0; index < missing.length; index += BATCH_SIZE) {
+      const chunk = missing.slice(index, index + BATCH_SIZE);
 
-          const genres = Array.isArray(details.genres)
-            ? details.genres
-                .map(normalizeGenre)
-                .filter(Boolean)
-            : [];
+      const results = await Promise.allSettled(
+        chunk.map(async ([key, entry]) => {
+          try {
+            const details = await getMediaDetails(entry.media);
 
-          const detailsYear =
-            Number(details.year) ||
-            Number(
-              String(
+            const genres = Array.isArray(details.genres)
+              ? details.genres
+                  .map(normalizeGenre)
+                  .filter(Boolean)
+              : [];
+
+            const detailsYear =
+              Number(details.year) ||
+              Number(
+                String(
+                  details.release_date ||
+                  details.first_air_date ||
+                  ''
+                ).slice(0, 4)
+              ) ||
+              null;
+
+            const existingYear = getMediaYear(entry.media);
+
+            const enrichedMedia: MediaItem = {
+              ...entry.media,
+
+              poster_path:
+                details.poster_path ||
+                entry.media.poster_path ||
+                '',
+
+              genres:
+                genres.length > 0
+                  ? Array.from(new Set(genres))
+                  : entry.media.genres,
+
+              genre_ids:
+                details.genre_ids ||
+                entry.media.genre_ids,
+
+              rating:
+                details.rating ??
+                entry.media.rating ??
+                null,
+
+              year:
+                detailsYear && detailsYear > 1900
+                  ? detailsYear
+                  : existingYear ||
+                    entry.media.year,
+
+              release_date:
                 details.release_date ||
+                entry.media.release_date,
+
+              first_air_date:
                 details.first_air_date ||
-                ''
-              ).slice(0, 4)
-            ) ||
-            null;
+                entry.media.first_air_date,
+            };
 
-          const existingYear = getMediaYear(entry.media);
+            /*
+             * Sauvegarde dans Supabase.
+             */
+            const { error } = await supabase
+              .from('media_progress')
+              .update({
+                media_data: enrichedMedia,
+              })
+              .eq('user_id', currentUserId)
+              .eq('media_id', String(entry.media.id))
+              .eq('media_type', entry.media.type);
 
-          const enrichedMedia: MediaItem = {
-            ...entry.media,
-
-            poster_path:
-              details.poster_path ||
-              entry.media.poster_path ||
-              '',
-
-            genres:
-              genres.length > 0
-                ? Array.from(new Set(genres))
-                : entry.media.genres,
-
-            genre_ids:
-              details.genre_ids ||
-              entry.media.genre_ids,
-
-            rating:
-              details.rating ??
-              entry.media.rating ??
-              null,
-
-            year:
-              detailsYear &&
-              detailsYear > 1900
-                ? detailsYear
-                : existingYear ||
-                  entry.media.year,
-
-            release_date:
-              details.release_date ||
-              entry.media.release_date,
-
-            first_air_date:
-              details.first_air_date ||
-              entry.media.first_air_date,
-          };
-
-          setMyList((current) => {
-            const currentEntry = current[key];
-
-            if (!currentEntry) return current;
+            if (error) {
+              console.error(
+                `Erreur Supabase pour ${entry.media.title}:`,
+                error
+              );
+            }
 
             return {
-              ...current,
-              [key]: {
-                ...currentEntry,
-                media: enrichedMedia,
-              },
+              key,
+              enrichedMedia,
+            };
+          } catch (error) {
+            console.error(
+              `Métadonnées indisponibles pour ${entry.media.title}:`,
+              error
+            );
+
+            return null;
+          }
+        })
+      );
+
+      /*
+       * IMPORTANT :
+       * au lieu de faire setMyList() une fois PAR média,
+       * on met React à jour UNE SEULE FOIS par lot.
+       */
+      const successfulUpdates = results
+        .filter(
+          (
+            result
+          ): result is PromiseFulfilledResult<{
+            key: string;
+            enrichedMedia: MediaItem;
+          } | null> => result.status === 'fulfilled'
+        )
+        .map((result) => result.value)
+        .filter(
+          (
+            value
+          ): value is {
+            key: string;
+            enrichedMedia: MediaItem;
+          } => value !== null
+        );
+
+      if (successfulUpdates.length > 0) {
+        setMyList((current) => {
+          const updated = { ...current };
+
+          successfulUpdates.forEach(({ key, enrichedMedia }) => {
+            const currentEntry = updated[key];
+
+            if (!currentEntry) return;
+
+            updated[key] = {
+              ...currentEntry,
+              media: enrichedMedia,
             };
           });
 
-          await supabase
-            .from('media_progress')
-            .update({
-              media_data: enrichedMedia,
-            })
-            .eq('user_id', currentUserId)
-            .eq(
-              'media_id',
-              String(entry.media.id)
-            )
-            .eq(
-              'media_type',
-              entry.media.type
-            );
-        } catch (error) {
-          console.error(
-            `Métadonnées indisponibles pour ${entry.media.title}:`,
-            error
-          );
-        } finally {
-          setMetadataIndexedCount(
-            (current) => current + 1
-          );
-        }
-      })
-    );
+          return updated;
+        });
+      }
+
+      setMetadataIndexedCount((current) =>
+        Math.min(current + chunk.length, missing.length)
+      );
+
+      /*
+       * Petite pause entre deux groupes.
+       * Cela évite d'inonder l'API.
+       */
+      if (index + BATCH_SIZE < missing.length) {
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, 250)
+        );
+      }
+    }
+  } finally {
+    setMetadataIndexing(false);
 
     /*
-     * Petite pause entre les groupes afin de ne pas envoyer
-     * des centaines de requêtes simultanément.
+     * "done" empêche un deuxième gros enrichissement
+     * pendant la même session.
      */
-    if (index + 6 < missing.length) {
-      await new Promise((resolve) =>
-        window.setTimeout(resolve, 120)
-      );
-    }
+    sessionStorage.setItem(sessionKey, 'done');
   }
-
-  setMetadataIndexing(false);
 };
 
 const handleAddToMyList = async (media: MediaItem, status: 'vu' | 'a_voir') => {
