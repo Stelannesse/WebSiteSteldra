@@ -39,8 +39,13 @@ export default function ListDetailsPage() {
 
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const dragStartItemsRef = useRef<CustomListItem[]>([]);
   const currentItemsRef = useRef<CustomListItem[]>([]);
+  const pointerDraggedItemIdRef = useRef<string | null>(null);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerMovedRef = useRef(false);
+  const suppressOpenRef = useRef(false);
 
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [isEditingMeta, setIsEditingMeta] = useState(false);
@@ -58,6 +63,14 @@ export default function ListDetailsPage() {
   useEffect(() => {
     currentItemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const updateTouchMode = () => setIsTouchDevice(mediaQuery.matches || navigator.maxTouchPoints > 0);
+    updateTouchMode();
+    mediaQuery.addEventListener?.('change', updateTouchMode);
+    return () => mediaQuery.removeEventListener?.('change', updateTouchMode);
+  }, []);
 
   useEffect(() => {
     if (!listId) return;
@@ -293,6 +306,78 @@ export default function ListDetailsPage() {
     }
   };
 
+  const handlePointerDown = (itemId: string, event: React.PointerEvent<HTMLElement>) => {
+    if (!isTouchDevice || event.pointerType === 'mouse' || savingOrder) return;
+    if ((event.target as HTMLElement).closest('button')) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragStartItemsRef.current = currentItemsRef.current.map((item) => ({ ...item }));
+    pointerDraggedItemIdRef.current = itemId;
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+    pointerMovedRef.current = false;
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const itemId = pointerDraggedItemIdRef.current;
+    if (!itemId || event.pointerType === 'mouse') return;
+
+    const start = pointerStartRef.current;
+    if (!start) return;
+
+    const distance = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+    if (!pointerMovedRef.current && distance < 8) return;
+
+    pointerMovedRef.current = true;
+    setDraggedItemId(itemId);
+    event.preventDefault();
+
+    const target = document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null;
+    const targetItem = target?.closest<HTMLElement>('[data-list-item-id]');
+    const targetId = targetItem?.dataset.listItemId;
+    if (!targetId || targetId === itemId) return;
+
+    setItems((current) => {
+      const reordered = reorderItems(current, itemId, targetId);
+      currentItemsRef.current = reordered;
+      return reordered;
+    });
+  };
+
+  const finishPointerDrag = async (event: React.PointerEvent<HTMLElement>) => {
+    const itemId = pointerDraggedItemIdRef.current;
+    if (!itemId || event.pointerType === 'mouse') return;
+
+    const moved = pointerMovedRef.current;
+    const fallback = dragStartItemsRef.current;
+    const finalItems = currentItemsRef.current.map((item, index) => ({ ...item, position: index }));
+
+    pointerDraggedItemIdRef.current = null;
+    pointerStartRef.current = null;
+    pointerMovedRef.current = false;
+    setDraggedItemId(null);
+
+    if (!moved) return;
+
+    suppressOpenRef.current = true;
+    window.setTimeout(() => { suppressOpenRef.current = false; }, 350);
+    setItems(finalItems);
+
+    if (finalItems.some((item, index) => fallback[index]?.id !== item.id)) {
+      await saveOrder(finalItems, fallback);
+    }
+  };
+
+  const handlePointerCancel = () => {
+    pointerDraggedItemIdRef.current = null;
+    pointerStartRef.current = null;
+    pointerMovedRef.current = false;
+    setDraggedItemId(null);
+    if (dragStartItemsRef.current.length) {
+      setItems(dragStartItemsRef.current);
+      currentItemsRef.current = dragStartItemsRef.current;
+    }
+  };
+
   const moveItem = async (itemId: string, direction: -1 | 1) => {
     if (savingOrder) return;
     const fromIndex = items.findIndex((item) => item.id === itemId);
@@ -374,6 +459,7 @@ export default function ListDetailsPage() {
   };
 
   const openMedia = (item: CustomListItem) => {
+    if (suppressOpenRef.current) return;
     sessionStorage.setItem('steldra_selected_media', JSON.stringify(item.media_data));
     router.push(`/media/${item.media_type}/${item.media_id}`);
   };
@@ -532,7 +618,7 @@ export default function ListDetailsPage() {
             ) : (
               <>
                 <div className={styles.listToolbar}>
-                  <p className={styles.dragHint}>↕ Glissez les affiches pour modifier l’ordre {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
+                  <p className={styles.dragHint}>↕ {isTouchDevice ? 'Maintenez puis glissez les affiches pour modifier l’ordre' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
                   <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
                 </div>
 
@@ -543,8 +629,13 @@ export default function ListDetailsPage() {
                     return (
                       <article
                         key={item.id}
+                        data-list-item-id={item.id}
                         className={`${styles.item} ${draggedItemId === item.id ? styles.itemDragging : ''}`}
-                        draggable={!savingOrder}
+                        draggable={!savingOrder && !isTouchDevice}
+                        onPointerDown={(event) => handlePointerDown(item.id, event)}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={(event) => void finishPointerDrag(event)}
+                        onPointerCancel={handlePointerCancel}
                         onDragStart={(event) => handleDragStart(item.id, event)}
                         onDragOver={(event) => handleDragOver(item.id, event)}
                         onDragEnd={() => void handleDragEnd()}
