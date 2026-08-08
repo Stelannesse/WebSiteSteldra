@@ -618,7 +618,7 @@ export default function ListDetailsPage() {
             ) : (
               <>
                 <div className={styles.listToolbar}>
-                  <p className={styles.dragHint}>↕ {isTouchDevice ? 'Maintenez puis glissez les affiches pour modifier l’ordre' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
+                  <p className={styles.dragHint}>↕ {isTouchDevice ? 'Glissez la poignée ⠿ pour modifier l’ordre' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
                   <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
                 </div>
 
@@ -632,10 +632,6 @@ export default function ListDetailsPage() {
                         data-list-item-id={item.id}
                         className={`${styles.item} ${draggedItemId === item.id ? styles.itemDragging : ''}`}
                         draggable={!savingOrder && !isTouchDevice}
-                        onPointerDown={(event) => handlePointerDown(item.id, event)}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={(event) => void finishPointerDrag(event)}
-                        onPointerCancel={handlePointerCancel}
                         onDragStart={(event) => handleDragStart(item.id, event)}
                         onDragOver={(event) => handleDragOver(item.id, event)}
                         onDragEnd={() => void handleDragEnd()}
@@ -659,7 +655,16 @@ export default function ListDetailsPage() {
                             disabled={deletingItemId === item.id}
                             title="Retirer de la liste"
                           >{deletingItemId === item.id ? '…' : '×'}</button>
-                          <span className={styles.dragHandle} aria-hidden="true">⠿</span>
+                          <span
+                            className={styles.dragHandle}
+                            role="button"
+                            aria-label={`Déplacer ${item.media_data.title}`}
+                            title="Maintenir et glisser pour déplacer"
+                            onPointerDown={(event) => handlePointerDown(item.id, event)}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={(event) => void finishPointerDrag(event)}
+                            onPointerCancel={handlePointerCancel}
+                          >⠿</span>
                         </div>
 
                         <div className={styles.itemContent}>

@@ -294,8 +294,9 @@
   .listToolbar { align-items: stretch; flex-direction: column; gap: 10px; }
   .addMediaButton { width: 100%; }
   .items { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px 8px; }
-  .dragHandle { display: grid; pointer-events: none; }
-  .item { cursor: default; touch-action: none; -webkit-touch-callout: none; }
+  .dragHandle { display: grid; pointer-events: auto; touch-action: none; -webkit-touch-callout: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .dragHandle:active { cursor: grabbing; }
+  .item { cursor: default; touch-action: auto; -webkit-touch-callout: default; }
   .item:hover { transform: none; }
   .mediaTitleButton { font-size: .72rem; }
   .mobileMoveButtons { display: flex; margin-top: 6px; gap: 5px; }
