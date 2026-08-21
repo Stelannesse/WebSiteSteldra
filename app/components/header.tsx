@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import styles from '../page.module.css';
 
 import type {
@@ -32,7 +31,6 @@ type HeaderProps = {
   ) => void;
 
   onReset: () => void;
-  onLogout: () => void;
 };
 
 const typeFilters: Array<{
@@ -65,11 +63,7 @@ export default function Header({
   onTypeFilterChange,
   onStatusFilterChange,
   onReset,
-  onLogout,
 }: HeaderProps) {
-  const [profileOpen, setProfileOpen] =
-    useState(false);
-
   const statusFilters: Array<{
     value: FilterStatus;
     label: string;
@@ -106,77 +100,6 @@ export default function Header({
   return (
     <header className={styles.appHeader}>
       <div className={styles.headerShell}>
-        <div className={styles.headerTop}>
-          <button
-            type="button"
-            className={styles.brandButton}
-            onClick={onReset}
-            aria-label="Retour à l’accueil"
-          >
-            <span className={styles.brandMark}>
-              S
-            </span>
-
-            <span className={styles.brandContent}>
-              <span className={styles.brandName}>
-                STELDRA
-              </span>
-
-              <span className={styles.brandSubtitle}>
-                Mon univers cinéma & lecture
-              </span>
-            </span>
-          </button>
-
-          <div className={styles.profileContainer}>
-            <button
-              type="button"
-              className={styles.profileButton}
-              onClick={() =>
-                setProfileOpen((current) => !current)
-              }
-              aria-label="Ouvrir le menu utilisateur"
-              aria-expanded={profileOpen}
-            >
-              <span className={styles.profileInitials}>
-                NT
-              </span>
-
-              <span
-                className={`${styles.profileChevron} ${
-                  profileOpen
-                    ? styles.profileChevronOpen
-                    : ''
-                }`}
-              >
-                ▾
-              </span>
-            </button>
-
-            {profileOpen && (
-              <div className={styles.profileMenu}>
-                <div className={styles.profileMenuHeader}>
-                  <strong>Mon compte</strong>
-
-                  <span>Steldra</span>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.profileMenuItem}
-                  onClick={() => {
-                    setProfileOpen(false);
-                    onLogout();
-                  }}
-                >
-                  <span aria-hidden="true">↪</span>
-                  Déconnexion
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
         <div className={styles.modernSearch}>
           <span
             className={styles.modernSearchIcon}

@@ -48,7 +48,6 @@ const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 const [favoritesOnly, setFavoritesOnly] = useState(false);
 const [hideCompleted, setHideCompleted] = useState(false);
 const [yearFilter, setYearFilter] = useState('all');
-const [filtersOpen, setFiltersOpen] = useState(false);
 const [selectedDecade, setSelectedDecade] = useState<number | null>(null);
 const [metadataIndexing, setMetadataIndexing] = useState(false);
 const [metadataIndexedCount, setMetadataIndexedCount] = useState(0);
@@ -250,11 +249,6 @@ const getFilterStatus = (
   }
 
   return 'a_voir';
-};
-
-  const handleLogout = async () => {
-  await supabase.auth.signOut();
-  window.location.href = '/login'; // Redirection vers la page de login
 };
 
 // Fonction pour sauvegarder les données dans Supabase
@@ -692,7 +686,6 @@ const handleReset = () => {
   setTypeFilter('tous');
   setStatusFilter('tout');
   setSelectedDecade(null);
-  setFiltersOpen(false);
   setYearFilter('all');
   setFavoritesOnly(false);
   setHideCompleted(false);
@@ -995,6 +988,7 @@ const clearAdvancedFilters = () => {
   setSelectedDecade(null);
 };
 
+
 const availableYears = useMemo(() => {
   const counts = new Map<number, number>();
 
@@ -1069,14 +1063,12 @@ displayItems = displayItems.filter(item => {
   const matchesCompleted = isSearching || !hideCompleted || itemStatus !== 'termine';
   const itemYear = getMediaYear(item);
   const matchesYear = isSearching || yearFilter === 'all' || Number(yearFilter) === itemYear;
-  const matchesGenre = true;
   return (
     matchesType &&
     matchesStatus &&
     matchesFavorite &&
     matchesCompleted &&
-    matchesYear &&
-    matchesGenre
+    matchesYear
   );
 });
 
@@ -1152,7 +1144,6 @@ return (
   onTypeFilterChange={setTypeFilter}
   onStatusFilterChange={setStatusFilter}
   onReset={handleReset}
-  onLogout={handleLogout}
 />
       {loading && <p style={{ textAlign: 'center', color: '#393E46', fontWeight: 'bold', marginTop: '2rem' }}>Recherche en cours...</p>}
 
@@ -1262,7 +1253,7 @@ return (
         reviewComment={reviewComment}
         userId={userId}
         userName={userName}
-
+      
         mangaProgress={mangaProgress}
 
         activeSeason={activeSeason}

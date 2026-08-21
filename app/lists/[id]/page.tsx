@@ -36,6 +36,9 @@ export default function ListDetailsPage() {
   const [showPicker, setShowPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [itemSort, setItemSort] = useState<'manual' | 'title' | 'type' | 'status'>('manual');
+  const [itemStatusFilter, setItemStatusFilter] = useState<'all' | 'vu' | 'a_voir'>('all');
+  const [itemTypeFilter, setItemTypeFilter] = useState('all');
   const [sharingList, setSharingList] = useState(false);
   const [selectedMediaKeys, setSelectedMediaKeys] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
@@ -161,11 +164,27 @@ export default function ListDetailsPage() {
 
   const displayedItems = useMemo(() => {
     const q = itemSearchQuery.trim().toLocaleLowerCase('fr');
-    if (!q) return items;
-    return items.filter((item) =>
-      (item.media_data?.title || '').toLocaleLowerCase('fr').includes(q)
-    );
-  }, [items, itemSearchQuery]);
+    const filtered = items.filter((item) => {
+      const key = getMediaKey({ id: item.media_id, type: item.media_type });
+      const status = mediaStatuses[key];
+      if (q && !(item.media_data?.title || '').toLocaleLowerCase('fr').includes(q)) return false;
+      if (itemStatusFilter !== 'all') {
+        if (itemStatusFilter === 'vu' && status !== 'vu') return false;
+        if (itemStatusFilter === 'a_voir' && status === 'vu') return false;
+      }
+      if (itemTypeFilter !== 'all' && item.media_type !== itemTypeFilter) return false;
+      return true;
+    });
+
+    if (itemSort === 'manual') return filtered;
+    return [...filtered].sort((a, b) => {
+      if (itemSort === 'title') return (a.media_data?.title || '').localeCompare(b.media_data?.title || '', 'fr', { numeric: true, sensitivity: 'base' });
+      if (itemSort === 'type') return (TYPE_LABELS[a.media_type] || a.media_type).localeCompare(TYPE_LABELS[b.media_type] || b.media_type, 'fr');
+      const aWatched = mediaStatuses[getMediaKey({ id: a.media_id, type: a.media_type })] === 'vu' ? 1 : 0;
+      const bWatched = mediaStatuses[getMediaKey({ id: b.media_id, type: b.media_type })] === 'vu' ? 1 : 0;
+      return bWatched - aWatched || (a.media_data?.title || '').localeCompare(b.media_data?.title || '', 'fr');
+    });
+  }, [items, itemSearchQuery, itemSort, itemStatusFilter, itemTypeFilter, mediaStatuses]);
 
   const watchedCount = useMemo(
     () => items.filter((item) => mediaStatuses[getMediaKey({ id: item.media_id, type: item.media_type })] === 'vu').length,
@@ -776,15 +795,32 @@ export default function ListDetailsPage() {
             ) : (
               <>
                 <div className={styles.listToolbar}>
-                  <input
-                    className={styles.listSearch}
-                    type="search"
-                    value={itemSearchQuery}
-                    onChange={(event) => setItemSearchQuery(event.target.value)}
-                    placeholder={`Rechercher parmi ${items.length} médias…`}
-                    aria-label="Rechercher dans cette liste"
-                  />
-                  <p className={styles.dragHint}>↕ {isTouchDevice ? 'Glissez ⠿ pour déplacer · approchez du bord pour faire défiler' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
+                  <div className={styles.listControls}>
+                    <input
+                      className={styles.listSearch}
+                      type="search"
+                      value={itemSearchQuery}
+                      onChange={(event) => setItemSearchQuery(event.target.value)}
+                      placeholder={`Rechercher parmi ${items.length} médias…`}
+                      aria-label="Rechercher dans cette liste"
+                    />
+                    <select className={styles.listSelect} value={itemSort} onChange={(event) => setItemSort(event.target.value as typeof itemSort)} aria-label="Trier la liste">
+                      <option value="manual">Ordre personnalisé</option>
+                      <option value="title">Titre A → Z</option>
+                      <option value="type">Type de média</option>
+                      <option value="status">Vus en premier</option>
+                    </select>
+                    <select className={styles.listSelect} value={itemStatusFilter} onChange={(event) => setItemStatusFilter(event.target.value as typeof itemStatusFilter)} aria-label="Filtrer par statut">
+                      <option value="all">Tous les statuts</option>
+                      <option value="vu">Vus</option>
+                      <option value="a_voir">À voir</option>
+                    </select>
+                    <select className={styles.listSelect} value={itemTypeFilter} onChange={(event) => setItemTypeFilter(event.target.value)} aria-label="Filtrer par type">
+                      <option value="all">Tous les types</option>
+                      {Object.entries(TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </div>
+                  <p className={styles.dragHint}>{itemSort === 'manual' ? <>↕ {isTouchDevice ? 'Glissez ⠿ pour déplacer · approchez du bord pour faire défiler' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</> : 'Le déplacement manuel est disponible avec « Ordre personnalisé ».'}</p>
                   <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
                 </div>
 
@@ -798,14 +834,14 @@ export default function ListDetailsPage() {
                         key={item.id}
                         data-list-item-id={item.id}
                         className={`${styles.item} ${draggedItemId === item.id ? styles.itemDragging : ''}`}
-                        draggable={!savingOrder && !isTouchDevice}
-                        onDragStart={(event) => handleDragStart(item.id, event)}
-                        onDragOver={(event) => handleDragOver(item.id, event)}
+                        draggable={itemSort === 'manual' && !savingOrder && !isTouchDevice}
+                        onDragStart={(event) => { if (itemSort === 'manual') handleDragStart(item.id, event); }}
+                        onDragOver={(event) => { if (itemSort === 'manual') handleDragOver(item.id, event); }}
                         onDragEnd={() => void handleDragEnd()}
                       >
                         <div className={styles.posterWrapper} onDoubleClick={() => openMedia(item)}>
                           <img src={getPosterUrl(item.media_data, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={item.media_data.title} className={styles.poster} draggable={false} />
-                          <span className={styles.position}>{index + 1}</span>
+                          <span className={styles.position}>{itemSort === 'manual' ? index + 1 : displayedItems.findIndex((entry) => entry.id === item.id) + 1}</span>
                           <button
                             type="button"
                             className={`${styles.watchedButton} ${watched ? styles.watchedButtonActive : ''}`}
@@ -827,7 +863,7 @@ export default function ListDetailsPage() {
                             role="button"
                             aria-label={`Déplacer ${item.media_data.title}`}
                             title="Maintenir et glisser pour déplacer"
-                            onPointerDown={(event) => handlePointerDown(item.id, event)}
+                            onPointerDown={(event) => { if (itemSort === 'manual') handlePointerDown(item.id, event); }}
                           >⠿</span>
                         </div>
 
@@ -835,8 +871,8 @@ export default function ListDetailsPage() {
                           <button type="button" className={styles.mediaTitleButton} onClick={() => openMedia(item)} title={item.media_data.title}>{item.media_data.title}</button>
                           <p>{TYPE_LABELS[item.media_type] || item.media_type}</p>
                           <div className={styles.mobileMoveButtons}>
-                            <button type="button" onClick={() => void moveItem(item.id, -1)} disabled={index === 0 || savingOrder}>←</button>
-                            <button type="button" onClick={() => void moveItem(item.id, 1)} disabled={index === items.length - 1 || savingOrder}>→</button>
+                            <button type="button" onClick={() => void moveItem(item.id, -1)} disabled={itemSort !== 'manual' || index === 0 || savingOrder}>←</button>
+                            <button type="button" onClick={() => void moveItem(item.id, 1)} disabled={itemSort !== 'manual' || index === items.length - 1 || savingOrder}>→</button>
                           </div>
                         </div>
                       </article>

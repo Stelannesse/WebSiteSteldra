@@ -25,6 +25,8 @@ export default function HistoryPage() {
   const [supabase] = useState(() => createClient());
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [periodFilter, setPeriodFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -75,9 +77,19 @@ export default function HistoryPage() {
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr');
-    if (!normalized) return rows;
-    return rows.filter((row) => (row.media_data?.title || '').toLocaleLowerCase('fr').includes(normalized));
-  }, [rows, query]);
+    const now = Date.now();
+    const periodDays = periodFilter === '7' ? 7 : periodFilter === '30' ? 30 : periodFilter === '365' ? 365 : null;
+
+    return rows.filter((row) => {
+      if (normalized && !(row.media_data?.title || '').toLocaleLowerCase('fr').includes(normalized)) return false;
+      if (typeFilter !== 'all' && row.media_type !== typeFilter) return false;
+      if (periodDays) {
+        const watchedAt = new Date(row.watched_at).getTime();
+        if (!Number.isFinite(watchedAt) || watchedAt < now - periodDays * 24 * 60 * 60 * 1000) return false;
+      }
+      return true;
+    });
+  }, [rows, query, typeFilter, periodFilter]);
 
   return (
     <>
@@ -92,7 +104,24 @@ export default function HistoryPage() {
           <span className={styles.count}>{rows.length} visionnage{rows.length > 1 ? 's' : ''}</span>
         </header>
 
-        <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher dans l’historique…" />
+        <div className={styles.filters}>
+          <input className={styles.search} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher dans l’historique…" />
+          <select className={styles.select} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Filtrer par type">
+            <option value="all">Tous les types</option>
+            <option value="movie">Films</option>
+            <option value="tv">Séries</option>
+            <option value="drama">Dramas</option>
+            <option value="anime">Animés</option>
+            <option value="manga">Mangas</option>
+            <option value="manhwa">Manhwas</option>
+          </select>
+          <select className={styles.select} value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value)} aria-label="Filtrer par période">
+            <option value="all">Toute la période</option>
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="365">12 derniers mois</option>
+          </select>
+        </div>
         {error && <p className={styles.error}>{error}</p>}
         {loading ? <p>Chargement…</p> : filtered.length === 0 ? <p className={styles.empty}>Aucun visionnage trouvé.</p> : (
           <section className={styles.list}>

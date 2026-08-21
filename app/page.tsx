@@ -200,6 +200,7 @@ export default function HomePage() {
   const [supabase] = useState(() => createClient());
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
   const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
   const [customLists, setCustomLists] = useState<CustomListRow[]>([]);
   const [customListItems, setCustomListItems] = useState<CustomListItemRow[]>([]);
@@ -491,11 +492,66 @@ if (!historyError && !cancelled) {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
+
+  const displayName = userName.trim() || 'Utilisateur';
+  const profileInitials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U';
+
   return (
     <>
       <MainNav />
 
       <main className={styles.dashboardHome}>
+        <section className={styles.homeIdentity}>
+          <div className={styles.homeBrand}>
+            <span className={styles.brandMark}>S</span>
+            <span className={styles.brandContent}>
+              <span className={styles.brandName}>STELDRA</span>
+              <span className={styles.brandSubtitle}>Mon univers cinéma & lecture</span>
+            </span>
+          </div>
+
+          <div className={styles.profileContainer}>
+            <button
+              type="button"
+              className={styles.profileButton}
+              onClick={() => setProfileOpen((current) => !current)}
+              aria-label="Ouvrir le menu utilisateur"
+              aria-expanded={profileOpen}
+            >
+              <span className={styles.profileInitials}>{profileInitials}</span>
+              <span className={`${styles.profileChevron} ${profileOpen ? styles.profileChevronOpen : ''}`}>▾</span>
+            </button>
+
+            {profileOpen && (
+              <div className={styles.profileMenu}>
+                <div className={styles.profileMenuHeader}>
+                  <strong>Mon compte</strong>
+                  <span>{displayName}</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.profileMenuItem}
+                  onClick={() => {
+                    setProfileOpen(false);
+                    void handleLogout();
+                  }}
+                >
+                  <span aria-hidden="true">↪</span>
+                  Déconnexion
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
         {loading ? (
           <div className={styles.dashboardLoading}>Chargement de votre espace...</div>
         ) : (

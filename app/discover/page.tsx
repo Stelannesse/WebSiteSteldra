@@ -9,9 +9,6 @@ import type { MediaItem, MyListItem, WatchStatus } from '../types/media';
 import styles from '../page.module.css';
 
 type ExploreItem = MediaItem & { recommendation_label?: string; recommendation_reason?: string; collection_id?: number };
-type ExploreGroup = { label: string; items: ExploreItem[]; collectionId?: number };
-type SagaInfo = { id: number; name: string; overview?: string; poster_path?: string; backdrop_path?: string };
-type SelectedSaga = { info: SagaInfo; items: ExploreItem[] };
 type PersonSearchResult = { id: number; name: string; profile_path: string; department: string; known_for: string[] };
 type SelectedPerson = { id: number; name: string; profile_path: string; department: string; biography?: string };
 
@@ -30,8 +27,67 @@ export default function ExplorePage() {
   const [personCredits, setPersonCredits] = useState<ExploreItem[]>([]);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  const [selectedSaga, setSelectedSaga] = useState<SelectedSaga | null>(null);
-  const [sagaLoading, setSagaLoading] = useState(false);
+
+  const genreChoices = [
+    'Action','Aventure','Animation','Comédie','Crime','Documentaire','Drame','Famille',
+    'Fantastique','Histoire','Horreur','Musique','Mystère','Romance','Science-fiction',
+    'Thriller','Guerre','Western','BL','GL','Super-héros','Vampires','Zombies','Noël',
+    'Arts martiaux','Espace','Voyage dans le temps',
+  ];
+  const [selectedGenres, setSelectedGenres] = useState<string[]>(['Action']);
+  const [genreScope, setGenreScope] = useState<'discover' | 'collection'>('discover');
+  const [genreResults, setGenreResults] = useState<ExploreItem[]>([]);
+  const [genreLoading, setGenreLoading] = useState(false);
+  const [genrePage, setGenrePage] = useState(1);
+
+  const normalizeGenreLabel = (value: string) => {
+    const v = value.trim().toLowerCase();
+    if (['bl','boys love','boy love','yaoi','shounen ai','shounen-ai'].includes(v)) return 'BL';
+    if (['gl','girls love',"girls' love",'girl love','yuri','shoujo ai','shoujo-ai'].includes(v)) return 'GL';
+    const aliases: Record<string,string> = { comedy:'Comédie', comedie:'Comédie', drama:'Drame', drame:'Drame', horror:'Horreur', horreur:'Horreur', fantasy:'Fantastique', fantastique:'Fantastique', romance:'Romance', action:'Action', adventure:'Aventure', aventure:'Aventure', thriller:'Thriller', crime:'Crime', mystery:'Mystère', mystere:'Mystère', animation:'Animation', 'science fiction':'Science-fiction', 'science-fiction':'Science-fiction', 'sci-fi':'Science-fiction' };
+    return aliases[v] || value.trim();
+  };
+
+  const mediaGenres = (media: MediaItem) => Array.from(new Set([
+    ...(media.genres || []).map(normalizeGenreLabel),
+    ...(media.tags || []).filter(t => ['BL','GL'].includes(normalizeGenreLabel(t))).map(normalizeGenreLabel),
+  ]));
+
+  const collectionGenreResults = useMemo(() => Object.values(myList)
+    .map(item => item.media)
+    .filter(media => selectedGenres.every(genre => mediaGenres(media).includes(genre))), [myList, selectedGenres]);
+
+  const activeGenreResults = genreScope === 'collection' ? collectionGenreResults : genreResults;
+
+  const toggleGenre = (choice: string) => {
+    setSelectedGenres(current => {
+      if (current.includes(choice)) {
+        return current.length === 1 ? current : current.filter(item => item !== choice);
+      }
+      return [...current, choice];
+    });
+  };
+
+  const loadGenre = async (genres = selectedGenres, page = 1) => {
+    setGenreLoading(true);
+    setGenrePage(page);
+    try {
+      const response = await fetch(`/api/discover-genre?genres=${encodeURIComponent(genres.join(','))}&page=${page}`);
+      const payload = response.ok ? await response.json() : { results: [] };
+      const unseen = (payload.results || []).filter((item: ExploreItem) => !myList[keyOf(item)]);
+      setGenreResults(unseen);
+    } catch {
+      setGenreResults([]);
+    } finally {
+      setGenreLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (genreScope === 'discover') void loadGenre(selectedGenres, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGenres, genreScope]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -68,28 +124,60 @@ export default function ExplorePage() {
     return () => { cancelled = true; };
   }, [supabase]);
 
-  const groups = useMemo(() => {
-    const make = (reason: string): ExploreGroup[] => {
-      const map = new Map<string, ExploreItem[]>();
-      results.filter(r => r.recommendation_reason === reason).forEach(item => {
-        const label = item.recommendation_label || (reason === 'collection' ? 'Même univers' : reason === 'cast' ? 'Acteur ou actrice' : 'Réalisateur');
-        map.set(label, [...(map.get(label) || []), item]);
-      });
-      return [...map.entries()].map(([label, items]) => ({
-        label,
-        items: items.slice(0, 14),
-        collectionId: items.find(item => item.collection_id)?.collection_id,
-      }));
-    };
-    return { universes: make('collection'), actors: make('cast'), directors: make('director') };
-  }, [results]);
 
   const saveStatus = async (media: MediaItem, status: WatchStatus) => {
-    const { data: { user } } = await supabase.auth.getUser(); if (!user) return;
-    const now = new Date().toISOString(); const current = myList[keyOf(media)];
-    const mediaData = { ...media, steldra_added_at: current?.addedAt || now, steldra_last_interaction_at: now, favorite: current?.favorite || false };
-    const { error } = await supabase.from('media_progress').upsert({ user_id: user.id, media_id: String(media.id), media_type: media.type, status, media_data: mediaData });
-    if (!error) setMyList(v => ({ ...v, [keyOf(media)]: { media: mediaData, status, watchCount: status === 'vu' ? 1 : 0, favorite: current?.favorite || false, addedAt: current?.addedAt || now, lastInteractionAt: now } }));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const now = new Date().toISOString();
+    const current = myList[keyOf(media)];
+    const currentCount = Number(current?.watchCount) || (current?.status === 'vu' ? 1 : 0);
+    const nextWatchCount = status === 'vu' ? Math.min(20, currentCount + 1) : status === 'a_voir' ? 0 : currentCount;
+    const mediaData = {
+      ...media,
+      steldra_added_at: current?.addedAt || now,
+      steldra_last_interaction_at: now,
+      favorite: current?.favorite || false,
+    };
+
+    const { error } = await supabase.from('media_progress').upsert({
+      user_id: user.id,
+      media_id: String(media.id),
+      media_type: media.type,
+      status,
+      media_data: mediaData,
+      watch_count: nextWatchCount,
+    }, { onConflict: 'user_id,media_id' });
+
+    if (error) {
+      console.error('Erreur sauvegarde depuis Découvrir :', error);
+      return;
+    }
+
+    if (status === 'vu') {
+      const { error: historyError } = await supabase.from('watch_history').insert({
+        user_id: user.id,
+        media_id: String(media.id),
+        media_type: media.type,
+        media_data: mediaData,
+        watched_at: now,
+      });
+      if (historyError) console.error('Erreur historique depuis Découvrir :', historyError);
+    }
+
+    setMyList(v => ({
+      ...v,
+      [keyOf(media)]: {
+        media: mediaData,
+        status,
+        watchCount: nextWatchCount,
+        favorite: current?.favorite || false,
+        addedAt: current?.addedAt || now,
+        lastInteractionAt: now,
+      },
+    }));
+
+    window.dispatchEvent(new CustomEvent('steldra:progress-updated'));
   };
 
   const remove = async (media: MediaItem) => {
@@ -132,52 +220,6 @@ export default function ExplorePage() {
     }
   };
 
-  const openSaga = async (group: ExploreGroup) => {
-    if (!group.collectionId) return;
-    setSagaLoading(true);
-    setSelectedSaga(null);
-    try {
-      const response = await fetch(`/api/collection?id=${group.collectionId}`);
-      const payload = response.ok ? await response.json() : { collection: null, results: [] };
-      if (payload.collection) {
-        setSelectedSaga({ info: payload.collection, items: payload.results || [] });
-      }
-    } catch {
-      setSelectedSaga(null);
-    } finally {
-      setSagaLoading(false);
-    }
-  };
-
-  const formatMinutes = (minutes: number) => {
-    const safe = Math.max(0, Math.round(minutes));
-    const hours = Math.floor(safe / 60);
-    const mins = safe % 60;
-    if (!hours) return `${mins} min`;
-    return `${hours} h ${String(mins).padStart(2, '0')}`;
-  };
-
-  const sagaStats = useMemo(() => {
-    if (!selectedSaga) return null;
-    const watched = selectedSaga.items.filter(item => myList[keyOf(item)]?.status === 'vu');
-    const total = selectedSaga.items.length;
-    const watchedMinutes = watched.reduce((sum, item) => {
-      const entry = myList[keyOf(item)];
-      const runtime = Number(entry?.media.runtime || item.runtime) || 0;
-      const count = Math.max(1, Number(entry?.watchCount) || 1);
-      return sum + runtime * count;
-    }, 0);
-    const totalMinutes = selectedSaga.items.reduce((sum, item) => sum + (Number(item.runtime) || 0), 0);
-    const next = selectedSaga.items.find(item => myList[keyOf(item)]?.status !== 'vu') || null;
-    return {
-      watched: watched.length,
-      total,
-      percent: total ? Math.round((watched.length / total) * 100) : 0,
-      watchedMinutes,
-      totalMinutes,
-      next,
-    };
-  }, [selectedSaga, myList]);
 
   const renderMediaRail = (items: ExploreItem[]) => (
     <div className={styles.discoverRail}>
@@ -191,86 +233,13 @@ export default function ExplorePage() {
     </div>
   );
 
-  const renderGroups = (title: string, intro: string, data: ExploreGroup[], sagaMode = false) => (
-    <section className={styles.discoverSection}>
-      <div className={styles.discoverSectionHeading}><div><h2>{title}</h2><p>{intro}</p></div></div>
-      {data.length === 0 ? <div className={styles.discoverEmpty}>Steldra complétera cette rubrique à mesure que vous aimez des titres.</div> : data.map(group => (
-        <div key={group.label} className={styles.exploreGroupBlock}>
-          <div className={styles.exploreGroupTitleRow}>
-            <h3>{group.label}</h3>
-            {sagaMode && group.collectionId && (
-              <button type="button" className={styles.sagaOpenButton} onClick={() => void openSaga(group)}>
-                Voir la saga
-              </button>
-            )}
-          </div>
-          {renderMediaRail(group.items)}
-        </div>
-      ))}
-    </section>
-  );
 
   return <><MainNav/><main className={styles.discoverPage}>
     <header className={styles.discoverHero}>
-      <span>EXPLORER</span>
-      <h1>Explorez selon ce que vous aimez</h1>
-      <p>Sagas, acteurs et réalisateurs : Steldra part de vos coups de cœur pour vous ouvrir de nouvelles pistes.</p>
+      <span>DÉCOUVRIR</span>
+      <h1>Qu’est-ce que vous avez envie de regarder ?</h1>
+      <p>Choisissez plusieurs envies à la fois et découvrez de nouveaux films et séries selon votre humeur.</p>
     </header>
-
-    {(sagaLoading || selectedSaga) && (
-      <section className={styles.sagaDetailSection}>
-        {sagaLoading ? (
-          <div className={styles.discoverEmpty}>Steldra prépare la saga…</div>
-        ) : selectedSaga && sagaStats ? (
-          <>
-            <div className={styles.sagaDetailTop}>
-              <div>
-                <span className={styles.sagaEyebrow}>UNIVERS / SAGA</span>
-                <h2>{selectedSaga.info.name}</h2>
-                {selectedSaga.info.overview && <p>{selectedSaga.info.overview}</p>}
-              </div>
-              <button type="button" className={styles.sagaCloseButton} onClick={() => setSelectedSaga(null)}>Fermer</button>
-            </div>
-
-            <div className={styles.sagaStatsGrid}>
-              <div><span>Progression</span><strong>{sagaStats.watched} / {sagaStats.total} vus</strong></div>
-              <div><span>Avancement</span><strong>{sagaStats.percent} %</strong></div>
-              <div><span>Temps regardé</span><strong>{formatMinutes(sagaStats.watchedMinutes)}</strong></div>
-              <div><span>Durée totale</span><strong>{formatMinutes(sagaStats.totalMinutes)}</strong></div>
-            </div>
-
-            <div className={styles.sagaProgressTrack} aria-label={`Progression ${sagaStats.percent} %`}>
-              <div style={{ width: `${sagaStats.percent}%` }} />
-            </div>
-
-            {sagaStats.next && (
-              <div className={styles.sagaNextCard}>
-                <span>▶ PROCHAIN</span>
-                <strong>{sagaStats.next.title}</strong>
-                {sagaStats.next.year && <small>{sagaStats.next.year}</small>}
-              </div>
-            )}
-
-            <div className={styles.sagaMoviesRail}>
-              {selectedSaga.items.map((media, index) => {
-                const entry = myList[keyOf(media)];
-                const isWatched = entry?.status === 'vu';
-                const isNext = sagaStats.next && keyOf(sagaStats.next) === keyOf(media);
-                return (
-                  <article key={keyOf(media)} className={`${styles.sagaMovieCard} ${isWatched ? styles.sagaMovieWatched : ''} ${isNext ? styles.sagaMovieNext : ''}`}>
-                    <div className={styles.sagaOrderBadge}>{isWatched ? '✓' : index + 1}</div>
-                    {isNext && <div className={styles.sagaNextBadge}>▶ Prochain</div>}
-                    <MediaCard item={media} currentItem={entry} onMarkWatched={m=>void saveStatus(m,'vu')} onToggleInProgress={m=>void saveStatus(m,'en_cours')} onMarkToWatch={m=>void saveStatus(m,'a_voir')} onRemove={m=>void remove(m)} rememberCollectionPosition={false}/>
-                    <strong>{media.title}</strong>
-                    <small>{media.year || '—'}{media.runtime ? ` · ${media.runtime} min` : ''}</small>
-                  </article>
-                );
-              })}
-            </div>
-          </>
-        ) : null}
-      </section>
-    )}
 
     <section className={styles.discoverPersonSearch}>
       <div className={styles.discoverSectionHeading}>
@@ -316,10 +285,53 @@ export default function ExplorePage() {
       )}
     </section>
 
-    {loading ? <div className={styles.discoverEmpty}>Steldra prépare votre espace Explorer...</div> : <>
-      {renderGroups(' Univers & sagas','Retrouvez les autres titres des univers que vous aimez.',groups.universes, true)}
-      {renderGroups(' Acteurs & actrices','D’autres films et séries avec les visages qui reviennent dans vos coups de cœur.',groups.actors)}
-      {renderGroups(' Réalisateurs','Explorez la filmographie des réalisateurs derrière vos films préférés.',groups.directors)}
-    </>}
+    {!loading && results.length > 0 && (
+      <section className={styles.discoverSection}>
+        <div className={styles.discoverSectionHeading}>
+          <div><span className={styles.sagaEyebrow}>POUR VOUS</span><h2>Inspiré de vos coups de cœur</h2><p>Une sélection construite à partir des titres que vous avez aimés.</p></div>
+        </div>
+        {renderMediaRail(results.slice(0, 18))}
+      </section>
+    )}
+
+    <section className={styles.genreDiscoveryBox}>
+      <div className={styles.genreDiscoveryTop}>
+        <div>
+          <span className={styles.sagaEyebrow}>J’AI ENVIE DE…</span>
+          <h2>Composez votre envie</h2>
+          <p>Mélangez genres et thèmes : Action + Romance, Horreur + Vampires, BL + Romance… STELDRA cherchera des titres qui correspondent à tous vos choix.</p>
+        </div>
+      </div>
+
+      <div className={styles.discoverGenreRail}>
+        {genreChoices.map(choice => (
+          <button key={choice} type="button" className={selectedGenres.includes(choice) ? styles.discoverGenreActive : ''} onClick={() => toggleGenre(choice)} aria-pressed={selectedGenres.includes(choice)}>
+            {choice}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.genreDiscoveryActions}>
+        <div className={styles.genreScopeSwitch}>
+          <button type="button" className={genreScope === 'discover' ? styles.genreScopeActive : ''} onClick={() => setGenreScope('discover')}>À découvrir</button>
+          <button type="button" className={genreScope === 'collection' ? styles.genreScopeActive : ''} onClick={() => setGenreScope('collection')}>Dans ma collection</button>
+        </div>
+        {genreScope === 'discover' && <button type="button" className={styles.refreshGenreButton} onClick={() => void loadGenre(selectedGenres, genrePage + 1)} disabled={genreLoading}>Nouvelles propositions</button>}
+      </div>
+
+      <div className={styles.genreSelectionSummary}>
+        <span>Genres sélectionnés</span>
+        <strong>{selectedGenres.join(' + ')}</strong>
+      </div>
+
+      {genreLoading && genreScope === 'discover' ? (
+        <div className={styles.discoverEmpty}>STELDRA cherche des titres correspondant à votre sélection…</div>
+      ) : activeGenreResults.length > 0 ? (
+        renderMediaRail(activeGenreResults.slice(0, 24))
+      ) : (
+        <div className={styles.discoverEmpty}>{genreScope === 'collection' ? 'Aucun titre ne correspond à tous ces genres dans votre collection.' : 'Aucune recommandation disponible pour cette combinaison pour le moment.'}</div>
+      )}
+    </section>
+
   </main></>;
 }

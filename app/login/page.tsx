@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { createClient } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
+import PasswordVisibilityButton from '../components/PasswordVisibilityButton';
+import { getAuthErrorMessage } from '../lib/authErrorMessage';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setMessage('Email ou mot de passe incorrect.');
+      setMessage(getAuthErrorMessage(error, 'E-mail ou mot de passe incorrect.'));
       setLoading(false);
       return;
     }
@@ -50,9 +52,11 @@ export default function LoginPage() {
             autoComplete="current-password"
             required
           />
-          <button type="button" className={styles.eyeButton} onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
-            {showPassword ? '🙈' : '👁'}
-          </button>
+          <PasswordVisibilityButton
+            visible={showPassword}
+            onToggle={() => setShowPassword((value) => !value)}
+            className={styles.eyeButton}
+          />
         </div>
 
         {message && <p className={styles.message}>{message}</p>}

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { createClient } from '../lib/supabase';
 import styles from '../login/login.module.css';
+import { getAuthErrorMessage } from '../lib/authErrorMessage';
 
 export default function ForgotPasswordPage() {
   const [supabase] = useState(() => createClient());
@@ -17,7 +18,7 @@ export default function ForgotPasswordPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
-    setMessage(error ? error.message : 'Si ce compte existe, un lien de réinitialisation vient d’être envoyé.');
+    setMessage(error ? getAuthErrorMessage(error, "Impossible d'envoyer le lien de réinitialisation pour le moment.") : 'Si ce compte existe, un lien de réinitialisation vient d’être envoyé. Pensez à vérifier vos courriers indésirables.');
     setLoading(false);
   };
 

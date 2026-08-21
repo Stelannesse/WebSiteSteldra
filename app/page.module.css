@@ -1852,6 +1852,40 @@ background-color: #181d23;
    ACCUEIL PERSONNALISE
 ========================================================= */
 
+.homeIdentity {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(1380px, 100%);
+  margin: 0 auto 1rem;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(145deg, rgba(34, 40, 49, 0.98), rgba(27, 32, 40, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.homeBrand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.7rem;
+}
+
+@media (max-width: 520px) {
+  .homeIdentity {
+    padding: 0.75rem;
+    border-radius: 15px;
+  }
+
+  .homeIdentity .brandSubtitle {
+    max-width: 205px;
+  }
+}
+
 .dashboardHome {
   width: 100%;
   max-width: 100vw;
@@ -3470,5 +3504,286 @@ background-color: #181d23;
 @media (max-width: 640px) {
   .moreListsButton {
     width: 100%;
+  }
+}
+
+/* =========================================================
+   GENRES — SÉLECTEUR COMPACT
+========================================================= */
+
+.genrePicker {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.genrePickerButton,
+.genrePickerButtonActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  min-width: 88px;
+  max-width: 190px;
+  white-space: nowrap;
+}
+
+.genrePickerButtonActive {
+  border-color: rgba(0, 198, 207, 0.55) !important;
+  background: rgba(0, 198, 207, 0.16) !important;
+  color: #72e3e8 !important;
+}
+
+.genrePickerButton > span:first-child,
+.genrePickerButtonActive > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.genrePickerChevron {
+  flex-shrink: 0;
+  color: #00c6cf;
+  font-size: 0.9rem;
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+.genrePickerPanel {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  width: min(270px, calc(100vw - 2rem));
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 0.38rem;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 12px;
+  background: #252b33;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+}
+
+.genreOption,
+.genreOptionActive {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px !important;
+  padding: 0.48rem 0.6rem !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  text-align: left;
+}
+
+.genreOption:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.genreOptionActive {
+  background: rgba(0, 198, 207, 0.14) !important;
+  color: #72e3e8 !important;
+}
+
+.genreOption small,
+.genreOptionActive small {
+  margin-left: 0.8rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.genreOptionActive small {
+  color: rgba(114, 227, 232, 0.72);
+}
+
+@media (max-width: 760px) {
+  .genrePicker {
+    flex: 0 0 auto;
+  }
+
+  .genrePickerButton,
+  .genrePickerButtonActive {
+    width: auto;
+    max-width: 180px;
+  }
+
+  .genrePickerPanel {
+    position: fixed;
+    top: auto;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    left: 1rem;
+    width: auto;
+    max-height: min(55vh, 420px);
+    border-radius: 16px;
+  }
+}
+
+
+/* Découvrir - recommandation par genre */
+.genreDiscoveryBox {
+  margin-top: 0.8rem;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  background: #20272f;
+}
+.genreDiscoveryTop,
+.genreDiscoveryActions,
+.genreScopeSwitch {
+  display: flex;
+  align-items: center;
+}
+.genreDiscoveryTop {
+  justify-content: space-between;
+  gap: 1rem;
+}
+.genreDiscoveryTop h2 {
+  margin: 0.18rem 0 0;
+  color: #fff;
+  font-family: var(--font-poppins), Arial, sans-serif;
+  font-size: 1.1rem;
+}
+.statsShortcut {
+  flex: 0 0 auto;
+  padding: 0.48rem 0.72rem;
+  border: 1px solid rgba(0,173,181,0.32);
+  border-radius: 999px;
+  color: #55d8de;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.genreDiscoveryActions {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0.8rem;
+}
+.genreScopeSwitch {
+  padding: 0.18rem;
+  border-radius: 999px;
+  background: #151a20;
+}
+.genreScopeSwitch button,
+.surpriseButton,
+.refreshGenreButton {
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.45rem 0.72rem;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+.genreScopeSwitch button {
+  background: transparent;
+  color: rgba(255,255,255,0.56);
+}
+.genreScopeSwitch .genreScopeActive {
+  background: #00adb5;
+  color: #071012;
+}
+.surpriseButton {
+  background: #00adb5;
+  color: #071012;
+}
+.refreshGenreButton {
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #29313a;
+  color: #fff;
+}
+.surpriseButton:disabled,
+.refreshGenreButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (max-width: 620px) {
+  .genreDiscoveryBox { padding: 0.8rem; }
+  .genreDiscoveryTop { align-items: flex-start; }
+  .statsShortcut { padding: 0.42rem 0.58rem; font-size: 0.62rem; }
+  .genreDiscoveryActions { align-items: stretch; }
+  .genreScopeSwitch { width: 100%; }
+  .genreScopeSwitch button { flex: 1; }
+}
+
+/* Découvrir v2 : page plus dense, recherche personnes mise en avant */
+.discoverHero {
+  position: relative;
+}
+
+.discoverHero .statsShortcut {
+  display: inline-flex;
+  margin-top: 1rem;
+  width: fit-content;
+}
+
+.discoverPersonSearch {
+  border: 1px solid rgba(0, 173, 181, 0.28);
+  background: linear-gradient(145deg, rgba(0, 173, 181, 0.10), rgba(34, 40, 49, 0.94));
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+}
+
+.discoverPersonSearch .discoverSectionHeading h2 {
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.discoverSearchForm {
+  max-width: none;
+}
+
+.discoverSearchForm input {
+  min-height: 52px;
+  font-size: 1rem;
+}
+
+.discoverSearchForm button {
+  min-height: 52px;
+  padding-inline: 1.3rem;
+}
+
+.genreSelectionSummary {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0 1rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(0, 173, 181, 0.08);
+  border: 1px solid rgba(0, 173, 181, 0.18);
+}
+
+.genreSelectionSummary span {
+  color: rgba(238, 238, 238, 0.62);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.genreSelectionSummary strong {
+  color: #EEEEEE;
+  font-size: 0.9rem;
+}
+
+.discoverGenreRail button[aria-pressed='true'] {
+  box-shadow: 0 0 0 1px rgba(0, 173, 181, 0.18), 0 8px 24px rgba(0, 173, 181, 0.12);
+}
+
+@media (max-width: 720px) {
+  .discoverSearchForm {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .discoverSearchForm button {
+    width: 100%;
+  }
+
+  .genreSelectionSummary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 }

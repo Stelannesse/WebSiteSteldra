@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { createClient } from '../lib/supabase';
 import styles from '../login/login.module.css';
+import PasswordVisibilityButton from '../components/PasswordVisibilityButton';
+import { getAuthErrorMessage } from '../lib/authErrorMessage';
 
 export default function SignupPage() {
   const [supabase] = useState(() => createClient());
@@ -30,11 +32,11 @@ export default function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: name }, emailRedirectTo: redirectTo },
+      options: { data: { full_name: name, display_name: name }, emailRedirectTo: redirectTo },
     });
 
     if (error) {
-      setMessage(error.message);
+      setMessage(getAuthErrorMessage(error, "Impossible de créer le compte pour le moment. Veuillez réessayer."));
     } else if (data.session) {
       window.location.href = '/';
       return;
@@ -53,7 +55,11 @@ export default function SignupPage() {
         <input name="email" className={styles.input} type="email" placeholder="Email" autoComplete="email" required />
         <div className={styles.passwordWrapper}>
           <input name="password" className={styles.input} type={showPassword ? 'text' : 'password'} placeholder="Mot de passe (8 caractères minimum)" autoComplete="new-password" required minLength={8} />
-          <button type="button" className={styles.eyeButton} onClick={() => setShowPassword((value) => !value)}>{showPassword ? '🙈' : '👁'}</button>
+          <PasswordVisibilityButton
+            visible={showPassword}
+            onToggle={() => setShowPassword((value) => !value)}
+            className={styles.eyeButton}
+          />
         </div>
         {message && <p className={styles.message}>{message}</p>}
         <button type="submit" disabled={loading} className={styles.button}>{loading ? 'Création…' : 'Créer mon compte'}</button>

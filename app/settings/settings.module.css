@@ -114,3 +114,48 @@
 
 .actionButton:disabled { opacity: .55; cursor: wait; }
 .exportMessage { margin: .5rem 0 0; color: #bfeff2; }
+
+.profileForm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 18px;
+}
+.profileForm label { display: grid; gap: 7px; color: #aeb7c8; font-size: .82rem; font-weight: 700; }
+.profileForm input {
+  width: 100%; box-sizing: border-box; padding: .75rem .85rem;
+  border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+  background: #222a34; color: #fff; font: inherit;
+}
+.profileForm input:focus { outline: 2px solid rgba(0,212,224,.25); border-color: #00d4e0; }
+.profileForm input:disabled { opacity: .65; }
+.secondaryActionButton {
+  min-width: 140px; padding: .7rem 1rem; border: 1px solid rgba(0,212,224,.35);
+  border-radius: 10px; background: rgba(0,212,224,.08); color: #8ff5fa;
+  font: inherit; font-weight: 800; cursor: pointer;
+}
+.secondaryActionButton:hover { background: rgba(0,212,224,.14); }
+.secondaryActionButton:disabled { opacity: .55; cursor: wait; }
+.hiddenInput { display: none; }
+@media (max-width: 760px) {
+  .page { padding: 1.2rem; }
+  .profileForm { grid-template-columns: 1fr; }
+  .setting { align-items: flex-start; flex-direction: column; }
+  .setting .actionButton, .setting .secondaryActionButton { width: 100%; }
+}
+
+.statsLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: .8rem;
+  padding: .75rem 1rem;
+  border: 1px solid rgba(0, 212, 224, .35);
+  border-radius: 10px;
+  background: rgba(0, 212, 224, .08);
+  color: #8ff5fa;
+  font-weight: 800;
+  text-decoration: none;
+}
+.statsLink:hover { background: rgba(0, 212, 224, .14); }

@@ -326,3 +326,31 @@
   font: inherit;
 }
 .listSearch:focus { outline: 2px solid rgba(0,173,181,.35); border-color: #00adb5; }
+
+
+.listControls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.5fr) repeat(3, minmax(135px, .7fr));
+  gap: 9px;
+  flex: 1;
+}
+.listSelect {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 11px;
+  border: 1px solid #46515e;
+  border-radius: 10px;
+  background: #171c22;
+  color: #fff;
+  font: inherit;
+  font-size: .8rem;
+}
+.listSelect:focus { outline: 2px solid rgba(0,173,181,.35); border-color: #00adb5; }
+@media (max-width: 900px) {
+  .listControls { width: 100%; grid-template-columns: 1fr 1fr; }
+  .listSearch { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .listControls { grid-template-columns: 1fr; }
+  .listSearch { grid-column: auto; }
+}

@@ -51,7 +51,28 @@ body {
 .brand { color: #00ADB5; margin: 0; }
 .passwordWrapper { position: relative; display: flex; width: 100%; }
 .passwordWrapper .input { width: 100%; box-sizing: border-box; padding-right: 3rem; }
-.eyeButton { position: absolute; right: .45rem; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: white; cursor: pointer; font-size: 1.05rem; }
+.eyeButton {
+  position: absolute;
+  right: .45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #00ADB5;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+.eyeButton:hover { background: rgba(0, 173, 181, .12); color: #22d3dc; }
+.eyeButton:focus-visible { outline: 2px solid #00ADB5; outline-offset: 2px; }
+.eyeButton svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.inlineLink { color: #7ce9ee; text-decoration: none; }
+.inlineLink:hover { text-decoration: underline; }
 .links { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: .9rem; }
 .links a { color: #7ce9ee; text-decoration: none; }
 .links a:hover { text-decoration: underline; }
