@@ -1238,7 +1238,7 @@ return (
   })}
 </div>
 {!isSearching && visibleCount < displayItems.length && (
-  <div style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem' }}>
+  <div className={styles.collectionLoadMoreWrap}>
     <button type="button" className={styles.collectionFilterButton} onClick={() => setVisibleCount((count) => count + 120)}>
       Afficher 120 médias de plus ({Math.min(visibleCount, displayItems.length)} / {displayItems.length})
     </button>

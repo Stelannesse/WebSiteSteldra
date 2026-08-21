@@ -109,17 +109,92 @@ const formatMinutes = (minutes: number) => {
   return rest ? `${hours} h ${rest.toString().padStart(2, '0')}` : `${hours} h`;
 };
 
-const watchedMinutesFor = (row: ProgressRow | undefined, media: MediaItem) => {
-  if (!row) return 0;
-  if (media.type === 'manga' || media.type === 'manhwa') return 0;
-  if (media.type === 'movie') {
-    const count = Math.max(Number(row.watch_count) || (row.status === 'vu' ? 1 : 0), 0);
-    return Math.round((Number(media.runtime) || 0) * count);
+const normalizeStoredMinutes = (value: unknown, kind: 'movie' | 'episode') => {
+  let minutes = Number(value) || 0;
+  if (!Number.isFinite(minutes) || minutes <= 0) return 0;
+
+  // Certaines anciennes fiches ont pu conserver une durée exprimée en secondes.
+  // Une durée de film > 10 h ou d'épisode > 5 h est donc ramenée en minutes.
+  const suspiciousThreshold = kind === 'movie' ? 600 : 300;
+  if (minutes > suspiciousThreshold) {
+    minutes = minutes / 60;
   }
+
+  return Math.round(minutes);
+};
+
+const firstPositiveNumber = (...values: unknown[]) => {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number) && number > 0) return number;
+  }
+  return 0;
+};
+
+const watchedMinutesFor = (row: ProgressRow | undefined, listMedia: MediaItem) => {
+  if (!row) return 0;
+
+  const progressMedia = row.media_data || ({} as MediaItem);
+  const mediaType = progressMedia.type || listMedia.type || row.media_type;
+
+  if (mediaType === 'manga' || mediaType === 'manhwa') return 0;
+
+  if (mediaType === 'movie') {
+    if (row.status !== 'vu') return 0;
+
+    // Important : une fiche media_progress plus récente peut avoir runtime=null.
+    // Dans ce cas on reprend la durée encore présente dans l'élément de liste.
+    const runtime = firstPositiveNumber(
+      progressMedia.runtime,
+      listMedia.runtime
+    );
+
+    return normalizeStoredMinutes(runtime, 'movie');
+  }
+
   const episodes = row.watched_episode || row.watched_episodes || {};
-  const watchedEpisodes = Object.values(episodes).filter(Boolean).length;
-  const fallbackEpisodes = row.status === 'vu' ? Number(media.episodes) || 0 : 0;
-  return Math.round((Number(media.episode_runtime) || 0) * Math.max(watchedEpisodes, fallbackEpisodes));
+  const prefix = `${row.media_type}_${row.media_id}_S`;
+
+  const watchedEpisodes = Object.entries(episodes).filter(
+    ([key, watched]) => watched && key.startsWith(prefix)
+  ).length;
+
+  // Même principe pour les séries : on ne laisse pas un null/0 récent
+  // écraser une ancienne durée d'épisode valide stockée dans la liste.
+  const episodeRuntime = normalizeStoredMinutes(
+    firstPositiveNumber(
+      progressMedia.episode_runtime,
+      listMedia.episode_runtime
+    ),
+    'episode'
+  );
+
+  const totalEpisodes = Math.max(
+    0,
+    Math.round(
+      firstPositiveNumber(
+        progressMedia.episodes,
+        listMedia.episodes
+      )
+    )
+  );
+
+  const episodesToCount =
+    watchedEpisodes > 0
+      ? watchedEpisodes
+      : row.status === 'vu'
+        ? totalEpisodes
+        : 0;
+
+  // Si aucun épisode n'est réellement compté, la durée regardée reste nulle.
+  if (episodesToCount <= 0) return 0;
+
+  // Si la durée d'épisode manque réellement dans les deux sources, on garde 0
+  // plutôt que d'inventer une durée. Elle sera renseignée dès que la fiche est
+  // ouverte et mise à jour depuis TMDB.
+  if (episodeRuntime <= 0) return 0;
+
+  return episodeRuntime * episodesToCount;
 };
 export default function HomePage() {
   const [supabase] = useState(() => createClient());
@@ -133,6 +208,7 @@ export default function HomePage() {
   const [recommendationSource, setRecommendationSource] = useState<string>('');
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
+  const [visibleListsCount, setVisibleListsCount] = useState(6);
   const hasLoadedDashboard = useRef(false);
 
   useEffect(() => {
@@ -533,19 +609,27 @@ if (!historyError && !cancelled) {
                 <p className={styles.emptyDashboard}>Aucune liste personnalisée pour le moment.</p>
               ) : (
                 <div className={styles.listPreviewGrid}>
-                  {customLists.slice(0, 6).map((list) => {
+                  {customLists.slice(0, visibleListsCount).map((list) => {
                     const preview = customListItems
                       .filter((item) => item.list_id === list.id)
                       .sort((a, b) => a.position - b.position)
                       .slice(0, 3);
 
-                    const watched = customListItems
-                      .filter((item) => item.list_id === list.id)
-                      .filter((item) => progressMap.get(`${item.media_type}_${item.media_id}`)?.status === 'vu').length;
-
-                    const listItems = customListItems.filter((item) => item.list_id === list.id);
-                    const total = listItems.length;
-                    const watchedMinutes = listItems.reduce((sum, item) => {
+                    const rawListItems = customListItems.filter((item) => item.list_id === list.id);
+                    const uniqueListItems = Array.from(
+                      new Map(
+                        rawListItems.map((item) => [
+                          `${item.media_type}_${item.media_id}`,
+                          item,
+                        ])
+                      ).values()
+                    );
+                    const total = uniqueListItems.length;
+                    const watched = uniqueListItems.filter(
+                      (item) =>
+                        progressMap.get(`${item.media_type}_${item.media_id}`)?.status === 'vu'
+                    ).length;
+                    const watchedMinutes = uniqueListItems.reduce((sum, item) => {
                       const row = progressMap.get(`${item.media_type}_${item.media_id}`);
                       return sum + watchedMinutesFor(row, item.media_data);
                     }, 0);
@@ -568,6 +652,25 @@ if (!historyError && !cancelled) {
                       </Link>
                     );
                   })}
+                </div>
+              )}
+
+              {customLists.length > visibleListsCount && (
+                <div className={styles.moreListsWrap}>
+                  <button
+                    type="button"
+                    className={styles.moreListsButton}
+                    onClick={() =>
+                      setVisibleListsCount((current) =>
+                        Math.min(current + 6, customLists.length)
+                      )
+                    }
+                  >
+                    Afficher plus de listes
+                    <span>
+                      {Math.min(visibleListsCount, customLists.length)} / {customLists.length}
+                    </span>
+                  </button>
                 </div>
               )}
             </section>
