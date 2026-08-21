@@ -159,3 +159,20 @@
   text-decoration: none;
 }
 .statsLink:hover { background: rgba(0, 212, 224, .14); }
+
+/* STELDRA premium — Paramètres */
+.page { max-width:none; margin:0; padding:34px clamp(14px,3vw,42px) 72px; background:radial-gradient(circle at 90% 0%,rgba(17,117,153,.11),transparent 28rem),linear-gradient(180deg,#040c14,#07121c 58%,#030a11); }
+.pageHeader { width:min(1180px,100%); margin:0 auto 18px; padding:27px 30px; text-align:left; border:1px solid rgba(95,189,204,.15); border-radius:22px; background:linear-gradient(145deg,rgba(10,25,37,.97),rgba(6,16,25,.97)); box-shadow:0 22px 55px rgba(0,0,0,.18); }
+.pageHeader h1 { margin:.35rem 0 .4rem; font-size:clamp(2rem,4vw,3.15rem); letter-spacing:-.04em; }
+.eyebrow { color:#2bdce6; letter-spacing:.17em; }
+.description { color:#8399a5; }
+.card { width:min(1180px,100%); margin:0 auto 14px; padding:22px 24px; border:1px solid rgba(96,187,202,.14); border-radius:18px; background:linear-gradient(145deg,rgba(10,24,36,.96),rgba(6,16,25,.96)); box-shadow:0 14px 36px rgba(0,0,0,.12); }
+.card h2 { margin-top:0; }
+.cardDescription,.setting small,.profileForm label { color:#8397a4; }
+.setting { border-top-color:rgba(255,255,255,.055); }
+.switch { background:#1a2b37; border:1px solid rgba(108,180,193,.16); }
+.switchOn { background:linear-gradient(135deg,#29dae4,#00a1ac); }
+.actionButton { border-radius:11px; background:linear-gradient(135deg,#2bdce6,#009eaa); color:#041318; box-shadow:0 10px 24px rgba(0,173,181,.12); }
+.secondaryActionButton,.statsLink { border-color:rgba(36,215,226,.28); background:rgba(0,173,181,.07); color:#36e3eb; border-radius:11px; }
+.profileForm input { border-color:rgba(115,183,196,.17); background:rgba(3,11,18,.72); }
+@media(max-width:760px){ .page{padding:14px 11px calc(92px + env(safe-area-inset-bottom));}.pageHeader{padding:20px;border-radius:18px}.pageHeader h1{font-size:2rem}.card{padding:17px;border-radius:16px}.setting{gap:13px} }

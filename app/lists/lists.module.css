@@ -44,3 +44,27 @@
 .page a {
   font-family: var(--font-inter), Arial, sans-serif;
 }
+
+/* STELDRA premium — Mes listes */
+.page {
+  padding: 34px clamp(14px,3vw,42px) 72px;
+  background:
+    radial-gradient(circle at 90% 2%, rgba(22,126,161,.12), transparent 28rem),
+    linear-gradient(180deg,#040c14,#07121c 58%,#030a11);
+}
+.heading { max-width: 1420px; margin-bottom: 20px; padding: 26px 28px; border:1px solid rgba(95,190,205,.15); border-radius:22px; background:linear-gradient(145deg,rgba(10,25,37,.97),rgba(6,16,25,.97)); box-shadow:0 22px 56px rgba(0,0,0,.2); }
+.heading h1 { font-size:clamp(2rem,4vw,3.2rem); letter-spacing:-.04em; }
+.heading p:not(.eyebrow) { color:#8298a5; }
+.eyebrow { color:#29dbe5 !important; letter-spacing:.17em; }
+.createButton, .form button, .empty button { background:linear-gradient(135deg,#2bdce6,#009eaa); color:#041318; box-shadow:0 10px 24px rgba(0,173,181,.13); }
+.form { max-width:1420px; border-color:rgba(97,189,204,.16); border-radius:18px; background:linear-gradient(145deg,rgba(10,24,36,.97),rgba(6,16,25,.97)); }
+.form input,.form textarea { border-color:rgba(117,184,197,.18); background:rgba(3,11,18,.72); }
+.grid { max-width:1420px; grid-template-columns:repeat(auto-fill,minmax(245px,1fr)); gap:18px; }
+.card { min-height:285px; border-color:rgba(99,184,198,.15); border-radius:19px; background:#081622; box-shadow:0 18px 42px rgba(0,0,0,.16); }
+.card:hover { transform:translateY(-6px); border-color:rgba(36,215,226,.42); box-shadow:0 24px 55px rgba(0,0,0,.24); }
+.coverShade { background:linear-gradient(to top,rgba(3,10,17,.99) 0%,rgba(3,10,17,.80) 35%,rgba(3,10,17,.08) 78%); }
+.coverText { padding:20px; }
+.coverText h2 { font-size:1.25rem; }
+.coverText span { background:rgba(0,173,181,.15); color:#36e2eb; border:1px solid rgba(36,215,226,.2); }
+.empty { background:rgba(8,20,31,.86); border-color:rgba(105,182,195,.2); }
+@media (max-width:700px){ .page{padding:14px 11px calc(92px + env(safe-area-inset-bottom));}.heading{padding:20px;border-radius:18px}.heading h1{font-size:2rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{min-height:230px;border-radius:15px}.coverText{padding:13px}.form{padding:15px}.createButton{width:100%} }

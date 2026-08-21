@@ -62,6 +62,7 @@ export default function StatistiquesPage() {
               .from('media_progress')
               .select('*')
               .eq('user_id', user.id)
+              .order('media_id', { ascending: true })
               .range(from, to)
           );
 
@@ -195,14 +196,14 @@ export default function StatistiquesPage() {
           minHeight: '100vh',
           padding:
             'clamp(1rem, 4vw, 2rem)',
-          backgroundColor: '#1b1f24',
+          background: 'radial-gradient(circle at 90% 0%, rgba(18,116,154,.11), transparent 28rem), linear-gradient(180deg,#040c14,#07121c 60%,#030a11)',
           color: '#EEEEEE',
         }}
       >
         <div
           style={{
             width: '100%',
-            maxWidth: '1100px',
+            maxWidth: '1420px',
             margin: '0 auto',
           }}
         >
@@ -214,7 +215,7 @@ export default function StatistiquesPage() {
             <p
               style={{
                 margin: 0,
-                color: '#00ADB5',
+                color: '#2bdce6',
                 fontWeight: 'bold',
                 textTransform: 'uppercase',
                 fontSize: '0.78rem',

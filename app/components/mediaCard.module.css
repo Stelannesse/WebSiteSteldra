@@ -102,3 +102,82 @@
 @media (prefers-reduced-motion: reduce) {
   .poster { animation: none; }
 }
+
+/* Carte média — finition premium */
+.card {
+  border: 1px solid rgba(102, 180, 194, .13);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(11,25,36,.92), rgba(5,15,24,.96));
+  box-shadow: 0 12px 28px rgba(0,0,0,.14);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(36,215,226,.34);
+  box-shadow: 0 18px 38px rgba(0,0,0,.22);
+}
+.poster { border-radius: 13px; }
+.action { border-color: rgba(255,255,255,.16); background: rgba(4,12,19,.78); }
+.toWatch { background: linear-gradient(135deg, rgba(30,215,225,.96), rgba(0,157,169,.96)); color:#041318; }
+.favoriteActive { background: linear-gradient(135deg, #2bdce6, #00a5b0); }
+
+.meta {
+  min-width: 0;
+  padding: 8px 9px 9px;
+  background: linear-gradient(180deg, rgba(4,13,21,.95), rgba(3,10,17,.98));
+}
+.meta strong {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #f2f8fa;
+  font-size: .68rem;
+  line-height: 1.25;
+}
+.metaLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 5px;
+  color: #6f8590;
+  font-size: .58rem;
+}
+.rating { color: #ffca51; font-weight: 800; }
+
+@media (max-width: 760px) {
+  .meta { padding: 7px 7px 8px; }
+  .meta strong { font-size: .64rem; }
+  .metaLine { font-size: .54rem; }
+}
+
+
+@media (max-width: 760px) {
+  /* Sur téléphone, l'affiche suffit : on gagne beaucoup de place verticalement. */
+  .meta { display: none; }
+  .card { border-radius: 10px; }
+  .poster { border-radius: 9px; }
+  .action { min-height: 22px; padding: .12rem .22rem; font-size: .5rem; border-radius: 5px; }
+  .center { min-width: 22px; }
+  .roundAction { width: 24px; height: 24px; font-size: .78rem; }
+}
+
+
+/* Les variantes actives doivent venir APRES la finition premium .action. */
+.action.watched {
+  border-color: rgba(78, 236, 179, .72);
+  background: linear-gradient(135deg, rgba(24, 180, 124, .97), rgba(13, 121, 99, .97));
+  color: #f3fff9;
+  box-shadow: 0 5px 18px rgba(23, 166, 116, .25);
+}
+.action.inProgress {
+  border-color: rgba(74, 177, 255, .7);
+  background: linear-gradient(135deg, rgba(20, 141, 224, .97), rgba(16, 88, 177, .97));
+  color: #fff;
+}
+.action.toWatch {
+  border-color: rgba(45, 220, 230, .72);
+  background: linear-gradient(135deg, rgba(30,215,225,.96), rgba(0,157,169,.96));
+  color: #041318;
+}

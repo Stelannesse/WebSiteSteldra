@@ -6,6 +6,7 @@ import styles from '../page.module.css';
 import type {
   MyListItem,
 } from '../types/media';
+import { calculateViewingStats } from '../lib/viewingStats';
 
 type TimeStatsProps = {
   myList: Record<string, MyListItem>;
@@ -40,143 +41,16 @@ const formatDuration = (minutes: number) => {
   return parts.join(' ');
 };
 
+
+
 export default function TimeStats({
   myList,
   watchedEpisodes,
 }: TimeStatsProps) {
-  const stats = useMemo(() => {
-    let movieMinutes = 0;
-    let seriesMinutes = 0;
-    let animeMinutes = 0;
-    let dramaMinutes = 0;
-
-    let watchedMovies = 0;
-    let watchedSeriesEpisodes = 0;
-    let watchedAnimeEpisodes = 0;
-    let watchedDramaEpisodes = 0;
-
-    let missingDurations = 0;
-
-    /*
-     * Films terminés
-     */
-    Object.values(myList).forEach((entry) => {
-      const media = entry.media;
-
-      if (
-        media.type !== 'movie' ||
-        entry.status !== 'vu'
-      ) {
-        return;
-      }
-
-      const runtime =
-        Number(media.runtime) || 0;
-
-      const watchCount = Math.max(
-        Number(entry.watchCount) || 1,
-        1
-      );
-
-      watchedMovies += watchCount;
-
-      if (runtime > 0) {
-        movieMinutes += runtime * watchCount;
-      } else {
-        missingDurations += 1;
-      }
-    });
-
-    /*
-     * Épisodes cochés comme vus
-     */
-    Object.entries(watchedEpisodes).forEach(
-      ([episodeKey, isWatched]) => {
-        if (!isWatched) {
-          return;
-        }
-
-        /*
-         * Exemple :
-         * anime_123_S1E4
-         *
-         * devient :
-         * anime_123
-         */
-        const mediaKey = episodeKey.replace(
-          /_S\d+E\d+$/,
-          ''
-        );
-
-        const media = myList[mediaKey]?.media;
-
-        if (!media) {
-          return;
-        }
-
-        const episodeRuntime =
-          Number(media.episode_runtime) || 0;
-
-        if (media.type === 'tv') {
-          watchedSeriesEpisodes += 1;
-
-          if (episodeRuntime > 0) {
-            seriesMinutes += episodeRuntime;
-          } else {
-            missingDurations += 1;
-          }
-        }
-
-        if (media.type === 'anime') {
-          watchedAnimeEpisodes += 1;
-
-          if (episodeRuntime > 0) {
-            animeMinutes += episodeRuntime;
-          } else {
-            missingDurations += 1;
-          }
-        }
-
-        if (media.type === 'drama') {
-          watchedDramaEpisodes += 1;
-
-          if (episodeRuntime > 0) {
-            dramaMinutes += episodeRuntime;
-          } else {
-            missingDurations += 1;
-          }
-        }
-      }
-    );
-
-    const totalMinutes =
-      movieMinutes +
-      seriesMinutes +
-      animeMinutes +
-      dramaMinutes;
-
-    const totalEpisodes =
-      watchedSeriesEpisodes +
-      watchedAnimeEpisodes +
-      watchedDramaEpisodes;
-
-    return {
-      totalMinutes,
-
-      movieMinutes,
-      seriesMinutes,
-      animeMinutes,
-      dramaMinutes,
-
-      watchedMovies,
-      totalEpisodes,
-      watchedSeriesEpisodes,
-      watchedAnimeEpisodes,
-      watchedDramaEpisodes,
-
-      missingDurations,
-    };
-  }, [myList, watchedEpisodes]);
+  const stats = useMemo(
+    () => calculateViewingStats(myList, watchedEpisodes),
+    [myList, watchedEpisodes]
+  );
 
   return (
     <section className={styles.timeStats}>
@@ -214,10 +88,10 @@ export default function TimeStats({
             </strong>
 
             <small className={styles.timeStatDetail}>
-              {stats.watchedMovies} film
-              {stats.watchedMovies > 1 ? 's' : ''}{' '}
+              {stats.watchedMovieCount} film
+              {stats.watchedMovieCount > 1 ? 's' : ''}{' '}
               vu
-              {stats.watchedMovies > 1 ? 's' : ''}
+              {stats.watchedMovieCount > 1 ? 's' : ''}
             </small>
           </div>
         </article>

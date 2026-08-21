@@ -58,10 +58,10 @@ export default function SettingsPage() {
     if (!user) throw new Error('Vous devez être connecté.');
 
     const [progress, lists, reviews, history] = await Promise.all([
-      fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').eq('user_id', user.id).range(from, to)),
-      fetchAllPages<any>((from, to) => supabase.from('custom_lists').select('*').eq('user_id', user.id).range(from, to)),
-      fetchAllPages<any>((from, to) => supabase.from('media_reviews').select('*').eq('user_id', user.id).range(from, to)),
-      fetchAllPages<any>((from, to) => supabase.from('watch_history').select('*').eq('user_id', user.id).range(from, to)),
+      fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)),
+      fetchAllPages<any>((from, to) => supabase.from('custom_lists').select('*').eq('user_id', user.id).order('id', { ascending: true }).range(from, to)),
+      fetchAllPages<any>((from, to) => supabase.from('media_reviews').select('*').eq('user_id', user.id).order('id', { ascending: true }).range(from, to)),
+      fetchAllPages<any>((from, to) => supabase.from('watch_history').select('*').eq('user_id', user.id).order('watched_at', { ascending: false }).order('id', { ascending: true }).range(from, to)),
     ]);
 
     const firstError = progress.error || lists.error || reviews.error || history.error;
@@ -195,7 +195,7 @@ export default function SettingsPage() {
       const reviewsToImport = Array.isArray(backup.media_reviews) ? backup.media_reviews : [];
       if (reviewsToImport.length) {
         const { data: currentReviews } = await fetchAllPages<any>((from, to) =>
-          supabase.from('media_reviews').select('media_id,media_type,rating,comment,created_at').eq('user_id', user.id).range(from, to)
+          supabase.from('media_reviews').select('media_id,media_type,rating,comment,created_at').eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)
         );
         const reviewKeys = new Set((currentReviews || []).map((row: any) => `${row.media_type}|${row.media_id}|${row.rating}|${row.created_at}|${row.comment || ''}`));
         const rows = reviewsToImport
@@ -211,7 +211,7 @@ export default function SettingsPage() {
       const historyToImport = Array.isArray(backup.watch_history) ? backup.watch_history : [];
       if (historyToImport.length) {
         const { data: currentHistory } = await fetchAllPages<any>((from, to) =>
-          supabase.from('watch_history').select('media_id,media_type,watched_at').eq('user_id', user.id).range(from, to)
+          supabase.from('watch_history').select('media_id,media_type,watched_at').eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)
         );
         const historyKeys = new Set((currentHistory || []).map((row: any) => `${row.media_type}|${row.media_id}|${row.watched_at}`));
         const rows = historyToImport

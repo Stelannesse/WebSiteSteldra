@@ -17,6 +17,7 @@ type MediaCardProps = {
   navigationMode?: 'push' | 'replace';
   rememberCollectionPosition?: boolean;
   onToggleFavorite?: (media: MediaItem) => void;
+  showMeta?: boolean;
 };
 
 export default function MediaCard({
@@ -29,6 +30,7 @@ export default function MediaCard({
   navigationMode = 'push',
   rememberCollectionPosition = true,
   onToggleFavorite,
+  showMeta = false,
 }: MediaCardProps) {
       const currentStatus: WatchStatus | undefined =
     currentItem?.status;
@@ -148,6 +150,16 @@ const openDetails = () => {
         >
           ×
         </button>
+      )}
+
+      {showMeta && (
+        <div className={styles.meta}>
+          <strong title={item.title}>{item.title}</strong>
+          <div className={styles.metaLine}>
+            <span>{item.year || (item.release_date || item.first_air_date || '').slice(0, 4) || '—'}</span>
+            {Number(item.rating) > 0 && <span className={styles.rating}>★ {Number(item.rating).toFixed(1)}</span>}
+          </div>
+        </div>
       )}
     </div>
   );

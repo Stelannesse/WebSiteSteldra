@@ -40,6 +40,14 @@ export default function ExplorePage() {
   const [genreLoading, setGenreLoading] = useState(false);
   const [genrePage, setGenrePage] = useState(1);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get('genres');
+    if (!requested) return;
+    const values = requested.split(',').map((value) => value.trim()).filter(Boolean);
+    if (values.length > 0) setSelectedGenres(values);
+  }, []);
+
   const normalizeGenreLabel = (value: string) => {
     const v = value.trim().toLowerCase();
     if (['bl','boys love','boy love','yaoi','shounen ai','shounen-ai'].includes(v)) return 'BL';
@@ -95,7 +103,7 @@ export default function ExplorePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.href = '/login'; return; }
       const [{ data: progress }, { data: likes }] = await Promise.all([
-        fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').eq('user_id', user.id).range(from, to)),
+        fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)),
         supabase.from('media_reviews').select('media_id,media_type').eq('user_id', user.id).eq('rating', 'like').order('created_at', { ascending: false }).limit(8),
       ]);
       if (cancelled) return;

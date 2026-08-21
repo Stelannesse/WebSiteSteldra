@@ -210,6 +210,7 @@ export default function ListDetailsPage() {
         .from('media_progress')
         .select('media_id, media_type, media_data')
         .eq('user_id', user.id)
+        .order('media_id', { ascending: true })
         .range(from, to)
     );
 

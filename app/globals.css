@@ -48,3 +48,33 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* STELDRA — identité premium partagée par tous les onglets */
+:root {
+  --st-bg: #030b12;
+  --st-bg-soft: #07121d;
+  --st-panel: rgba(8, 20, 31, .94);
+  --st-panel-2: rgba(11, 27, 40, .94);
+  --st-line: rgba(93, 196, 210, .16);
+  --st-line-strong: rgba(40, 218, 228, .42);
+  --st-cyan: #24d7e2;
+  --st-cyan-2: #00aeb8;
+  --st-text: #eef7fa;
+  --st-muted: #8ba0ac;
+  --st-shadow: 0 22px 58px rgba(0, 0, 0, .24);
+}
+
+html { background: var(--st-bg); }
+body {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 173, 181, .08), transparent 28rem),
+    radial-gradient(circle at 92% 18%, rgba(17, 96, 150, .10), transparent 34rem),
+    linear-gradient(180deg, #030a11 0%, #06111b 48%, #030a11 100%);
+  color: var(--st-text);
+}
+
+::selection { background: rgba(36, 215, 226, .28); color: #fff; }
+
+@media (max-width: 760px) {
+  body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
+}

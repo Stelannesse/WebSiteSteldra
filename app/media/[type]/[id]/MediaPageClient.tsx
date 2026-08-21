@@ -400,6 +400,7 @@ export default function MediaPageClient({
           .from('media_progress')
           .select('*')
           .eq('user_id', userId)
+          .order('media_id', { ascending: true })
           .range(from, to)
       );
 

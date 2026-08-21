@@ -8,6 +8,7 @@ import styles from './page.module.css';
 import type { MediaItem, WatchStatus } from './types/media';
 import { getPosterUrl, usePosterFallback } from './lib/poster';
 import { fetchAllPages } from './lib/supabasePaging';
+import { calculateViewingStats } from './lib/viewingStats';
 
 type ProgressRow = {
   id?: string | number;
@@ -55,6 +56,13 @@ const mediaKey = (media: { type: string; id: string | number }) =>
   `${media.type}_${media.id}`;
 
 const posterUrl = (media: MediaItem) => getPosterUrl(media, 'w342');
+
+const HOME_GENRES = [
+  'Action', 'Aventure', 'Animation', 'Comédie', 'Crime', 'Documentaire',
+  'Drame', 'Fantastique', 'Histoire', 'Horreur', 'Romance', 'Science-fiction',
+  'Thriller', 'BL', 'GL', 'Super-héros', 'Vampires', 'Zombies', 'Noël',
+  'Arts martiaux', 'Espace', 'Voyage dans le temps',
+];
 
 const dateValue = (row: ProgressRow, mode: 'added' | 'activity') => {
   const media = row.media_data || ({} as MediaItem);
@@ -210,6 +218,7 @@ export default function HomePage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
   const [visibleListsCount, setVisibleListsCount] = useState(6);
+  const [homeContinueType, setHomeContinueType] = useState<'series' | 'movies'>('series');
   const hasLoadedDashboard = useRef(false);
 
   useEffect(() => {
@@ -264,6 +273,7 @@ export default function HomePage() {
         .from('media_progress')
         .select('*')
         .eq('user_id', user.id)
+        .order('media_id', { ascending: true })
         .range(from, to)
     ),
 
@@ -505,19 +515,64 @@ if (!historyError && !cancelled) {
     .map((part) => part.charAt(0).toUpperCase())
     .join('') || 'U';
 
+  // Une seule ligne par média : évite qu'une ancienne ligne ou un doublon
+  // fasse gonfler les compteurs de l'accueil.
+  const uniqueProgressRows = Array.from(
+    new Map(progressRows.map((row) => [`${row.media_type}_${row.media_id}`, row])).values()
+  );
+
+  // Source de vérité commune Accueil / Collection / Statistiques.
+  const statsMyList = uniqueProgressRows.reduce<Record<string, any>>((acc, row) => {
+    if (!row.media_data) return acc;
+    const media = {
+      ...row.media_data,
+      id: row.media_id,
+      type: (row.media_data.type || row.media_type) as any,
+    };
+    acc[`${media.type}_${media.id}`] = {
+      media,
+      status: row.status,
+      watchCount: Number(row.watch_count) || 0,
+    };
+    return acc;
+  }, {});
+
+  const statsWatchedEpisodes = uniqueProgressRows.reduce<Record<string, boolean>>((acc, row) => {
+    Object.assign(acc, row.watched_episode || {});
+    Object.assign(acc, row.watched_episodes || {});
+    return acc;
+  }, {});
+
+  const viewingStats = calculateViewingStats(statsMyList, statsWatchedEpisodes);
+  const watchedMediaCount = viewingStats.watchedMediaCount;
+  const seriesCount = viewingStats.watchedSeriesCount;
+  const episodesWatched = viewingStats.watchedEpisodeCount;
+  const totalWatchedMinutes = viewingStats.totalMinutes;
+
+  const cinemaContinueRows = continueRows.filter((row) => !['manga', 'manhwa'].includes(row.media_type));
+  const movieContinueRows = cinemaContinueRows.filter((row) => row.media_type === 'movie');
+  const seriesContinueRows = cinemaContinueRows.filter((row) => ['tv', 'drama', 'anime'].includes(row.media_type));
+  const activeContinueRows = homeContinueType === 'movies' ? movieContinueRows : seriesContinueRows;
+  const featuredContinue = activeContinueRows[0];
+  const favoriteMedia = uniqueProgressRows
+    .filter((row) => row.media_data && Boolean((row.media_data as MediaItem & { favorite?: boolean }).favorite))
+    .map((row) => row.media_data as MediaItem)
+    .slice(0, 8);
+  const compactLists = customLists.slice(0, 4);
+
   return (
     <>
       <MainNav />
 
-      <main className={styles.dashboardHome}>
-        <section className={styles.homeIdentity}>
-          <div className={styles.homeBrand}>
-            <span className={styles.brandMark}>S</span>
-            <span className={styles.brandContent}>
-              <span className={styles.brandName}>STELDRA</span>
-              <span className={styles.brandSubtitle}>Mon univers cinéma & lecture</span>
+      <main className={styles.cinemaHome}>
+        <section className={styles.cinemaTopbar}>
+          <Link href="/" className={styles.cinemaLogo}>
+            <span className={styles.cinemaSpark}>✦</span>
+            <span>
+              <strong>STELDRA</strong>
+              <small>Votre univers cinéma</small>
             </span>
-          </div>
+          </Link>
 
           <div className={styles.profileContainer}>
             <button
@@ -530,13 +585,15 @@ if (!historyError && !cancelled) {
               <span className={styles.profileInitials}>{profileInitials}</span>
               <span className={`${styles.profileChevron} ${profileOpen ? styles.profileChevronOpen : ''}`}>▾</span>
             </button>
-
             {profileOpen && (
               <div className={styles.profileMenu}>
                 <div className={styles.profileMenuHeader}>
-                  <strong>Mon compte</strong>
-                  <span>{displayName}</span>
+                  <strong>{displayName}</strong>
+                  <span>Mon compte STELDRA</span>
                 </div>
+                <Link href="/settings" className={styles.profileMenuLink} onClick={() => setProfileOpen(false)}>
+                  Paramètres
+                </Link>
                 <button
                   type="button"
                   className={styles.profileMenuItem}
@@ -545,213 +602,165 @@ if (!historyError && !cancelled) {
                     void handleLogout();
                   }}
                 >
-                  <span aria-hidden="true">↪</span>
                   Déconnexion
                 </button>
               </div>
             )}
           </div>
         </section>
+
+        <section className={styles.cinemaHero}>
+          <div className={styles.cinemaHeroGlow} />
+          <div className={styles.cinemaHeroContent}>
+            <span className={styles.cinemaEyebrow}>MON UNIVERS</span>
+            <h1>Bienvenue, {displayName} !</h1>
+            <p>Plongez dans de nouveaux univers...</p>
+            <span className={styles.heroLine}><i /></span>
+          </div>
+        </section>
+
         {loading ? (
           <div className={styles.dashboardLoading}>Chargement de votre espace...</div>
         ) : (
-          <>
-            <DashboardSection
-              title="Continuer"
-              subtitle="Vos séries, films et lectures en cours"
-              empty="Aucun contenu en cours pour le moment."
-            >
-              {continueRows.map((row) => {
-                const media = row.media_data as MediaItem;
-                const seriesProgress = getSeriesProgress(row);
-                const isReading = media.type === 'manga' || media.type === 'manhwa';
-                const isSeries = ['tv', 'drama', 'anime'].includes(media.type);
-                const currentChapter = Number(row.manga_progress) || 0;
-                const total = isReading
-                  ? Number(media.chapters) || 0
-                  : isSeries
-                    ? Number(media.episodes) || 0
-                    : 0;
-                const current = isReading ? currentChapter : seriesProgress.watchedCount;
-                const percent = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
+          <div className={styles.cinemaDashboardGrid}>
+            <div className={styles.cinemaMainColumn}>
+              <form className={styles.cinemaSearch} action="/collection">
+                <span aria-hidden="true">⌕</span>
+                <input name="q" placeholder="Rechercher un film, une série..." aria-label="Rechercher" />
+                <button type="submit">Rechercher</button>
+              </form>
 
-                return (
-                  <Link
-                    key={`${row.media_type}_${row.media_id}`}
-                    href={`/media/${media.type}/${media.id}`}
-                    className={styles.continueCard}
-                  >
-                    <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
-                    <div className={styles.continueInfo}>
-                      <span className={styles.mediaTypeLabel}>{media.type}</span>
-                      <strong>{media.title}</strong>
-                      <p>
-                        {isReading
-                          ? `Chapitre ${currentChapter}${media.chapters ? ` sur ${media.chapters}` : ''}`
-                          : isSeries
-                            ? `Saison ${seriesProgress.latestSeason} · épisode ${Math.max(1, seriesProgress.nextEpisode)} à poursuivre`
-                            : 'Lecture ou visionnage en cours'}
-                      </p>
-                      {total > 0 && (
-                        <div className={styles.progressTrack}>
-                          <span style={{ width: `${percent}%` }} />
-                        </div>
-                      )}
-                      {total > 0 && <small>{current} / {total}</small>}
-                    </div>
-                  </Link>
-                );
-              })}
-            </DashboardSection>
-
-            <DashboardSection
-              title="À regarder ensuite"
-              subtitle="Le prochain titre non vu de vos listes ordonnées"
-              empty="Vos listes n’ont pas encore de prochain média à proposer."
-            >
-              {nextFromLists.map(({ list, item }) => (
-                <Link
-                  key={`${list.id}_${item.id}`}
-                  href={`/media/${item.media_data.type}/${item.media_data.id}`}
-                  className={styles.nextCard}
-                >
-                  <img src={posterUrl(item.media_data)} alt={item.media_data.title} onError={(event) => usePosterFallback(event.currentTarget)} />
-                  <div>
-                    <span>{list.name}</span>
-                    <strong>{item.media_data.title}</strong>
-                    <small>Position {item.position + 1}</small>
-                  </div>
-                </Link>
-              ))}
-            </DashboardSection>
-
-            <DashboardSection
-              title={recommendationSource ? `Parce que vous avez aimé ${recommendationSource}` : 'Découvrir'}
-              subtitle="Des titres proches de vos goûts et des sagas que vous suivez"
-              empty="Ajoutez un avis J’aime sur une fiche pour personnaliser cette section."
-            >
-              {recommendations.map((media) => {
-                const key = mediaKey(media);
-                const alreadyInCollection = progressMap.has(key);
-
-                return (
-                  <div key={key} className={styles.recommendationCard}>
-                    <Link href={`/media/${media.type}/${media.id}`}>
-                      <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
-                      <strong>{media.title}</strong>
-                    </Link>
-                    <button
-                      type="button"
-                      disabled={alreadyInCollection || savingKey === key}
-                      onClick={() => void addRecommendationToWatch(media)}
-                    >
-                      {alreadyInCollection ? 'Dans la collection' : savingKey === key ? 'Ajout...' : 'Ajouter à voir'}
-                    </button>
-                  </div>
-                );
-              })}
-            </DashboardSection>
-
-            <section className={styles.dashboardSection}>
-              <div className={styles.sectionHeading}>
-                <div>
-                  <h2>Vos listes</h2>
-                  <p>Retrouvez vos sélections et leur prochain média.</p>
-                </div>
-                <Link href="/lists">Voir toutes les listes</Link>
+              <div className={styles.typeChips}>
+                <Link href="/collection">🎬 Films</Link>
+                <Link href="/collection">▣ Séries</Link>
+                <Link href="/collection">🎭 Drama</Link>
+                <Link href="/collection">◉ Animés</Link>
+                <Link href="/collection">▥ Documentaires</Link>
               </div>
 
-              {customLists.length === 0 ? (
-                <p className={styles.emptyDashboard}>Aucune liste personnalisée pour le moment.</p>
-              ) : (
-                <div className={styles.listPreviewGrid}>
-                  {customLists.slice(0, visibleListsCount).map((list) => {
-                    const preview = customListItems
-                      .filter((item) => item.list_id === list.id)
-                      .sort((a, b) => a.position - b.position)
-                      .slice(0, 3);
+              <section className={`${styles.cinemaPanel} ${styles.moodPanel}`}>
+                <div className={styles.panelTitleRow}>
+                  <div>
+                    <span className={styles.cinemaEyebrow}>DÉCOUVRIR</span>
+                    <h2>J’ai envie de...</h2>
+                  </div>
+                  <Link href="/discover" className={styles.ghostAction}>Nouvelles propositions ✦</Link>
+                </div>
+                <div className={styles.genreCloud}>
+                  {HOME_GENRES.map((genre) => (
+                    <Link key={genre} href={`/discover?genres=${encodeURIComponent(genre)}`} className={styles.genrePill}>{genre}</Link>
+                  ))}
+                </div>
+              </section>
 
-                    const rawListItems = customListItems.filter((item) => item.list_id === list.id);
-                    const uniqueListItems = Array.from(
-                      new Map(
-                        rawListItems.map((item) => [
-                          `${item.media_type}_${item.media_id}`,
-                          item,
-                        ])
-                      ).values()
-                    );
-                    const total = uniqueListItems.length;
-                    const watched = uniqueListItems.filter(
-                      (item) =>
-                        progressMap.get(`${item.media_type}_${item.media_id}`)?.status === 'vu'
-                    ).length;
-                    const watchedMinutes = uniqueListItems.reduce((sum, item) => {
-                      const row = progressMap.get(`${item.media_type}_${item.media_id}`);
-                      return sum + watchedMinutesFor(row, item.media_data);
-                    }, 0);
-
+              <div className={styles.cinemaSplitRow}>
+                <section className={`${styles.cinemaPanel} ${styles.continueSpotlight}`}>
+                  <div className={styles.panelTitleRow}>
+                    <h2>Continuer mon visionnage</h2>
+                    <div className={styles.continueTabs} role="tablist" aria-label="Type de média à reprendre">
+                      <button type="button" className={homeContinueType === 'series' ? styles.continueTabActive : ''} onClick={() => setHomeContinueType('series')}>Séries</button>
+                      <button type="button" className={homeContinueType === 'movies' ? styles.continueTabActive : ''} onClick={() => setHomeContinueType('movies')}>Films</button>
+                    </div>
+                  </div>
+                  {featuredContinue?.media_data ? (() => {
+                    const row = featuredContinue;
+                    const media = row.media_data as MediaItem;
+                    const isMovie = media.type === 'movie';
+                    const progress = getSeriesProgress(row);
+                    const total = Number(media.episodes) || 0;
+                    const percent = isMovie ? 0 : (total > 0 ? Math.min(100, Math.round((progress.watchedCount / total) * 100)) : 0);
                     return (
-                      <Link key={list.id} href={`/lists/${list.id}`} className={styles.homeListCard}>
-                        <div className={styles.homeListPosters}>
-                          {preview.length > 0 ? preview.map((item) => (
-                            <img key={item.id} src={posterUrl(item.media_data)} alt="" onError={(event) => usePosterFallback(event.currentTarget)} />
-                          )) : <span>Aucun média</span>}
+                      <Link href={`/media/${media.type}/${media.id}`} className={styles.featuredContinueCard}>
+                        <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
+                        <div>
+                          <strong>{media.title}</strong>
+                          <span>{isMovie ? `Film${media.runtime ? ` · ${formatMinutes(normalizeStoredMinutes(media.runtime, 'movie'))}` : ''}` : `Saison ${progress.latestSeason} · épisode ${Math.max(1, progress.nextEpisode)}`}</span>
+                          {!isMovie && <div className={styles.progressTrack}><span style={{ width: `${percent}%` }} /></div>}
+                          <small>{isMovie ? 'Film en cours' : (percent > 0 ? `${percent}% terminé` : 'Reprendre')}</small>
+                          <b>▶ Regarder</b>
                         </div>
-                        <strong>{list.name}</strong>
-                        <small className={styles.homeListCount}>{total} média{total > 1 ? 's' : ''}</small>
-                        <div className={styles.homeListProgressLine}>
-                          <span>{watched} / {total} vus</span>
-                          <span>•</span>
-                          <span>{total > 0 ? Math.round((watched / total) * 100) : 0}%</span>
-                        </div>
-                        <small className={styles.homeListTime}>◷ {formatMinutes(watchedMinutes)} regardées</small>
                       </Link>
                     );
-                  })}
+                  })() : <p className={styles.emptyDashboard}>Aucun visionnage en cours.</p>}
+                </section>
+
+                <section className={`${styles.cinemaPanel} ${styles.recentPanel}`}>
+                  <div className={styles.panelTitleRow}>
+                    <h2>Vu récemment</h2>
+                    <Link href="/history">Voir tout</Link>
+                  </div>
+                  <div className={styles.miniPosterRail}>
+                    {recentlyWatched.slice(0, 5).map((row) => row.media_data && (
+                      <PosterCard key={row.id || `${row.media_type}_${row.media_id}_${row.watched_at}`} media={row.media_data} />
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <section className={`${styles.cinemaPanel} ${styles.favoritePanel}`}>
+                <div className={styles.panelTitleRow}>
+                  <div>
+                    <span className={styles.cinemaEyebrow}>POUR VOUS</span>
+                    <h2>Mes favoris</h2>
+                  </div>
+                  <Link href="/discover">Voir tout</Link>
                 </div>
-              )}
-
-              {customLists.length > visibleListsCount && (
-                <div className={styles.moreListsWrap}>
-                  <button
-                    type="button"
-                    className={styles.moreListsButton}
-                    onClick={() =>
-                      setVisibleListsCount((current) =>
-                        Math.min(current + 6, customLists.length)
-                      )
-                    }
-                  >
-                    Afficher plus de listes
-                    <span>
-                      {Math.min(visibleListsCount, customLists.length)} / {customLists.length}
-                    </span>
-                  </button>
+                <div className={styles.posterShowcase}>
+                  {favoriteMedia.length ? favoriteMedia.map((media) => (
+                    <PosterCard key={`${media.type}_${media.id}`} media={media} />
+                  )) : <p className={styles.emptyDashboard}>Aucun favori pour le moment. Ajoutez une étoile depuis votre collection.</p>}
                 </div>
-              )}
-            </section>
+              </section>
+            </div>
 
-            <DashboardSection
-              title="Ajoutés récemment"
-              subtitle="Les derniers médias entrés dans votre collection"
-              empty="Votre collection est encore vide."
-            >
-              {recentlyAdded.map((row) => (
-                <PosterCard key={row.id || `${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
-              ))}
-            </DashboardSection>
+            <aside className={styles.cinemaSidebar}>
+              <section className={`${styles.cinemaPanel} ${styles.statsPanel}`}>
+                <div className={styles.panelTitleRow}>
+                  <h2>Mes statistiques</h2>
+                  <Link href="/statistiques">Voir tout</Link>
+                </div>
+                <div className={styles.statGrid}>
+                  <div><strong>{watchedMediaCount}</strong><span>Médias vus</span></div>
+                  <div><strong>{Math.round(totalWatchedMinutes / 60)} h</strong><span>Visionnage</span></div>
+                  <div><strong>{episodesWatched.toLocaleString('fr-FR')}</strong><span>Épisodes vus</span></div>
+                  <div><strong>{seriesCount}</strong><span>Séries terminées</span></div>
+                </div>
+              </section>
 
+              <section className={`${styles.cinemaPanel} ${styles.sidebarLists}`}>
+                <div className={styles.panelTitleRow}>
+                  <h2>Mes listes</h2>
+                  <Link href="/lists">Voir tout</Link>
+                </div>
+                <div className={styles.sidebarListRows}>
+                  {compactLists.length ? compactLists.map((list) => {
+                    const total = customListItems.filter((item) => item.list_id === list.id).length;
+                    return (
+                      <Link href={`/lists/${list.id}`} key={list.id}>
+                        <span>▤</span><strong>{list.name}</strong><small>{total}</small><b>›</b>
+                      </Link>
+                    );
+                  }) : <p className={styles.emptyDashboard}>Aucune liste.</p>}
+                </div>
+              </section>
 
-            <DashboardSection
-              title="Vu récemment"
-              subtitle="Les derniers titres que vous avez terminés"
-              empty="Aucun média terminé récemment."
-            >
-              {recentlyWatched.map((row) => (
-                <PosterCard key={row.id || `${row.media_type}_${row.media_id}_${row.watched_at}`} media={row.media_data as MediaItem} />
-              ))}
-            </DashboardSection>
-          </>
+              <section className={`${styles.cinemaPanel} ${styles.lastAddedPanel}`}>
+                <div className={styles.panelTitleRow}>
+                  <h2>Derniers ajouts</h2>
+                  <Link href="/collection">Voir tout</Link>
+                </div>
+                <div className={styles.lastAddedList}>
+                  {recentlyAdded.slice(0, 5).map((row) => row.media_data && (
+                    <Link href={`/media/${row.media_data.type}/${row.media_data.id}`} key={row.id || `${row.media_type}_${row.media_id}`}>
+                      <img src={posterUrl(row.media_data)} alt="" onError={(event) => usePosterFallback(event.currentTarget)} />
+                      <div><strong>{row.media_data.title}</strong><span>{row.media_data.type}</span></div>
+                      <b>⋮</b>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            </aside>
+          </div>
         )}
       </main>
     </>

@@ -15,7 +15,7 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "Steldra",
-  description: "Films, séries, animés, mangas et manhwas",
+  description: "Films, séries, dramas et animés — votre univers cinéma STELDRA",
 };
 
 export default function RootLayout({
