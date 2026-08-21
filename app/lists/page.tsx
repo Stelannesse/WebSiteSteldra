@@ -6,6 +6,7 @@ import { createClient } from '../lib/supabase';
 import MainNav from '../components/mainNav';
 import type { CustomList, CustomListItem } from '../types/media';
 import styles from './lists.module.css';
+import { fetchAllPages } from '../lib/supabasePaging';
 
 type ListWithPreview = CustomList & {
   previewItems: CustomListItem[];
@@ -61,11 +62,14 @@ export default function ListsPage() {
       }
 
       const ids = baseLists.map((list) => list.id);
-      const { data: itemData, error: itemError } = await supabase
-        .from('custom_list_items')
-        .select('*')
-        .in('list_id', ids)
-        .order('position', { ascending: true });
+      const { data: itemData, error: itemError } = await fetchAllPages<CustomListItem>((from, to) =>
+        supabase
+          .from('custom_list_items')
+          .select('*')
+          .in('list_id', ids)
+          .order('position', { ascending: true })
+          .range(from, to)
+      );
 
       if (itemError) console.error('Erreur aperçus des listes :', itemError);
 

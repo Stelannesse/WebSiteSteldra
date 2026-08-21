@@ -12,6 +12,7 @@ import type { MediaType } from '../types/media';
 import MainNav from '../components/mainNav';
 import { sortMediaAlphabetically } from "../lib/sortMedia";
 import { usePosterFallback } from '../lib/poster';
+import { fetchAllPages } from '../lib/supabasePaging';
 import type {
   MediaItem,
   MyListItem,
@@ -37,6 +38,7 @@ const [supabase] = useState(() => createClient());
   const [initialDataReady, setInitialDataReady] = useState(false);
   const [pendingScrollRestore, setPendingScrollRestore] = useState<number | null>(null);
   const [collectionStateRestored, setCollectionStateRestored] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(120);
   
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('tout');
@@ -511,10 +513,13 @@ useEffect(() => {
       setUserId(user.id);
 
       
-    const { data, error } = await supabase
-      .from('media_progress')
-      .select('*')
-      .eq('user_id', user.id);
+    const { data, error } = await fetchAllPages<any>((from, to) =>
+      supabase
+        .from('media_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .range(from, to)
+    );
       if (data && !error) {
         console.log("Données brutes reçues de Supabase :", data);
 
@@ -850,7 +855,7 @@ const toggleStatus = async (media: MediaItem, status: 'vu' | 'a_voir', e: React.
   if (isRemoving) {
     delete updatedList[mediaKey];
   } else {
-    updatedList[mediaKey] = { media, status };
+    updatedList[mediaKey] = { media, status, watchCount: status === 'a_voir' ? 0 : (updatedList[mediaKey]?.watchCount || 1) };
   }
 
 
@@ -877,6 +882,7 @@ const { error } = await supabase
     status,
     watched_episodes: watchedEpisodes,
     manga_progress: mangaProgress[mediaKey] || 0,
+    watch_count: status === 'a_voir' ? 0 : 1,
   });
 
 if (error) {
@@ -1076,6 +1082,10 @@ displayItems = displayItems.filter(item => {
 
 const statusOrder: Record<string, number> = { en_cours: 0, en_pause: 1, a_voir: 2, termine: 3, abandonne: 4 };
 
+useEffect(() => {
+  setVisibleCount(120);
+}, [query, statusFilter, typeFilter, sortBy, favoritesOnly, hideCompleted, yearFilter, viewMode]);
+
 displayItems = [...displayItems].sort((a, b) => {
   if (isSearching) {
     const normalizedQuery = query.trim().toLowerCase();
@@ -1119,6 +1129,8 @@ displayItems = [...displayItems].sort((a, b) => {
 
   return a.title.localeCompare(b.title, 'fr', { numeric: true, sensitivity: 'base', ignorePunctuation: true });
 });
+
+const visibleDisplayItems = isSearching ? displayItems : displayItems.slice(0, visibleCount);
 
 return (
   <>
@@ -1171,7 +1183,7 @@ return (
       )}
 
 <div className={viewMode === 'grid' || isSearching ? styles.liste : styles.collectionListView}>
-  {displayItems.map((item) => {
+  {visibleDisplayItems.map((item) => {
     const mediaKey = getMediaKey(item);
 
     const currentItem = myList[mediaKey];
@@ -1225,6 +1237,13 @@ return (
     );
   })}
 </div>
+{!isSearching && visibleCount < displayItems.length && (
+  <div style={{ display: 'flex', justifyContent: 'center', padding: '1.25rem' }}>
+    <button type="button" className={styles.collectionFilterButton} onClick={() => setVisibleCount((count) => count + 120)}>
+      Afficher 120 médias de plus ({Math.min(visibleCount, displayItems.length)} / {displayItems.length})
+    </button>
+  </div>
+)}
 
       {/* Fiche détaillée "TV Time" */}
           <MediaModal

@@ -1,72 +1,67 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { createClient } from '../lib/supabase';
 import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
 
-// Composant de la page de connexion
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    setMessage('');
 
-    // Vérification des champs vides
-    if (!email || !password) {
-      alert("Veuillez remplir tous les champs.");
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get('email') || '').trim();
+    const password = String(formData.get('password') || '');
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setMessage('Email ou mot de passe incorrect.');
       setLoading(false);
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    // Gestion de l'erreur ou redirection en cas de succès
-    if (error) {
-      alert("Erreur de connexion : " + error.message);
-      setLoading(false);
-    } else {
-      router.push('/');
-      router.refresh(); 
-    }
+    router.push('/');
+    router.refresh();
   };
 
-  // Rendu du formulaire de connexion
   return (
     <div className={styles.loginPage}>
       <form onSubmit={handleLogin} className={styles.card}>
-        <h1 style={{ color: '#00ADB5' }}>STELDRA</h1>
+        <h1 className={styles.brand}>STELDRA</h1>
         <h2>Connexion</h2>
-        
-        <input 
-          name="email"
-          className={styles.input} 
-          type="email" 
-          placeholder="Email" 
-          required 
-        />
-        <input 
-          name="password"
-          className={styles.input} 
-          type="password" 
-          placeholder="Mot de passe" 
-          required 
-        />
-        
-        {/* Le bouton se désactive pendant el chargement */}
-        <button type="submit" disabled={loading} className={styles.button}>
-          {loading ? "Connexion en cours..." : "Se connecter"}
-        </button>
+
+        <input name="email" className={styles.input} type="email" placeholder="Email" autoComplete="email" required />
+        <div className={styles.passwordWrapper}>
+          <input
+            name="password"
+            className={styles.input}
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Mot de passe"
+            autoComplete="current-password"
+            required
+          />
+          <button type="button" className={styles.eyeButton} onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
+            {showPassword ? '🙈' : '👁'}
+          </button>
+        </div>
+
+        {message && <p className={styles.message}>{message}</p>}
+        <button type="submit" disabled={loading} className={styles.button}>{loading ? 'Connexion en cours…' : 'Se connecter'}</button>
+
+        <div className={styles.links}>
+          <Link href="/forgot-password">Mot de passe oublié ?</Link>
+          <Link href="/signup">Créer un compte</Link>
+        </div>
       </form>
     </div>
   );

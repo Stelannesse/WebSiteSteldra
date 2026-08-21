@@ -8,6 +8,7 @@ const links = [
   { href: '/collection', label: 'Collection', icon: '◫' },
 { href: '/discover', label: 'Explorer', icon: '◇' },
   { href: '/lists', label: 'Mes listes', icon: '☰' },
+  { href: '/history', label: 'Historique', icon: '↺' },
   { href: '/statistiques', label: 'Statistiques', icon: '⌁' },
   { href: '/tier-lists', label: 'Tier lists', icon: '★' },
   { href: '/settings', label: 'Paramètres', icon: '⚙' },

@@ -13,6 +13,7 @@ import useMediaProgress from '../../../hooks/useMediaProgress';
 import useReviews from '../../../hooks/useReviews';
 
 import { createClient } from '../../../lib/supabase';
+import { fetchAllPages } from '../../../lib/supabasePaging';
 
 import type {
   MediaItem,
@@ -394,10 +395,13 @@ export default function MediaPageClient({
     let cancelled = false;
 
     const loadFullCollection = async () => {
-      const { data, error } = await supabase
-        .from('media_progress')
-        .select('*')
-        .eq('user_id', userId);
+      const { data, error } = await fetchAllPages<any>((from, to) =>
+        supabase
+          .from('media_progress')
+          .select('*')
+          .eq('user_id', userId)
+          .range(from, to)
+      );
 
       if (error) {
         console.error('Erreur chargement collection sur la fiche :', error);

@@ -314,3 +314,15 @@
 .page h3 {
   font-family: var(--font-poppins), Arial, sans-serif;
 }
+
+.listSearch {
+  width: min(420px, 100%);
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #46515e;
+  border-radius: 10px;
+  background: #171c22;
+  color: #fff;
+  font: inherit;
+}
+.listSearch:focus { outline: 2px solid rgba(0,173,181,.35); border-color: #00adb5; }

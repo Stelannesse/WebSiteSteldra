@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import MainNav from '../components/mainNav';
 import MediaCard from '../components/mediaCard';
 import { createClient } from '../lib/supabase';
+import { fetchAllPages } from '../lib/supabasePaging';
 import type { MediaItem, MyListItem, WatchStatus } from '../types/media';
 import styles from '../page.module.css';
 
@@ -38,7 +39,7 @@ export default function ExplorePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { window.location.href = '/login'; return; }
       const [{ data: progress }, { data: likes }] = await Promise.all([
-        supabase.from('media_progress').select('*').eq('user_id', user.id),
+        fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').eq('user_id', user.id).range(from, to)),
         supabase.from('media_reviews').select('media_id,media_type').eq('user_id', user.id).eq('rating', 'like').order('created_at', { ascending: false }).limit(8),
       ]);
       if (cancelled) return;

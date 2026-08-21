@@ -9,6 +9,7 @@ import MainNav from '../../components/mainNav';
 import type { CustomList, CustomListItem, MediaItem, WatchStatus } from '../../types/media';
 import styles from './listDetails.module.css';
 import { getPosterUrl, usePosterFallback } from '../../lib/poster';
+import { fetchAllPages } from '../../lib/supabasePaging';
 
 const TYPE_LABELS: Record<string, string> = {
   movie: 'Film',
@@ -34,6 +35,8 @@ export default function ListDetailsPage() {
   const [addingItems, setAddingItems] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [sharingList, setSharingList] = useState(false);
   const [selectedMediaKeys, setSelectedMediaKeys] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -95,7 +98,7 @@ export default function ListDetailsPage() {
       const [{ data: listData, error: listError }, { data: itemData, error: itemsError }] =
         await Promise.all([
           supabase.from('custom_lists').select('*').eq('id', listId).eq('user_id', user.id).single(),
-          supabase.from('custom_list_items').select('*').eq('list_id', listId).order('position', { ascending: true }),
+          fetchAllPages<CustomListItem>((from, to) => supabase.from('custom_list_items').select('*').eq('list_id', listId).order('position', { ascending: true }).range(from, to)),
         ]);
 
       if (listError || !listData) {
@@ -156,6 +159,14 @@ export default function ListDetailsPage() {
     });
   }, [collectionMedia, existingMediaKeys, searchQuery]);
 
+  const displayedItems = useMemo(() => {
+    const q = itemSearchQuery.trim().toLocaleLowerCase('fr');
+    if (!q) return items;
+    return items.filter((item) =>
+      (item.media_data?.title || '').toLocaleLowerCase('fr').includes(q)
+    );
+  }, [items, itemSearchQuery]);
+
   const watchedCount = useMemo(
     () => items.filter((item) => mediaStatuses[getMediaKey({ id: item.media_id, type: item.media_type })] === 'vu').length,
     [items, mediaStatuses]
@@ -175,10 +186,13 @@ export default function ListDetailsPage() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('media_progress')
-      .select('media_id, media_type, media_data')
-      .eq('user_id', user.id);
+    const { data, error } = await fetchAllPages<any>((from, to) =>
+      supabase
+        .from('media_progress')
+        .select('media_id, media_type, media_data')
+        .eq('user_id', user.id)
+        .range(from, to)
+    );
 
     if (error) {
       setErrorMessage('Impossible de charger votre collection.');
@@ -557,6 +571,15 @@ export default function ListDetailsPage() {
         status: newStatus,
       });
       if (error) throw error;
+      if (newStatus === 'vu') {
+        await supabase.from('watch_history').insert({
+          user_id: user.id,
+          media_id: item.media_id,
+          media_type: item.media_type,
+          media_data: item.media_data,
+          watched_at: new Date().toISOString(),
+        });
+      }
       setMediaStatuses((current) => ({ ...current, [key]: newStatus }));
     } catch (error) {
       console.error(error);
@@ -603,6 +626,30 @@ export default function ListDetailsPage() {
       console.error(error);
       setErrorMessage('Impossible de dupliquer cette liste.');
       setDuplicatingList(false);
+    }
+  };
+
+  const shareList = async () => {
+    if (!list || sharingList) return;
+    setSharingList(true);
+    setErrorMessage('');
+    try {
+      const token = list.share_token || crypto.randomUUID();
+      const { error } = await supabase
+        .from('custom_lists')
+        .update({ is_shared: true, share_token: token })
+        .eq('id', listId)
+        .eq('user_id', list.user_id);
+      if (error) throw error;
+      const url = `${window.location.origin}/shared-list/${token}`;
+      await navigator.clipboard.writeText(url);
+      setList({ ...list, is_shared: true, share_token: token });
+      window.alert('Lien de partage copié. La personne pourra importer sa propre copie de la liste.');
+    } catch (error) {
+      console.error(error);
+      setErrorMessage('Impossible de créer le lien de partage. Vérifiez que la migration SQL a bien été appliquée.');
+    } finally {
+      setSharingList(false);
     }
   };
 
@@ -683,6 +730,9 @@ export default function ListDetailsPage() {
                 </div>
 
                 <div className={styles.listActions}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => void shareList()} disabled={sharingList}>
+                    {sharingList ? 'Partage…' : '↗ Partager'}
+                  </button>
                   <button type="button" className={styles.secondaryButton} onClick={() => void duplicateList()} disabled={duplicatingList}>
                     {duplicatingList ? 'Copie…' : '⧉ Dupliquer'}
                   </button>
@@ -726,12 +776,21 @@ export default function ListDetailsPage() {
             ) : (
               <>
                 <div className={styles.listToolbar}>
+                  <input
+                    className={styles.listSearch}
+                    type="search"
+                    value={itemSearchQuery}
+                    onChange={(event) => setItemSearchQuery(event.target.value)}
+                    placeholder={`Rechercher parmi ${items.length} médias…`}
+                    aria-label="Rechercher dans cette liste"
+                  />
                   <p className={styles.dragHint}>↕ {isTouchDevice ? 'Glissez ⠿ pour déplacer · approchez du bord pour faire défiler' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</p>
                   <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
                 </div>
 
                 <section className={styles.items}>
-                  {items.map((item, index) => {
+                  {displayedItems.map((item) => {
+                    const index = items.findIndex((entry) => entry.id === item.id);
                     const key = getMediaKey({ id: item.media_id, type: item.media_type });
                     const watched = mediaStatuses[key] === 'vu';
                     return (

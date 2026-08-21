@@ -1,0 +1,116 @@
+.page {
+  max-width: 1000px;
+  min-height: 100vh;
+  margin: auto;
+  padding: 2.5rem;
+  color: #f8fafc;
+  background: linear-gradient(
+    180deg,
+    #232a35,
+    #222831
+  );
+}
+
+.pageHeader {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.eyebrow {
+  color: #00d4e0;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.pageHeader h1 {
+  color: #ffffff;
+}
+
+.description {
+  color: #b7c0cf;
+}
+
+.card {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  background: #303744;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+.card h2 {
+  color: #ffffff;
+}
+
+.cardDescription {
+  color: #aeb7c8;
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.setting div {
+  color: #f8fafc;
+}
+
+.setting strong {
+  display: block;
+  color: #ffffff;
+}
+
+.setting small {
+  display: block;
+  margin-top: 0.3rem;
+  color: #aeb7c8;
+}
+
+.switch {
+  position: relative;
+  width: 58px;
+  height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  background: #555f6f;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.switchOn {
+  background: #00d4e0;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: left 0.25s ease;
+}
+
+.switchOn .switchThumb {
+  left: 30px;
+}
+.actionButton {
+  min-width: 120px;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #00d4e0;
+  color: #102026;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actionButton:disabled { opacity: .55; cursor: wait; }
+.exportMessage { margin: .5rem 0 0; color: #bfeff2; }

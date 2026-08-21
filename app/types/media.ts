@@ -88,6 +88,8 @@ export interface CustomList {
   is_ordered: boolean;
   created_at: string;
   updated_at: string;
+  is_shared?: boolean;
+  share_token?: string | null;
 }
 
 export interface CustomListItem {

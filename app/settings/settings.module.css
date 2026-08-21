@@ -100,3 +100,17 @@
 .switchOn .switchThumb {
   left: 30px;
 }
+.actionButton {
+  min-width: 120px;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: #00d4e0;
+  color: #102026;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actionButton:disabled { opacity: .55; cursor: wait; }
+.exportMessage { margin: .5rem 0 0; color: #bfeff2; }

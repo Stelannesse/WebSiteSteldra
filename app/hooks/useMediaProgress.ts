@@ -125,6 +125,22 @@ export default function useMediaProgress({
       return;
     }
 
+    if (status === 'vu') {
+      const { error: historyError } = await supabase
+        .from('watch_history')
+        .insert({
+          user_id: user.id,
+          media_id: String(media.id),
+          media_type: media.type,
+          media_data: enrichedMedia,
+          watched_at: now,
+        });
+
+      if (historyError) {
+        console.error('Erreur historique de visionnage :', historyError);
+      }
+    }
+
     notifyProgressUpdated();
   };
 
@@ -140,8 +156,8 @@ export default function useMediaProgress({
       (currentItem?.status === 'vu' ? 1 : 0);
 
     const nextCount =
-      currentCount >= 7
-        ? 1
+      currentCount >= 20
+        ? 20
         : currentCount + 1;
 
     await updateMediaInList(
@@ -172,7 +188,8 @@ export default function useMediaProgress({
 
   const handleSetStatus = async (media: MediaItem, status: WatchStatus) => {
     const currentItem = myList[getMediaKey(media)];
-    await updateMediaInList(media, status, currentItem?.watchCount || 0);
+    const nextWatchCount = status === 'a_voir' ? 0 : currentItem?.watchCount || 0;
+    await updateMediaInList(media, status, nextWatchCount);
   };
 
   const handleMarkToWatch = async (
@@ -180,12 +197,10 @@ export default function useMediaProgress({
   ) => {
     const mediaKey = getMediaKey(media);
 
-    const currentItem = myList[mediaKey];
-
     await updateMediaInList(
       media,
       'a_voir',
-      currentItem?.watchCount || 0
+      0
     );
   };
 

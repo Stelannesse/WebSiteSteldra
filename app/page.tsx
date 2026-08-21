@@ -7,6 +7,7 @@ import { createClient } from './lib/supabase';
 import styles from './page.module.css';
 import type { MediaItem, WatchStatus } from './types/media';
 import { getPosterUrl, usePosterFallback } from './lib/poster';
+import { fetchAllPages } from './lib/supabasePaging';
 
 type ProgressRow = {
   id?: string | number;
@@ -36,6 +37,14 @@ type CustomListItemRow = {
   media_type: string;
   media_data: MediaItem;
   position: number;
+};
+
+type WatchHistoryRow = {
+  id: string;
+  media_id: string;
+  media_type: string;
+  media_data: MediaItem | null;
+  watched_at: string;
 };
 
 type Recommendation = MediaItem & {
@@ -119,6 +128,7 @@ export default function HomePage() {
   const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
   const [customLists, setCustomLists] = useState<CustomListRow[]>([]);
   const [customListItems, setCustomListItems] = useState<CustomListItemRow[]>([]);
+  const [watchHistory, setWatchHistory] = useState<WatchHistoryRow[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [recommendationSource, setRecommendationSource] = useState<string>('');
   const [savingKey, setSavingKey] = useState<string | null>(null);
@@ -172,10 +182,13 @@ export default function HomePage() {
 
       const [progressResponse, listsResponse, likesResponse] =
   await Promise.all([
-    supabase
-      .from('media_progress')
-      .select('*')
-      .eq('user_id', user.id),
+    fetchAllPages<ProgressRow>((from, to) =>
+      supabase
+        .from('media_progress')
+        .select('*')
+        .eq('user_id', user.id)
+        .range(from, to)
+    ),
 
     supabase
       .from('custom_lists')
@@ -206,12 +219,14 @@ let items: CustomListItemRow[] = [];
 if (lists.length > 0) {
   const listIds = lists.map((list) => list.id);
 
-  const { data: listItemsData, error: listItemsError } =
-    await supabase
+  const { data: listItemsData, error: listItemsError } = await fetchAllPages<CustomListItemRow>((from, to) =>
+    supabase
       .from('custom_list_items')
       .select('*')
       .in('list_id', listIds)
-      .order('position', { ascending: true });
+      .order('position', { ascending: true })
+      .range(from, to)
+  );
 
   if (listItemsError) {
     console.error(
@@ -228,6 +243,17 @@ if (cancelled) return;
 setProgressRows(rows);
 setCustomLists(lists);
 setCustomListItems(items);
+
+const { data: historyData, error: historyError } = await supabase
+  .from('watch_history')
+  .select('id,media_id,media_type,media_data,watched_at')
+  .eq('user_id', user.id)
+  .order('watched_at', { ascending: false })
+  .limit(20);
+
+if (!historyError && !cancelled) {
+  setWatchHistory((historyData || []) as WatchHistoryRow[]);
+}
 
       const likedRows = (likesResponse.data || []) as Array<{
         media_id: string;
@@ -298,12 +324,8 @@ setCustomListItems(items);
   );
 
   const recentlyWatched = useMemo(
-    () =>
-      progressRows
-        .filter((row) => row.status === 'vu' && row.media_data)
-        .sort((a, b) => dateValue(b, 'activity') - dateValue(a, 'activity'))
-        .slice(0, 8),
-    [progressRows]
+    () => watchHistory.filter((row) => row.media_data).slice(0, 20),
+    [watchHistory]
   );
 
   const recentlyAdded = useMemo(
@@ -556,7 +578,7 @@ setCustomListItems(items);
               empty="Votre collection est encore vide."
             >
               {recentlyAdded.map((row) => (
-                <PosterCard key={`${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
+                <PosterCard key={row.id || `${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
               ))}
             </DashboardSection>
 
@@ -567,7 +589,7 @@ setCustomListItems(items);
               empty="Aucun média terminé récemment."
             >
               {recentlyWatched.map((row) => (
-                <PosterCard key={`${row.media_type}_${row.media_id}`} media={row.media_data as MediaItem} />
+                <PosterCard key={row.id || `${row.media_type}_${row.media_id}_${row.watched_at}`} media={row.media_data as MediaItem} />
               ))}
             </DashboardSection>
           </>

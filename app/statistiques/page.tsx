@@ -9,6 +9,7 @@ import MainNav from '../components/mainNav';
 import TimeStats from '../components/timeStats';
 
 import { createClient } from '../lib/supabase';
+import { fetchAllPages } from '../lib/supabasePaging';
 
 import type {
   MediaItem,
@@ -56,11 +57,13 @@ export default function StatistiquesPage() {
          * chargement depuis Supabase.
          */
         if (user) {
-          const { data, error: supabaseError } =
-            await supabase
+          const { data, error: supabaseError } = await fetchAllPages<any>((from, to) =>
+            supabase
               .from('media_progress')
               .select('*')
-              .eq('user_id', user.id);
+              .eq('user_id', user.id)
+              .range(from, to)
+          );
 
           if (supabaseError) {
             throw supabaseError;
