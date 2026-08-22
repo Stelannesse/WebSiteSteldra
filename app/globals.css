@@ -78,3 +78,13 @@ body {
 @media (max-width: 760px) {
   body { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 }
+
+/* STELDRA — confort mobile navigateur / raccourci */
+@media (max-width: 760px) {
+  html, body { min-height: 100dvh; }
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+
+@media (display-mode: standalone) {
+  html, body { min-height: 100dvh; }
+}

@@ -101,3 +101,33 @@
   .backupRow { flex-direction:column; }
   .backupRow .actionButton,.backupRow .secondaryActionButton { width:100%; }
 }
+
+/* STELDRA V19 — bandeau homogène */
+.hero {
+  width: min(1480px, 100%);
+  min-height: 270px;
+  border-radius: 24px;
+  border-color: rgba(92, 190, 208, .18);
+}
+.hero h1 {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: clamp(2.45rem, 4.7vw, 4.45rem);
+  line-height: .98;
+  letter-spacing: -.045em;
+}
+.quickGrid,
+.settingsGrid { width: min(1480px, 100%); }
+@media (max-width:760px) {
+  .hero { min-height: 210px; border-radius: 18px; }
+  .hero h1 { font-size: clamp(2.15rem, 11vw, 3.2rem); }
+}
+
+/* STELDRA V21 — grand titre = Tier Lists */
+.hero h1 {
+  font-size: clamp(2rem, 3.65vw, 3.45rem);
+  line-height: 1.03;
+}
+@media (max-width: 760px) {
+  .hero h1 { font-size: 1.85rem; }
+}

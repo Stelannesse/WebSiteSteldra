@@ -6561,3 +6561,77 @@ background-color: #181d23;
   .stats2026SummaryGrid { grid-template-columns: 1fr 1fr; }
   .stats2026SummaryGrid article { min-height: 100px; }
 }
+
+/* STELDRA V19 — grands titres homogènes */
+.cinemaHeroContent h1,
+.collectionHeroCopy h1,
+.collectionOptionHeroCopy h1,
+.discover2026HeroCopy h1,
+.stats2026HeroCopy h1 {
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: -.045em;
+}
+
+/* STELDRA V20 — typographie plus compacte et cohérente */
+.panelTitleRow h2,
+.collectionOptionSectionHeading h2 {
+  font-family: var(--font-title);
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+
+/* Grands titres : moins imposants sur toutes les pages */
+.cinemaHeroContent h1,
+.collectionHeroCopy h1,
+.collectionOptionHeroCopy h1,
+.stats2026HeroCopy h1 {
+  font-size: clamp(2rem, 3.65vw, 3.45rem);
+  line-height: 1.03;
+}
+
+/* Découvrir : titre long, donc volontairement plus compact */
+.discover2026HeroCopy h1 {
+  max-width: 560px;
+  font-size: clamp(1.85rem, 3.55vw, 3.35rem);
+  line-height: 1.05;
+  letter-spacing: -.04em;
+}
+
+@media (max-width: 760px) {
+  .cinemaHeroContent h1,
+  .collectionHeroCopy h1,
+  .collectionOptionHeroCopy h1,
+  .stats2026HeroCopy h1 {
+    font-size: clamp(1.7rem, 8vw, 2.35rem);
+  }
+
+  .discover2026HeroCopy h1 {
+    max-width: 275px;
+    font-size: clamp(1.55rem, 7.3vw, 2.05rem);
+    line-height: 1.08;
+  }
+
+  .panelTitleRow h2 { font-size: .9rem; }
+  .collectionOptionSectionHeading h2 { font-size: .95rem; }
+}
+
+/* STELDRA V21 — tous les grands titres = taille de Tier Lists */
+.cinemaHeroContent h1,
+.collectionHeroCopy h1,
+.collectionOptionHeroCopy h1,
+.discover2026HeroCopy h1,
+.stats2026HeroCopy h1 {
+  font-size: clamp(2rem, 3.65vw, 3.45rem);
+  line-height: 1.03;
+}
+
+@media (max-width: 760px) {
+  .cinemaHeroContent h1,
+  .collectionHeroCopy h1,
+  .collectionOptionHeroCopy h1,
+  .discover2026HeroCopy h1,
+  .stats2026HeroCopy h1 {
+    font-size: 1.85rem;
+  }
+}

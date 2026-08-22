@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Inter, Poppins } from "next/font/google";
 
@@ -16,6 +16,17 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Steldra",
   description: "Films, séries, dramas et animés — votre univers cinéma STELDRA",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "STELDRA",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#030b12",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
