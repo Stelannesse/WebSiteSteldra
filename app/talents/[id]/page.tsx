@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import MainNav from '../../components/mainNav';
-import { readTalentFavorites, toggleTalentFavorite, type TalentFavorite, type TalentRole } from '../../lib/talentFavorites';
+import { loadTalentFavorites, readTalentFavorites, toggleTalentFavorite, type TalentFavorite, type TalentRole } from '../../lib/talentFavorites';
 import styles from './talentDetail.module.css';
 
 type Person = { id:number; name:string; profile_path?:string; department?:string; biography?:string; birthday?:string; place_of_birth?:string; acting_count?:number; directing_count?:number };
@@ -45,6 +45,7 @@ export default function TalentDetailPage() {
 
   useEffect(() => {
     setFavorites(readTalentFavorites());
+    void loadTalentFavorites().then(setFavorites);
     if (!id) return;
     let cancelled = false;
     setLoading(true);
@@ -162,9 +163,10 @@ export default function TalentDetailPage() {
   },[voxography]);
 
   const isFavorite = (role:TalentRole) => favorites.some((f)=>f.id===person?.id && f.role===role);
-  const toggle = (role:TalentRole) => {
+  const toggle = async (role:TalentRole) => {
     if (!person) return;
-    setFavorites(toggleTalentFavorite({ id:person.id, name:person.name, profile_path:person.profile_path, department:person.department, role }));
+    const next = await toggleTalentFavorite({ id:person.id, name:person.name, profile_path:person.profile_path, department:person.department, role });
+    setFavorites(next);
   };
 
   return <>

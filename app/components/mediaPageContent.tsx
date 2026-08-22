@@ -280,7 +280,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
 
               <div className={styles.actionRow}>
                 <button type="button" onClick={() => onMarkWatched(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'vu' ? styles.activeWatched : ''}`}>✓ {isManga ? 'Lu' : 'Vu'}</button>
-                <button type="button" onClick={() => onToggleInProgress(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'en_cours' ? styles.activeProgress : ''}`}>▶ En cours</button>
+                <button type="button" onClick={() => onToggleInProgress(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'en_cours' ? styles.activeProgress : ''}`}> En cours</button>
                 <button type="button" onClick={() => onMarkToWatch(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'a_voir' ? styles.activeWatchlist : ''}`}>◉ {isManga ? 'À lire' : 'À voir'}</button>
                 <button type="button" onClick={() => onSetStatus(selectedMedia, 'en_pause')} className={`${styles.actionButton} ${currentItem?.status === 'en_pause' ? styles.activePause : ''}`}>Ⅱ En pause</button>
                 <button type="button" onClick={() => onSetStatus(selectedMedia, 'abandonne')} className={`${styles.actionButton} ${currentItem?.status === 'abandonne' ? styles.activeAbandoned : ''}`}>× Abandonné</button>

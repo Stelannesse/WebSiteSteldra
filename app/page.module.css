@@ -7391,3 +7391,44 @@ background-color: #181d23;
   .discoverTalentGateway p{font-size:.69rem;}
   .discoverTalentGateway > a{width:100%;justify-content:center;}
 }
+
+/* =========================================================
+   COULEUR UNIFIÉE — ONGLETS DE CATÉGORIES
+   Même bleu que les onglets actifs de Découvrir.
+========================================================= */
+.mediaTabActive,
+.filterBtnActive,
+.active,
+.collectionTypeTabs .collectionTypeActive {
+  color: #fff !important;
+  border-color: rgba(43, 201, 255, .55) !important;
+  background: linear-gradient(180deg, rgba(0, 153, 255, .9), rgba(0, 95, 210, .84)) !important;
+  box-shadow: 0 8px 28px rgba(0, 133, 255, .22), inset 0 1px rgba(255,255,255,.2) !important;
+}
+
+/* =========================================================
+   BLEU EXACT DE DÉCOUVRIR — extension à tous les onglets / boutons bleus
+========================================================= */
+.collectionStatusTabs .collectionStatusActive,
+.collectionSortGroup .collectionViewActive,
+.collectionOptionViewButtons .collectionViewActive,
+.collectionOptionStatusBar .collectionStatusActive,
+.discover2026TypeTabs .discover2026TypeActive,
+.discover2026TypeTabs button:hover,
+.collectionHeroActions button,
+.discover2026PersonBlock .discoverPeopleSearch button,
+.discoverTalentGateway > a {
+  color: #fff !important;
+  border-color: rgba(43, 201, 255, .55) !important;
+  background: linear-gradient(180deg, rgba(0, 153, 255, .9), rgba(0, 95, 210, .84)) !important;
+  box-shadow: 0 8px 28px rgba(0, 133, 255, .22), inset 0 1px rgba(255,255,255,.2) !important;
+}
+
+/* =========================================================
+   BLEU EXACT « LES TALENTS DU CINÉMA » — Accueil / Collection / Découvrir
+========================================================= */
+.cinemaHeroContent .cinemaEyebrow,
+.collectionOptionHeroCopy > span,
+.discover2026HeroCopy > span {
+  color: #2f9dff !important;
+}

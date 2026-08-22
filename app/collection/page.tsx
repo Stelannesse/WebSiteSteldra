@@ -1286,7 +1286,7 @@ return (
               const media = entry.media;
               return <Link key={getMediaKey(media)} href={`/media/${media.type}/${media.id}`} className={styles.collectionOptionContinueCard}>
                 <img src={getPosterUrl(media, 'w342')} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
-                <div><strong>{media.title}</strong><small>{media.type === 'movie' ? 'Film' : media.type === 'tv' ? 'Série' : media.type === 'drama' ? 'Drama' : media.type === 'anime' ? 'Animé' : media.type}</small><span>▶ Reprendre</span></div>
+                <div><strong>{media.title}</strong><small>{media.type === 'movie' ? 'Film' : media.type === 'tv' ? 'Série' : media.type === 'drama' ? 'Drama' : media.type === 'anime' ? 'Animé' : media.type}</small><span>Reprendre</span></div>
               </Link>;
             })}
           </div> : <p className={styles.emptyDashboard}>Aucun {collectionContinueType === 'movies' ? 'film' : 'épisode de série'} en cours.</p>}

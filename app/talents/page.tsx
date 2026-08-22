@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import MainNav from '../components/mainNav';
-import { readTalentFavorites, type TalentFavorite, type TalentRole } from '../lib/talentFavorites';
+import { loadTalentFavorites, readTalentFavorites, type TalentFavorite, type TalentRole } from '../lib/talentFavorites';
 import styles from './talents.module.css';
 
 type Person = { id:number; name:string; profile_path?:string; department?:string; known_for_department?:string; known_for?:string[] };
@@ -41,6 +41,7 @@ export default function TalentsPage() {
   useEffect(() => {
     const sync = () => setFavorites(readTalentFavorites());
     sync();
+    void loadTalentFavorites().then(setFavorites);
     window.addEventListener('steldra:talent-favorites-updated', sync);
     void loadPopular(1);
     return () => window.removeEventListener('steldra:talent-favorites-updated', sync);

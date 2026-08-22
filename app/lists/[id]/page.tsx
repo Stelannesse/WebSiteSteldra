@@ -662,9 +662,40 @@ export default function ListDetailsPage() {
         .eq('user_id', list.user_id);
       if (error) throw error;
       const url = `${window.location.origin}/shared-list/${token}`;
-      await navigator.clipboard.writeText(url);
       setList({ ...list, is_shared: true, share_token: token });
-      window.alert('Lien de partage copié. La personne pourra importer sa propre copie de la liste.');
+
+      // Sur téléphone, on ouvre la feuille de partage native (Messages,
+      // WhatsApp, Mail…). Sur ordinateur ou si elle n'est pas disponible,
+      // on copie le lien dans le presse-papiers avec un repli compatible iOS.
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({
+            title: list.name,
+            text: `Je te partage ma liste « ${list.name} » sur STELDRA.`,
+            url,
+          });
+          return;
+        } catch (shareError: any) {
+          // Annuler la feuille de partage n'est pas une erreur à afficher.
+          if (shareError?.name === 'AbortError') return;
+        }
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      window.alert('Lien de partage copié. Ton amie pourra ouvrir la liste sur son téléphone ou son ordinateur et l’ajouter à son compte.');
     } catch (error) {
       console.error(error);
       setErrorMessage('Impossible de créer le lien de partage. Vérifiez que la migration SQL a bien été appliquée.');
@@ -751,7 +782,7 @@ export default function ListDetailsPage() {
 
                 <div className={styles.listActions}>
                   <button type="button" className={styles.secondaryButton} onClick={() => void shareList()} disabled={sharingList}>
-                    {sharingList ? 'Partage…' : '↗ Partager'}
+                    {sharingList ? 'Partage…' : 'Partager'}
                   </button>
                   <button type="button" className={styles.secondaryButton} onClick={() => void duplicateList()} disabled={duplicatingList}>
                     {duplicatingList ? 'Copie…' : '⧉ Dupliquer'}

@@ -731,7 +731,7 @@ export default function ListDetailsPage() {
 
                 <div className={styles.listActions}>
                   <button type="button" className={styles.secondaryButton} onClick={() => void shareList()} disabled={sharingList}>
-                    {sharingList ? 'Partage…' : '↗ Partager'}
+                    {sharingList ? 'Partage…' : 'Partager'}
                   </button>
                   <button type="button" className={styles.secondaryButton} onClick={() => void duplicateList()} disabled={duplicatingList}>
                     {duplicatingList ? 'Copie…' : '⧉ Dupliquer'}

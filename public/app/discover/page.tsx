@@ -245,7 +245,7 @@ export default function ExplorePage() {
 
             {sagaStats.next && (
               <div className={styles.sagaNextCard}>
-                <span>▶ PROCHAIN</span>
+                <span>PROCHAIN</span>
                 <strong>{sagaStats.next.title}</strong>
                 {sagaStats.next.year && <small>{sagaStats.next.year}</small>}
               </div>

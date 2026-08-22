@@ -374,3 +374,18 @@
 .titleInput,.descriptionInput,.pickerSearch { border-color:rgba(115,183,196,.18); background:rgba(3,11,18,.72); }
 .empty { border-color:rgba(102,181,195,.18); background:rgba(8,20,31,.75); }
 @media(max-width:760px){ .page{padding:14px 11px calc(92px + env(safe-area-inset-bottom));}.header{padding:18px;border-radius:17px}.titleRow h1{font-size:2rem}.items{gap:13px 10px}.posterWrapper{border-radius:11px} }
+
+
+/* Boutons bleus de listes — même bleu que Découvrir */
+.addMediaButton,
+.confirmButton,
+.position {
+  color: #fff !important;
+  border-color: rgba(43, 201, 255, .55) !important;
+  background: linear-gradient(180deg, rgba(0, 153, 255, .9), rgba(0, 95, 210, .84)) !important;
+  box-shadow: 0 8px 28px rgba(0, 133, 255, .22), inset 0 1px rgba(255,255,255,.2) !important;
+}
+
+/* Bleu exact de “LES TALENTS DU CINÉMA” pour les intitulés de listes */
+.eyebrow { color:#2f9dff !important; }
+

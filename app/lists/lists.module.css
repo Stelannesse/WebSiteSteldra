@@ -349,3 +349,7 @@
   .heroContent h1 { font-size: 1.85rem !important; }
   .heroTagline { max-width: 92% !important; font-size: .78rem !important; line-height: 1.5 !important; }
 }
+
+/* Bleu exact de “LES TALENTS DU CINÉMA” pour le bandeau */
+.heroContent > span { color:#2f9dff !important; }
+

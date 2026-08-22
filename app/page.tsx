@@ -678,7 +678,7 @@ if (!historyError && !cancelled) {
                           <span>{isMovie ? `Film${media.runtime ? ` · ${formatMinutes(normalizeStoredMinutes(media.runtime, 'movie'))}` : ''}` : `Saison ${progress.latestSeason} · épisode ${Math.max(1, progress.nextEpisode)}`}</span>
                           {!isMovie && <div className={styles.progressTrack}><span style={{ width: `${percent}%` }} /></div>}
                           <small>{isMovie ? 'Film en cours' : (percent > 0 ? `${percent}% terminé` : 'Reprendre')}</small>
-                          <b>▶ Regarder</b>
+                          <b>Regarder</b>
                         </div>
                       </Link>
                     );

@@ -318,3 +318,8 @@
     min-width: 98px;
   }
 }
+
+/* STELDRA V42 — intitulé « LES TALENTS DU CINÉMA » en bleu */
+.hero .eyebrow {
+  color: #2f9dff !important;
+}
