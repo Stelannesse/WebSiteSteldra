@@ -44,6 +44,14 @@ export type LoadedMediaDetails = {
   release_date?: string | null;
   first_air_date?: string | null;
   poster_path?: string | null;
+  backdrop_path?: string | null;
+  directors?: string[];
+  creators?: string[];
+  countries?: string[];
+  status?: string | null;
+  tagline?: string | null;
+  original_title?: string | null;
+  trailers?: Array<{ key: string; name: string; site?: string; type?: string; official?: boolean }>;
 };
 
 type UseMediaDetailsOptions = {
@@ -253,6 +261,15 @@ export default function useMediaDetails({
             data?.poster_path ??
             enrichedMedia.poster_path ??
             null,
+
+          backdrop_path: data?.backdrop_path ?? null,
+          directors: Array.isArray(data?.directors) ? data.directors : [],
+          creators: Array.isArray(data?.creators) ? data.creators : [],
+          countries: Array.isArray(data?.countries) ? data.countries : [],
+          status: data?.status ?? null,
+          tagline: data?.tagline ?? null,
+          original_title: data?.original_title ?? null,
+          trailers: Array.isArray(data?.trailers) ? data.trailers : [],
         };
 
         setMedia(enrichedMedia);

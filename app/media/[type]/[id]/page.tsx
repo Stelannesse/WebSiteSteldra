@@ -1,3 +1,4 @@
+// STELDRA_MEDIA_V13_FULLPAGE — fiche média plein écran officielle
 import type { MediaType } from '../../../types/media';
 import MediaPageClient from './MediaPageClient';
 

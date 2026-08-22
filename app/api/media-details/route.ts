@@ -98,6 +98,22 @@ export async function GET(request: Request) {
           jikanData.data?.images?.jpg?.large_image_url ||
           jikanData.data?.images?.jpg?.image_url ||
           null,
+        backdrop_path: null,
+        directors: [],
+        creators: [],
+        countries: ['Japon'],
+        status: jikanData.data?.status || null,
+        tagline: null,
+        original_title: jikanData.data?.title_japanese || jikanData.data?.title || null,
+        trailers: jikanData.data?.trailer?.youtube_id
+          ? [{
+              key: jikanData.data.trailer.youtube_id,
+              name: 'Bande-annonce',
+              site: 'YouTube',
+              type: 'Trailer',
+              official: true,
+            }]
+          : [],
       });
     } catch {
       return NextResponse.json({
@@ -205,7 +221,7 @@ export async function GET(request: Request) {
       `${tmdbType}/${id}` +
       `?api_key=${TMDB_API_KEY}` +
       `&language=fr-FR` +
-      `&append_to_response=credits`;
+      `&append_to_response=credits,videos`;
 
     const res = await fetch(url);
 
@@ -233,6 +249,55 @@ export async function GET(request: Request) {
               ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
               : null,
         })) || [];
+
+    const directors = Array.from(
+      new Set(
+        (data.credits?.crew || [])
+          .filter((member: any) => member.job === 'Director')
+          .map((member: any) => member.name)
+          .filter(Boolean)
+      )
+    );
+
+    const creators = (data.created_by || [])
+      .map((creator: any) => creator.name)
+      .filter(Boolean);
+
+    const countries = (data.production_countries || [])
+      .map((country: any) => country.name)
+      .filter(Boolean);
+
+    let trailerResults = Array.isArray(data.videos?.results)
+      ? data.videos.results
+      : [];
+
+    if (trailerResults.length === 0) {
+      try {
+        const fallbackVideosRes = await fetch(
+          `https://api.themoviedb.org/3/${tmdbType}/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
+        );
+        if (fallbackVideosRes.ok) {
+          const fallbackVideos = await fallbackVideosRes.json();
+          trailerResults = Array.isArray(fallbackVideos?.results)
+            ? fallbackVideos.results
+            : [];
+        }
+      } catch {
+        // La fiche reste utilisable même si les vidéos ne sont pas disponibles.
+      }
+    }
+
+    const trailers = trailerResults
+      .filter((video: any) => video?.site === 'YouTube' && ['Trailer', 'Teaser', 'Clip'].includes(video?.type))
+      .sort((a: any, b: any) => Number(Boolean(b.official)) - Number(Boolean(a.official)))
+      .slice(0, 8)
+      .map((video: any) => ({
+        key: video.key,
+        name: video.name,
+        site: video.site,
+        type: video.type,
+        official: Boolean(video.official),
+      }));
 
     /*
      * Film :
@@ -320,6 +385,17 @@ return NextResponse.json({
       : null,
 
   poster_path: data.poster_path || null,
+  backdrop_path: data.backdrop_path || null,
+  directors,
+  creators,
+  countries,
+  status: data.status || null,
+  tagline: data.tagline || null,
+  original_title:
+    tmdbType === 'movie'
+      ? data.original_title || null
+      : data.original_name || null,
+  trailers,
 });
 
   } catch (error) {

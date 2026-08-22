@@ -247,56 +247,112 @@ export default function SettingsPage() {
     setSavingProfile(false);
   };
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
+
   return (
     <>
       <MainNav />
       <main className={styles.page}>
-        <header className={styles.pageHeader}>
-          <p className={styles.eyebrow}>CONFIGURATION</p>
-          <h1>Paramètres</h1>
-          <p className={styles.description}>Personnalise ton expérience.</p>
-        </header>
-
-        <section className={styles.card}>
-          <h2>Mon profil</h2>
-          <p className={styles.cardDescription}>Le prénom ou pseudo est celui affiché dans STELDRA.</p>
-          <div className={styles.profileForm}>
-            <label><span>Prénom ou pseudo</span><input value={profileName} onChange={(event) => setProfileName(event.target.value)} maxLength={60} /></label>
-            <label><span>E-mail</span><input value={profileEmail} disabled /></label>
-            <button className={styles.actionButton} onClick={() => void saveProfile()} disabled={savingProfile}>{savingProfile ? 'Enregistrement…' : 'Enregistrer le profil'}</button>
-          </div>
-          {profileMessage && <p className={styles.exportMessage}>{profileMessage}</p>}
-        </section>
-
-        <section className={styles.card}>
-          <h2>Mes statistiques</h2>
-          <p className={styles.cardDescription}>Retrouve tes heures regardées, tes habitudes et les statistiques de ta collection.</p>
-          <Link href="/statistiques" className={styles.statsLink}>Voir mes statistiques</Link>
-        </section>
-
-        <section className={styles.card}><h2>Apparence</h2><p className={styles.cardDescription}>Personnalise l'interface.</p>
-          <div className={styles.setting}><div><strong>Réduire les animations</strong><small>Limite les effets visuels.</small></div>
-            <button className={`${styles.switch} ${settings.reduceAnimations ? styles.switchOn : ''}`} onClick={() => update('reduceAnimations', !settings.reduceAnimations)}><span className={styles.switchThumb} /></button>
+        <section className={styles.hero}>
+          <div className={styles.heroShade} />
+          <div className={styles.heroContent}>
+            <p className={styles.eyebrow}>VOTRE ESPACE</p>
+            <h1>Paramètres</h1>
+            <p>Personnalisez STELDRA, sécurisez vos données et gardez le contrôle sur votre univers.</p>
           </div>
         </section>
 
-        <section className={styles.card}><h2>Collection</h2><div className={styles.setting}><div><strong>Afficher les titres</strong></div>
-          <button className={`${styles.switch} ${settings.showCollectionTitles ? styles.switchOn : ''}`} onClick={() => update('showCollectionTitles', !settings.showCollectionTitles)}><span className={styles.switchThumb} /></button>
-        </div></section>
-
-        <section className={styles.card}>
-          <h2>Sauvegarde</h2>
-          <p className={styles.cardDescription}>Conserve une copie de ta collection et peux la réimporter plus tard.</p>
-          <div className={styles.setting}><div><strong>Exporter mes données</strong><small>Collection, listes, éléments des listes, avis et historique.</small></div><button className={styles.actionButton} onClick={() => void exportBackup()} disabled={exporting || importing}>{exporting ? 'Export…' : 'Télécharger'}</button></div>
-          <div className={styles.setting}><div><strong>Importer une sauvegarde</strong><small>Fusionne la collection et recrée les listes sans supprimer les données déjà présentes.</small></div><button className={styles.secondaryActionButton} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>{importing ? 'Import…' : 'Choisir un fichier'}</button></div>
-          <input ref={fileInputRef} className={styles.hiddenInput} type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); }} />
-          {backupMessage && <p className={styles.exportMessage}>{backupMessage}</p>}
+        <section className={styles.quickGrid}>
+          <Link href="/statistiques" className={styles.quickCard}>
+            <span className={styles.quickIcon}>◫</span><div><strong>Statistiques</strong><small>Voir vos habitudes de visionnage</small></div><b>→</b>
+          </Link>
+          <button type="button" className={styles.quickCard} onClick={() => void exportBackup()} disabled={exporting || importing}>
+            <span className={styles.quickIcon}>⇩</span><div><strong>Sauvegarder</strong><small>Exporter toutes vos données</small></div><b>→</b>
+          </button>
+          <button type="button" className={styles.quickCard} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>
+            <span className={styles.quickIcon}>⇧</span><div><strong>Restaurer</strong><small>Importer une sauvegarde STELDRA</small></div><b>→</b>
+          </button>
         </section>
 
-        <section className={styles.card}><h2>Tier Lists</h2>
-          <div className={styles.setting}><div><strong>Afficher la signature</strong></div><button className={`${styles.switch} ${settings.showTierListSignature ? styles.switchOn : ''}`} onClick={() => update('showTierListSignature', !settings.showTierListSignature)}><span className={styles.switchThumb} /></button></div>
-          <div className={styles.setting}><div><strong>Confirmation avant réinitialisation</strong></div><button className={`${styles.switch} ${settings.confirmTierListReset ? styles.switchOn : ''}`} onClick={() => update('confirmTierListReset', !settings.confirmTierListReset)}><span className={styles.switchThumb} /></button></div>
-        </section>
+        <div className={styles.settingsGrid}>
+          <section className={`${styles.card} ${styles.profileCard}`}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIcon}>◎</span>
+              <div><h2>Mon profil</h2><p>Les informations visibles dans STELDRA.</p></div>
+            </div>
+            <div className={styles.profileForm}>
+              <label><span>Prénom ou pseudo</span><input value={profileName} onChange={(event) => setProfileName(event.target.value)} maxLength={60} /></label>
+              <label><span>E-mail</span><input value={profileEmail} disabled /></label>
+            </div>
+            <div className={styles.cardActions}>
+              <button className={styles.actionButton} onClick={() => void saveProfile()} disabled={savingProfile}>{savingProfile ? 'Enregistrement…' : 'Enregistrer le profil'}</button>
+              <Link href="/forgot-password" className={styles.secondaryActionButton}>Modifier mon mot de passe</Link>
+            </div>
+            {profileMessage && <p className={styles.message}>{profileMessage}</p>}
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIcon}>✦</span>
+              <div><h2>Apparence</h2><p>Adaptez l'interface à votre confort.</p></div>
+            </div>
+            <div className={styles.setting}>
+              <div><strong>Réduire les animations</strong><small>Limite les transitions et effets visuels.</small></div>
+              <button aria-label="Réduire les animations" className={`${styles.switch} ${settings.reduceAnimations ? styles.switchOn : ''}`} onClick={() => update('reduceAnimations', !settings.reduceAnimations)}><span className={styles.switchThumb} /></button>
+            </div>
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIcon}>▦</span>
+              <div><h2>Collection</h2><p>Choisissez la présentation de votre bibliothèque.</p></div>
+            </div>
+            <div className={styles.setting}>
+              <div><strong>Afficher les titres</strong><small>Affiche le nom des médias sous leurs affiches lorsque l'espace le permet.</small></div>
+              <button aria-label="Afficher les titres" className={`${styles.switch} ${settings.showCollectionTitles ? styles.switchOn : ''}`} onClick={() => update('showCollectionTitles', !settings.showCollectionTitles)}><span className={styles.switchThumb} /></button>
+            </div>
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIcon}>S</span>
+              <div><h2>Tier Lists</h2><p>Réglez le comportement de vos classements.</p></div>
+            </div>
+            <div className={styles.setting}><div><strong>Afficher la signature</strong><small>Ajoute la signature STELDRA à vos exports.</small></div><button aria-label="Afficher la signature" className={`${styles.switch} ${settings.showTierListSignature ? styles.switchOn : ''}`} onClick={() => update('showTierListSignature', !settings.showTierListSignature)}><span className={styles.switchThumb} /></button></div>
+            <div className={styles.setting}><div><strong>Confirmation avant réinitialisation</strong><small>Évite d'effacer un classement par erreur.</small></div><button aria-label="Confirmer avant réinitialisation" className={`${styles.switch} ${settings.confirmTierListReset ? styles.switchOn : ''}`} onClick={() => update('confirmTierListReset', !settings.confirmTierListReset)}><span className={styles.switchThumb} /></button></div>
+          </section>
+
+          <section className={`${styles.card} ${styles.backupCard}`}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIcon}>☁</span>
+              <div><h2>Sauvegarde & restauration</h2><p>Conservez une copie complète de votre univers STELDRA.</p></div>
+            </div>
+            <div className={styles.backupRows}>
+              <div className={styles.backupRow}>
+                <div><strong>Exporter mes données</strong><small>Collection, listes, avis et historique dans un fichier JSON.</small></div>
+                <button className={styles.actionButton} onClick={() => void exportBackup()} disabled={exporting || importing}>{exporting ? 'Export…' : 'Télécharger'}</button>
+              </div>
+              <div className={styles.backupRow}>
+                <div><strong>Importer une sauvegarde</strong><small>Fusionne vos médias et recrée vos listes sans écraser les données actuelles.</small></div>
+                <button className={styles.secondaryActionButton} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>{importing ? 'Import…' : 'Choisir un fichier'}</button>
+              </div>
+            </div>
+            <input ref={fileInputRef} className={styles.hiddenInput} type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); }} />
+            {backupMessage && <p className={styles.message}>{backupMessage}</p>}
+          </section>
+
+          <section className={`${styles.card} ${styles.accountCard}`}>
+            <div className={styles.cardHead}>
+              <span className={styles.cardIcon}>⌁</span>
+              <div><h2>Compte</h2><p>Accès et session STELDRA.</p></div>
+            </div>
+            <div className={styles.accountRow}><div><strong>Adresse e-mail</strong><small>{profileEmail || 'Compte STELDRA'}</small></div></div>
+            <button type="button" className={styles.logoutButton} onClick={() => void signOut()}>Se déconnecter</button>
+          </section>
+        </div>
       </main>
     </>
   );

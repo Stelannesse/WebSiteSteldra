@@ -1993,6 +1993,24 @@ background-color: #181d23;
   text-decoration: none;
 }
 
+
+/* Titres harmonisés Accueil / Collection / Découvrir */
+.dashboardIntro h1,
+.sectionHeading h2,
+.collectionSectionTitle h2,
+.discover2026AdvancedHead h2,
+.discover2026SectionHead h2,
+.discover2026PersonBlock > div:first-child h3 {
+  font-family: var(--font-title);
+  letter-spacing: -.02em;
+}
+
+.collectionContinueCard strong,
+.discover2026CardMeta strong {
+  font-family: var(--font-title);
+  font-weight: 600;
+}
+
 .dashboardRail {
   display: grid;
   grid-auto-flow: column;
@@ -4241,7 +4259,7 @@ background-color: #181d23;
 }
 
 .statGrid > div {
-  min-height: 92px;
+  min-height: 82px;
   padding: 17px 12px;
   display: flex;
   flex-direction: column;
@@ -4971,9 +4989,9 @@ background-color: #181d23;
   color: #f7fbfc;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(2.35rem, 4vw, 4rem);
-  font-weight: 400;
-  line-height: .98;
-  letter-spacing: -.04em;
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -.03em;
 }
 
 .collectionHeroCopy h1 em {
@@ -5210,9 +5228,9 @@ background-color: #181d23;
 .collectionSectionTitle h2 {
   margin: 3px 0 0;
   color: #f3f9fb;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-title);
   font-size: 1.28rem;
-  font-weight: 400;
+  font-weight: 700;
 }
 .collectionSectionTitle > strong { color: #6f8995; font-size: .66rem; font-weight: 700; }
 
@@ -5748,4 +5766,783 @@ background-color: #181d23;
     min-height: 300px;
   }
   .collectionOptionHeroScene { display: none !important; }
+}
+
+/* ========================================================================== */
+/* STELDRA — DÉCOUVRIR 2026 / VERSION CINÉMA SANS MENU LATÉRAL              */
+/* ========================================================================== */
+.discover2026Page {
+  min-height: 100vh;
+  padding: 20px clamp(14px, 3vw, 44px) 54px;
+  color: #f5f8fb;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(21, 105, 179, .12), transparent 32%),
+    linear-gradient(180deg, #030812 0%, #050b14 48%, #030811 100%);
+}
+
+.discover2026Hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 315px;
+  border: 1px solid rgba(74, 167, 221, .22);
+  border-radius: 25px;
+  background:
+    linear-gradient(90deg, rgba(3, 8, 19, .94) 0%, rgba(3, 8, 19, .78) 38%, rgba(3, 8, 19, .22) 76%, rgba(3, 8, 19, .08) 100%),
+    linear-gradient(0deg, rgba(4, 9, 20, .52), rgba(4, 9, 20, .12)),
+    url('/images/steldra-night.png') center 44% / cover no-repeat;
+  box-shadow: 0 26px 68px rgba(0,0,0,.36), inset 0 1px rgba(255,255,255,.035);
+}
+
+.discover2026Hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 90px;
+  background: linear-gradient(180deg, transparent, rgba(2,7,15,.78));
+  pointer-events: none;
+}
+
+.discover2026HeroCopy {
+  position: relative;
+  z-index: 2;
+  max-width: 690px;
+  padding: 62px 52px 96px;
+}
+
+.discover2026HeroCopy > span {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: #39d9ff;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .22em;
+}
+
+.discover2026HeroCopy h1 {
+  margin: 0;
+  max-width: 650px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.3rem, 4.6vw, 4.8rem);
+  line-height: 1.02;
+  font-weight: 500;
+  letter-spacing: -.03em;
+  text-wrap: balance;
+  text-shadow: 0 10px 35px rgba(0,0,0,.55);
+}
+
+.discover2026HeroCopy p {
+  margin: 18px 0 0;
+  color: #c1d0da;
+  font-size: 1.04rem;
+}
+
+.discover2026TypeTabs {
+  position: absolute;
+  z-index: 3;
+  left: 52px;
+  bottom: 28px;
+  display: flex;
+  gap: 8px;
+  max-width: calc(100% - 104px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.discover2026TypeTabs::-webkit-scrollbar { display: none; }
+.discover2026TypeTabs button {
+  flex: 0 0 auto;
+  min-width: 112px;
+  padding: 11px 18px;
+  border: 1px solid rgba(96, 152, 190, .22);
+  border-radius: 999px;
+  background: rgba(4, 13, 26, .72);
+  color: #b8c7d1;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: .2s ease;
+}
+.discover2026TypeTabs button:hover,
+.discover2026TypeTabs .discover2026TypeActive {
+  color: #fff;
+  border-color: rgba(43, 201, 255, .55);
+  background: linear-gradient(180deg, rgba(0, 153, 255, .9), rgba(0, 95, 210, .84));
+  box-shadow: 0 8px 28px rgba(0, 133, 255, .22), inset 0 1px rgba(255,255,255,.2);
+}
+
+.discover2026Filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 15px;
+  border: 1px solid rgba(67, 126, 165, .18);
+  border-radius: 18px;
+  background: rgba(5, 13, 25, .76);
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+}
+.discover2026Filters label { display: grid; gap: 7px; }
+.discover2026Filters label span { color: #688399; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.discover2026Filters select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 36px 0 13px;
+  border: 1px solid rgba(80, 137, 175, .18);
+  border-radius: 11px;
+  outline: none;
+  background: #081321;
+  color: #dbe6ec;
+}
+.discover2026AdvancedButton,
+.discover2026AdvancedActive {
+  align-self: end;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid rgba(43, 203, 255, .24);
+  border-radius: 11px;
+  background: rgba(7, 24, 40, .92);
+  color: #8fdfff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.discover2026AdvancedActive {
+  color: #fff;
+  border-color: rgba(43, 203, 255, .55);
+  background: linear-gradient(180deg, rgba(0, 137, 230, .36), rgba(0, 82, 152, .22));
+  box-shadow: 0 0 24px rgba(0, 157, 255, .12);
+}
+
+.discover2026AdvancedPanel {
+  margin-top: 14px;
+  padding: 20px;
+  border: 1px solid rgba(59, 147, 198, .2);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(7, 18, 33, .94), rgba(3, 10, 20, .94));
+  box-shadow: 0 22px 52px rgba(0,0,0,.28);
+}
+.discover2026AdvancedHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.discover2026AdvancedHead span { color: #2cd8ff; font-size: .68rem; font-weight: 800; letter-spacing: .17em; }
+.discover2026AdvancedHead h2 { margin: 5px 0 3px; font-family: var(--font-title); font-size: 1.65rem; font-weight: 700; }
+.discover2026AdvancedHead p { margin: 0; color: #7f95a5; font-size: .88rem; }
+.discover2026AdvancedHead > strong {
+  max-width: 45%;
+  color: #c8f4ff;
+  font-size: .82rem;
+  text-align: right;
+  font-weight: 600;
+}
+.discover2026GenreCloud { display: flex; flex-wrap: wrap; gap: 8px; }
+.discover2026GenreCloud button {
+  padding: 8px 12px;
+  border: 1px solid rgba(91, 140, 173, .2);
+  border-radius: 999px;
+  background: rgba(8, 20, 34, .92);
+  color: #9db0bd;
+  cursor: pointer;
+}
+.discover2026GenreCloud button:hover,
+.discover2026GenreCloud .discover2026GenreActive {
+  color: #eaffff;
+  border-color: rgba(44, 215, 255, .54);
+  background: rgba(0, 125, 196, .22);
+  box-shadow: 0 0 18px rgba(34, 202, 255, .09);
+}
+.discover2026ScopeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0;
+}
+.discover2026ScopeRow > div { display: flex; gap: 7px; }
+.discover2026ScopeRow button {
+  padding: 9px 13px;
+  border: 1px solid rgba(80, 134, 170, .2);
+  border-radius: 10px;
+  background: #081421;
+  color: #8ca0ad;
+  cursor: pointer;
+}
+.discover2026ScopeRow .discover2026ScopeActive { color: #fff; border-color: rgba(40, 205, 255, .48); background: rgba(0, 125, 205, .22); }
+
+.discover2026Section {
+  margin-top: 22px;
+  padding: 19px;
+  border: 1px solid rgba(58, 115, 151, .16);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(6, 15, 27, .78), rgba(4, 11, 21, .72));
+}
+.discover2026SectionHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.discover2026SectionHead > div { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.discover2026SectionHead h2 { margin: 0; font-family: var(--font-title); font-size: 1.55rem; font-weight: 700; }
+.discover2026SectionHead span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(19, 57, 84, .46);
+  color: #7fbad4;
+  font-size: .68rem;
+}
+
+.discover2026Rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(135px, 12.5vw, 180px);
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 2px 2px 10px;
+  scroll-snap-type: inline proximity;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(58, 173, 222, .35) transparent;
+}
+.discover2026Card { min-width: 0; scroll-snap-align: start; }
+.discover2026CardMeta { padding: 8px 2px 1px; display: grid; gap: 4px; }
+.discover2026CardMeta strong { overflow: hidden; color: #ecf2f6; font-size: .8rem; font-weight: 650; white-space: nowrap; text-overflow: ellipsis; }
+.discover2026CardMeta span { color: #667f90; font-size: .68rem; }
+.discover2026Empty {
+  display: grid;
+  place-items: center;
+  min-height: 110px;
+  padding: 18px;
+  border: 1px dashed rgba(83, 144, 180, .22);
+  border-radius: 14px;
+  color: #6f899a;
+  text-align: center;
+}
+
+.discover2026GenreTiles {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(84px, 1fr));
+  gap: 9px;
+}
+.discover2026GenreTiles button {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 92px;
+  padding: 13px 8px;
+  border: 1px solid rgba(86, 139, 173, .2);
+  border-radius: 15px;
+  background: radial-gradient(circle at 50% 0%, rgba(31, 111, 163, .13), transparent 55%), rgba(7, 17, 29, .94);
+  color: #dbe8ef;
+  cursor: pointer;
+  transition: .2s ease;
+}
+.discover2026GenreTiles button:hover { transform: translateY(-3px); border-color: rgba(44, 210, 255, .47); box-shadow: 0 12px 28px rgba(0,0,0,.22); }
+.discover2026GenreTiles button span { color: #d5f7ff; font-size: 1.55rem; line-height: 1; text-shadow: 0 0 16px rgba(58,210,255,.35); }
+.discover2026GenreTiles button strong { font-size: .73rem; font-weight: 600; }
+
+.discover2026GenreTiles .discover2026GenreTileActive {
+  border-color: rgba(47, 211, 255, .72);
+  background: linear-gradient(180deg, rgba(15, 108, 173, .34), rgba(7, 25, 43, .95));
+  box-shadow: 0 0 0 1px rgba(61, 208, 255, .12) inset, 0 10px 26px rgba(0, 139, 211, .16);
+}
+.discover2026GenreTiles .discover2026GenreTileActive span,
+.discover2026GenreTiles .discover2026GenreTileActive strong { color: #effcff; }
+
+.discover2026PersonBlock {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(71, 126, 161, .15);
+}
+.discover2026PersonBlock > div:first-child h3 { margin: 0 0 4px; font-size: 1rem; }
+.discover2026PersonBlock > div:first-child p { margin: 0; color: #7890a0; font-size: .8rem; }
+.discover2026PersonBlock form { display: grid; grid-template-columns: 1fr auto; gap: 9px; margin-top: 12px; }
+.discover2026PersonBlock form input {
+  min-height: 43px;
+  padding: 0 14px;
+  border: 1px solid rgba(75, 139, 179, .2);
+  border-radius: 11px;
+  outline: none;
+  background: #07131f;
+  color: #ecf7fb;
+}
+.discover2026PersonBlock form button,
+.discover2026PersonTitle > button {
+  padding: 0 16px;
+  border: 1px solid rgba(43, 201, 255, .32);
+  border-radius: 11px;
+  background: rgba(0, 112, 185, .2);
+  color: #b9eeff;
+  cursor: pointer;
+}
+.discover2026PeopleGrid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 9px; margin-top: 12px; }
+.discover2026PeopleGrid > button {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(80, 139, 176, .18);
+  border-radius: 12px;
+  background: #081521;
+  color: #e2edf2;
+  text-align: left;
+  cursor: pointer;
+}
+.discover2026PeopleGrid img,
+.discover2026PeopleGrid > button > span { grid-row: 1 / 3; width: 42px; height: 42px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #102234; }
+.discover2026PeopleGrid small { color: #708797; }
+.discover2026PersonResult { margin-top: 14px; }
+.discover2026PersonTitle { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+.discover2026PersonTitle img,
+.discover2026PersonTitle > span { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: #102234; }
+.discover2026PersonTitle > div { display: grid; gap: 2px; }
+.discover2026PersonTitle small { color: #718899; }
+.discover2026PersonTitle > button { min-height: 38px; margin-left: auto; }
+
+.discover2026Benefits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(68, 135, 177, .18);
+  border-radius: 20px;
+  background: linear-gradient(90deg, rgba(10, 29, 48, .85), rgba(7, 18, 32, .85));
+}
+.discover2026Benefits > div {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 11px;
+  padding: 18px;
+}
+.discover2026Benefits > div + div { border-left: 1px solid rgba(72, 131, 169, .16); }
+.discover2026Benefits span { grid-row: 1 / 3; color: #42d5ff; font-size: 1.45rem; }
+.discover2026Benefits strong { color: #e8f2f7; font-size: .84rem; }
+.discover2026Benefits small { color: #758c9c; font-size: .7rem; line-height: 1.4; }
+
+@media (max-width: 1000px) {
+  .discover2026Filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .discover2026GenreTiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .discover2026PeopleGrid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 760px) {
+  .discover2026Page { padding: 10px 9px calc(92px + env(safe-area-inset-bottom)); }
+  .discover2026Hero { min-height: 260px; border-radius: 19px; background-position: 63% 50%; }
+  .discover2026HeroCopy { padding: 33px 20px 90px; }
+  .discover2026HeroCopy h1 { max-width: 310px; font-size: clamp(2.1rem, 11vw, 3.4rem); }
+  .discover2026HeroCopy p { font-size: .86rem; }
+  .discover2026TypeTabs { left: 16px; right: 16px; bottom: 17px; max-width: none; gap: 6px; }
+  .discover2026TypeTabs button { min-width: auto; padding: 9px 14px; font-size: .72rem; }
+  .discover2026Filters { grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 9px; padding: 10px; border-radius: 15px; }
+  .discover2026Filters label span { font-size: .58rem; }
+  .discover2026Filters select { min-height: 39px; font-size: .73rem; }
+  .discover2026AdvancedButton, .discover2026AdvancedActive { min-height: 39px; font-size: .73rem; }
+  .discover2026AdvancedPanel { padding: 14px; border-radius: 16px; }
+  .discover2026AdvancedHead { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .discover2026AdvancedHead > strong { max-width: 100%; text-align: left; }
+  .discover2026GenreCloud { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+  .discover2026GenreCloud button { flex: 0 0 auto; font-size: .68rem; }
+  .discover2026ScopeRow { flex-direction: column; }
+  .discover2026ScopeRow > div { width: 100%; }
+  .discover2026ScopeRow > div button { flex: 1; }
+  .discover2026Section { margin-top: 13px; padding: 13px 11px; border-radius: 16px; }
+  .discover2026SectionHead { align-items: center; margin-bottom: 11px; }
+  .discover2026SectionHead h2 { font-size: 1.2rem; }
+  .discover2026SectionHead > div > span { display: none; }
+  .discover2026Rail { grid-auto-columns: 118px; gap: 9px; padding-bottom: 5px; }
+  .discover2026CardMeta { padding-top: 6px; }
+  .discover2026CardMeta strong { font-size: .68rem; }
+  .discover2026CardMeta span { font-size: .6rem; }
+  .discover2026GenreTiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+  .discover2026GenreTiles button { min-height: 74px; padding: 9px 4px; border-radius: 12px; }
+  .discover2026GenreTiles button span { font-size: 1.25rem; }
+  .discover2026GenreTiles button strong { font-size: .61rem; }
+  .discover2026PersonBlock form { grid-template-columns: 1fr; }
+  .discover2026PersonBlock form button { min-height: 40px; }
+  .discover2026PeopleGrid { grid-template-columns: 1fr; }
+  .discover2026Benefits { grid-template-columns: 1fr; border-radius: 16px; }
+  .discover2026Benefits > div + div { border-left: 0; border-top: 1px solid rgba(72, 131, 169, .16); }
+}
+
+@media (max-width: 460px) {
+  .discover2026Filters { grid-template-columns: 1fr; }
+  .discover2026Filters > button { width: 100%; }
+  .discover2026GenreTiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .discover2026Rail { grid-auto-columns: 106px; }
+}
+
+/* =========================================================
+   DECOUVRIR V10 — parcours simplifié
+   Genres d'abord, résultats hors du cadre de composition
+   ========================================================= */
+.discover2026GenresFirst {
+  margin-top: 14px;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(42, 176, 255, .09), transparent 36%),
+    linear-gradient(180deg, rgba(8, 20, 34, .94), rgba(5, 14, 26, .94));
+}
+.discover2026GenreResultArea {
+  margin-top: 12px;
+  padding: 4px 2px 6px;
+  scroll-margin-top: 84px;
+}
+.discover2026GenreResultArea .discover2026SectionHead { padding: 0 3px; }
+.discover2026GenreActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.discover2026GenreActions button {
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(86, 151, 193, .2);
+  border-radius: 10px;
+  background: rgba(5, 17, 29, .76);
+  color: #93a9b8;
+  cursor: pointer;
+  font-size: .7rem;
+}
+.discover2026GenreActions button:hover,
+.discover2026GenreActions .discover2026ScopeActive {
+  border-color: rgba(56, 205, 255, .5);
+  background: rgba(16, 117, 184, .18);
+  color: #e8fbff;
+}
+.discover2026PeopleOnly { padding-top: 12px; }
+.discover2026PeopleOnly .discover2026PersonBlock { margin-top: 0; }
+@media (max-width: 760px) {
+  .discover2026GenresFirst { margin-top: 10px; }
+  .discover2026GenreResultArea { margin-top: 9px; }
+  .discover2026GenreActions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+  .discover2026GenreActions button { flex: 0 0 auto; }
+}
+
+/* Découvrir V11 — sélection multi-genres sans déplacement automatique */
+.discover2026GenreTiles button {
+  position: relative;
+}
+.discover2026GenreTiles .discover2026GenreTileActive::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(48, 208, 255, .18);
+  border: 1px solid rgba(73, 220, 255, .55);
+  color: #dcfbff;
+  font-size: .72rem;
+  font-weight: 800;
+  box-shadow: 0 0 14px rgba(26, 188, 255, .18);
+}
+.discover2026GenreSelectionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  min-height: 34px;
+  color: #7893a5;
+  font-size: .75rem;
+}
+.discover2026GenreSelectionBar button {
+  padding: 7px 11px;
+  border: 1px solid rgba(69, 151, 193, .22);
+  border-radius: 999px;
+  background: rgba(8, 25, 40, .78);
+  color: #9edff3;
+  cursor: pointer;
+}
+.discover2026GenreSelectionBar button:hover {
+  border-color: rgba(63, 208, 255, .45);
+  color: #e7fbff;
+}
+@media (max-width: 620px) {
+  .discover2026GenreSelectionBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* =========================================================
+   STELDRA — STATISTIQUES PREMIUM V20
+   ========================================================= */
+.stats2026Page {
+  min-height: 100vh;
+  padding: 18px clamp(12px, 2.4vw, 30px) calc(52px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 10% -5%, rgba(18, 172, 213, .12), transparent 29rem),
+    radial-gradient(circle at 92% 18%, rgba(20, 84, 170, .12), transparent 34rem),
+    linear-gradient(180deg, #030b13 0%, #06121d 46%, #030a12 100%);
+  color: #eef7fa;
+}
+
+.stats2026Hero,
+.stats2026SummaryGrid,
+.stats2026MainGrid,
+.stats2026Page > .timeStats,
+.stats2026State,
+.stats2026Empty {
+  width: min(1400px, 100%);
+  margin-inline: auto;
+}
+
+.stats2026Hero {
+  position: relative;
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid rgba(71, 166, 205, .19);
+  border-radius: 25px;
+  background:
+    linear-gradient(90deg, rgba(2, 9, 18, .96) 0%, rgba(3, 12, 22, .84) 40%, rgba(3, 11, 20, .33) 78%, rgba(3, 10, 18, .15) 100%),
+    url('/images/steldra-night.png') center 48% / cover no-repeat;
+  box-shadow: 0 26px 64px rgba(0, 0, 0, .28);
+}
+
+.stats2026Hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 48%, rgba(3, 10, 18, .48));
+}
+
+.stats2026HeroCopy {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  padding: 54px 50px;
+}
+
+.stats2026HeroCopy > span {
+  color: #2bdce6;
+  font-size: .66rem;
+  font-weight: 900;
+  letter-spacing: .2em;
+}
+
+.stats2026HeroCopy h1 {
+  margin: 10px 0 12px;
+  color: #fbfeff;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.45rem, 5vw, 4.6rem);
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.04em;
+  text-shadow: 0 12px 36px rgba(0, 0, 0, .46);
+}
+
+.stats2026HeroCopy p {
+  max-width: 610px;
+  margin: 0;
+  color: #b0c3cf;
+  font-size: .93rem;
+  line-height: 1.65;
+}
+
+.stats2026HeroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.stats2026HeroActions a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  border: 1px solid rgba(44, 214, 230, .3);
+  border-radius: 10px;
+  background: rgba(6, 27, 39, .72);
+  color: #d8fbfd;
+  font-size: .72rem;
+  font-weight: 800;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+}
+
+.stats2026HeroActions a:first-child {
+  border-color: rgba(42, 224, 235, .5);
+  background: linear-gradient(135deg, rgba(9, 156, 194, .38), rgba(0, 127, 162, .24));
+  color: #fff;
+}
+
+.stats2026SummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 11px;
+  margin-top: 14px;
+}
+
+.stats2026SummaryGrid article {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(75, 157, 188, .16);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(8, 22, 34, .94), rgba(4, 14, 23, .91));
+  box-shadow: 0 17px 40px rgba(0, 0, 0, .16);
+}
+
+.stats2026SummaryGrid span,
+.stats2026PanelHead span {
+  display: block;
+  color: #2edbe5;
+  font-size: .59rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.stats2026SummaryGrid strong {
+  display: block;
+  margin-top: 8px;
+  color: #f5fbfd;
+  font-family: var(--font-title);
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+  line-height: 1.05;
+}
+
+.stats2026SummaryGrid small {
+  display: block;
+  margin-top: 7px;
+  color: #708896;
+  font-size: .67rem;
+  line-height: 1.4;
+}
+
+.stats2026MainGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin-top: 13px;
+}
+
+.stats2026Panel {
+  padding: 19px;
+  border: 1px solid rgba(73, 149, 184, .15);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(7, 20, 31, .92), rgba(4, 13, 22, .89));
+}
+
+.stats2026PanelHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 17px;
+}
+
+.stats2026PanelHead h2 {
+  margin: 5px 0 0;
+  color: #f1f8fa;
+  font-family: var(--font-title);
+  font-size: 1.18rem;
+}
+
+.stats2026PanelHead > strong {
+  color: #738c9a;
+  font-size: .67rem;
+}
+
+.stats2026Bars { display: grid; gap: 13px; }
+.stats2026BarRow { display: grid; gap: 6px; }
+.stats2026BarRow > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #9eb2bd;
+  font-size: .72rem;
+}
+.stats2026BarRow > div:first-child strong { color: #e6f6f8; font-size: .7rem; }
+.stats2026BarTrack {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(80, 119, 138, .14);
+}
+.stats2026BarTrack > span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #087eb7, #24d7e2);
+  box-shadow: 0 0 14px rgba(36, 215, 226, .2);
+}
+
+.stats2026Page > .timeStats {
+  margin-top: 13px;
+  border: 1px solid rgba(73, 149, 184, .15);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(7, 20, 31, .92), rgba(4, 13, 22, .89));
+  box-shadow: none;
+}
+
+.stats2026Page > .timeStats .timeStatsTitle {
+  font-family: var(--font-title);
+}
+
+.stats2026State,
+.stats2026Empty {
+  margin-top: 14px;
+  padding: 24px;
+  border: 1px solid rgba(78, 153, 187, .16);
+  border-radius: 18px;
+  background: rgba(6, 19, 29, .88);
+  color: #8ea5b1;
+  text-align: center;
+}
+
+.stats2026Error { border-color: rgba(218, 95, 107, .28); color: #ffc3ca; }
+.stats2026Empty h2 { margin: 0; color: #f0f8fa; font-family: var(--font-title); }
+.stats2026Empty p { margin: 8px auto 16px; max-width: 540px; }
+.stats2026Empty a { color: #35dce6; font-weight: 800; text-decoration: none; }
+
+@media (max-width: 920px) {
+  .stats2026SummaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats2026MainGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .stats2026Page { padding: 10px 9px calc(92px + env(safe-area-inset-bottom)); }
+  .stats2026Hero { min-height: 225px; border-radius: 19px; background-position: 60% 50%; }
+  .stats2026HeroCopy { padding: 31px 21px; max-width: 78%; }
+  .stats2026HeroCopy > span { font-size: .53rem; }
+  .stats2026HeroCopy h1 { font-size: clamp(2rem, 11vw, 3.2rem); }
+  .stats2026HeroCopy p { font-size: .72rem; line-height: 1.5; }
+  .stats2026HeroActions { margin-top: 15px; }
+  .stats2026HeroActions a { min-height: 34px; padding: 0 11px; font-size: .61rem; }
+  .stats2026SummaryGrid { gap: 8px; margin-top: 9px; }
+  .stats2026SummaryGrid article { padding: 13px 11px; border-radius: 14px; }
+  .stats2026SummaryGrid strong { font-size: 1.25rem; }
+  .stats2026SummaryGrid small { font-size: .59rem; }
+  .stats2026MainGrid { gap: 9px; margin-top: 9px; }
+  .stats2026Panel { padding: 14px; border-radius: 16px; }
+  .stats2026PanelHead h2 { font-size: 1rem; }
+  .stats2026BarRow > div:first-child { font-size: .66rem; }
+  .stats2026Page > .timeStats { margin-top: 9px; border-radius: 16px; }
+}
+
+@media (max-width: 430px) {
+  .stats2026HeroCopy { max-width: 90%; }
+  .stats2026SummaryGrid { grid-template-columns: 1fr 1fr; }
+  .stats2026SummaryGrid article { min-height: 100px; }
 }

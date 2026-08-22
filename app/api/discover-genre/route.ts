@@ -67,12 +67,18 @@ function format(item: any, type: 'movie' | 'tv') {
     release_date: type === 'movie' ? date || undefined : undefined,
     first_air_date: type === 'tv' ? date || undefined : undefined,
     genre_ids: item.genre_ids || [],
+    genres: (item.genre_ids || []).map((id: number) => Object.entries(TMDB_GENRES).find(([, value]) => value === id)?.[0]).filter(Boolean),
     rating: typeof item.vote_average === 'number' ? item.vote_average : null,
   };
 }
 
 async function tmdb(path: string) {
-  const r = await fetch(`https://api.themoviedb.org/3/${path}`, { next: { revalidate: 1800 } });
+  if (!TMDB_API_KEY) return [];
+  const separator = path.includes('?') ? '&' : '?';
+  const r = await fetch(
+    `https://api.themoviedb.org/3/${path}${separator}api_key=${encodeURIComponent(TMDB_API_KEY)}`,
+    { next: { revalidate: 1800 } },
+  );
   if (!r.ok) return [];
   const data = await r.json();
   return data.results || [];

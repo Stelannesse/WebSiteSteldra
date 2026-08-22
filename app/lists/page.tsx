@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '../lib/supabase';
 import MainNav from '../components/mainNav';
 import type { CustomList, CustomListItem } from '../types/media';
@@ -13,11 +13,20 @@ type ListWithPreview = CustomList & {
   itemCount: number;
 };
 
+type SortMode = 'recent' | 'name' | 'count';
+
 const posterUrl = (item?: CustomListItem) => {
   const path = item?.media_data?.poster_path;
   if (!path) return '';
   if (path.startsWith('http')) return path;
   return `https://image.tmdb.org/t/p/w300${path}`;
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(date);
 };
 
 export default function ListsPage() {
@@ -29,6 +38,8 @@ export default function ListsPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [query, setQuery] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('recent');
 
   useEffect(() => {
     const loadLists = async () => {
@@ -132,28 +143,93 @@ export default function ListsPage() {
     setCreating(false);
   };
 
+  const filteredLists = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('fr');
+    const next = lists.filter((list) => {
+      if (!normalized) return true;
+      return `${list.name} ${list.description || ''}`.toLocaleLowerCase('fr').includes(normalized);
+    });
+
+    return [...next].sort((a, b) => {
+      if (sortMode === 'name') return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' });
+      if (sortMode === 'count') return b.itemCount - a.itemCount || a.name.localeCompare(b.name, 'fr');
+      const aDate = new Date(a.updated_at || a.created_at).getTime() || 0;
+      const bDate = new Date(b.updated_at || b.created_at).getTime() || 0;
+      return bDate - aDate;
+    });
+  }, [lists, query, sortMode]);
+
+  const featuredLists = useMemo(
+    () => [...lists].sort((a, b) => b.itemCount - a.itemCount).slice(0, 5),
+    [lists]
+  );
+
+  const totalTitles = useMemo(() => lists.reduce((sum, list) => sum + list.itemCount, 0), [lists]);
+  const sharedLists = useMemo(() => lists.filter((list) => Boolean(list.is_shared)).length, [lists]);
+  const recentLists = useMemo(
+    () => [...lists]
+      .sort((a, b) => (new Date(b.updated_at || b.created_at).getTime() || 0) - (new Date(a.updated_at || a.created_at).getTime() || 0))
+      .slice(0, 3),
+    [lists]
+  );
+
+  const renderPreview = (list: ListWithPreview, compact = false) => (
+    <div className={compact ? styles.compactPreview : styles.coverGrid}>
+      {list.previewItems.length ? (
+        Array.from({ length: compact ? 3 : 4 }).map((_, index) => {
+          const item = list.previewItems[index % list.previewItems.length];
+          const src = posterUrl(item);
+          return src ? <img key={`${item?.id}-${index}`} src={src} alt="" /> : <div key={index} className={styles.coverFallback} />;
+        })
+      ) : (
+        <div className={styles.emptyPreview}>{list.name.charAt(0).toUpperCase()}</div>
+      )}
+    </div>
+  );
+
   return (
     <>
       <MainNav />
       <main className={styles.page}>
-        <div className={styles.heading}>
-          <div>
-            <p className={styles.eyebrow}>Organisation</p>
+        <section className={styles.hero}>
+          <div className={styles.heroShade} />
+          <div className={styles.heroContent}>
+            <span>VOTRE UNIVERS</span>
             <h1>Mes listes</h1>
-            <p>Créez vos propres ordres de visionnage : Marvel, Disney, Star Wars, Fast & Furious…</p>
+            <p className={styles.heroTagline}>Organisez. Retrouvez. Revivez vos histoires.</p>
+            <p>Créez vos listes, suivez vos envies et retrouvez en un instant les univers qui comptent pour vous.</p>
           </div>
+        </section>
+
+        <section className={styles.controlBar}>
+          <label className={styles.searchBox}>
+            <span>⌕</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher dans mes listes…" />
+          </label>
+          <label className={styles.sortBox}>
+            <span>Trier par</span>
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
+              <option value="recent">Dernière activité</option>
+              <option value="name">Nom A–Z</option>
+              <option value="count">Nombre de médias</option>
+            </select>
+          </label>
           <button type="button" className={styles.createButton} onClick={() => setShowForm((current) => !current)}>
             {showForm ? 'Annuler' : '+ Créer une liste'}
           </button>
-        </div>
+        </section>
 
         {showForm && (
           <form className={styles.form} onSubmit={createList}>
+            <div className={styles.formHeading}>
+              <div><span>NOUVELLE LISTE</span><h2>Créez votre prochain univers</h2></div>
+              <button type="button" className={styles.formClose} onClick={() => setShowForm(false)}>×</button>
+            </div>
             <label>Nom de la liste
-              <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex. Marvel" maxLength={80} />
+              <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex. Marvel / MCU" maxLength={80} />
             </label>
             <label>Description
-              <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Ex. MCU dans l’ordre chronologique" maxLength={250} rows={3} />
+              <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Ex. Tout le MCU dans mon ordre préféré" maxLength={250} rows={3} />
             </label>
             <button type="submit" disabled={creating}>{creating ? 'Création…' : 'Créer la liste'}</button>
           </form>
@@ -165,36 +241,73 @@ export default function ListsPage() {
           <p className={styles.message}>Chargement des listes…</p>
         ) : lists.length === 0 ? (
           <section className={styles.empty}>
-            <span>☰</span><h2>Aucune liste pour le moment</h2>
+            <span>◇</span><h2>Aucune liste pour le moment</h2>
             <p>Créez votre première liste pour organiser vos médias dans l’ordre de votre choix.</p>
             <button type="button" onClick={() => setShowForm(true)}>Créer ma première liste</button>
           </section>
         ) : (
-          <section className={styles.grid}>
-            {lists.map((list) => (
-              <Link href={`/lists/${list.id}`} className={styles.card} key={list.id}>
-                <div className={styles.cover}>
-                  {list.previewItems.length ? (
-                    <div className={styles.coverGrid}>
-                      {Array.from({ length: 4 }).map((_, index) => {
-                        const item = list.previewItems[index % list.previewItems.length];
-                        const src = posterUrl(item);
-                        return src ? <img key={`${item?.id}-${index}`} src={src} alt="" /> : <div key={index} className={styles.coverFallback} />;
-                      })}
-                    </div>
-                  ) : (
-                    <div className={styles.emptyCover}>{list.name.charAt(0).toUpperCase()}</div>
-                  )}
-                  <div className={styles.coverShade} />
-                  <div className={styles.coverText}>
-                    <h2>{list.name}</h2>
-                    <p>{list.description || 'Liste personnalisée ordonnée'}</p>
-                    <span>{list.itemCount} {list.itemCount > 1 ? 'médias' : 'média'}</span>
-                  </div>
+          <>
+            <section className={styles.dashboardRow}>
+              <aside className={styles.summaryCard}>
+                <div className={styles.summaryStats}>
+                  <div><span>▱</span><strong>{lists.length}</strong><small>Listes créées</small></div>
+                  <div><span>▦</span><strong>{totalTitles}</strong><small>Titres au total</small></div>
+                  <div><span>⌁</span><strong>{sharedLists}</strong><small>Listes partagées</small></div>
                 </div>
-              </Link>
-            ))}
-          </section>
+                <div className={styles.recentActivity}>
+                  <h3>Activité récente</h3>
+                  {recentLists.map((list) => (
+                    <Link key={list.id} href={`/lists/${list.id}`}>
+                      <span>{list.name.charAt(0).toUpperCase()}</span>
+                      <div><strong>{list.name}</strong><small>{list.itemCount} média{list.itemCount > 1 ? 's' : ''}</small></div>
+                      <time>{formatDate(list.updated_at || list.created_at)}</time>
+                    </Link>
+                  ))}
+                </div>
+              </aside>
+
+              <div className={styles.featuredArea}>
+                <div className={styles.sectionTitle}><div><span>SÉLECTION</span><h2>Vos listes à la une ✦</h2></div></div>
+                <div className={styles.featuredRail}>
+                  {featuredLists.map((list) => (
+                    <Link href={`/lists/${list.id}`} className={styles.featuredCard} key={list.id}>
+                      {renderPreview(list, true)}
+                      <div className={styles.featuredShade} />
+                      <div className={styles.featuredText}><strong>{list.name}</strong><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span></div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.allListsSection}>
+              <div className={styles.sectionTitle}>
+                <div><span>COLLECTIONS</span><h2>Toutes mes listes</h2></div>
+                <strong>{filteredLists.length} liste{filteredLists.length > 1 ? 's' : ''}</strong>
+              </div>
+
+              {filteredLists.length === 0 ? (
+                <div className={styles.noResults}>Aucune liste ne correspond à votre recherche.</div>
+              ) : (
+                <div className={styles.grid}>
+                  {filteredLists.map((list) => (
+                    <Link href={`/lists/${list.id}`} className={styles.card} key={list.id}>
+                      <div className={styles.cover}>
+                        {renderPreview(list)}
+                        <div className={styles.coverShade} />
+                      </div>
+                      <div className={styles.cardBody}>
+                        <div className={styles.cardTitleRow}><h2>{list.name}</h2>{list.is_shared && <span title="Liste partagée">⌁</span>}</div>
+                        <p>{list.description || 'Liste personnalisée ordonnée'}</p>
+                        <div className={styles.cardMeta}><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span><time>{formatDate(list.updated_at || list.created_at)}</time></div>
+                        <div className={styles.cardAction}>Ouvrir <span>→</span></div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
         )}
       </main>
     </>

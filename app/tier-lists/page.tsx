@@ -772,6 +772,13 @@ const deleteRow = (rowId: string) => {
     }, 120);
   };
 
+  const rankedMediaCount = rows.reduce((total, row) => total + row.media.length, 0);
+  const activeSourceMediaCount = activeSourceId === 'collection'
+    ? unranked.length + rows.flatMap((row) => row.media).filter((media) =>
+        unranked.some((item) => item.type === media.type && String(item.id) === String(media.id))
+      ).length
+    : sourceLists.find((list) => list.id === activeSourceId)?.media.length || 0;
+
   const getPosterUrl = (media: MediaItem) => {
     if (!media.poster_path) {
       return '/steldra-poster-placeholder.svg';
@@ -790,101 +797,118 @@ const deleteRow = (rowId: string) => {
 
       <main className={`${styles.page} ${touchDragging ? styles.touchDragging : ''}`}>
         <section className={styles.heroPanel}>
-          <div className={styles.pageHeader}>
-            <div>
-              <h1><span className={styles.titleIcon}>☆</span> Tier Lists</h1>
-              <p className={styles.description}>
-                Créez, organisez et partagez vos classements !
-              </p>
+          <div className={styles.tierHero}>
+            <div className={styles.tierHeroGlow} aria-hidden="true" />
+            <div className={styles.pageHeader}>
+              <div>
+                <span className={styles.heroEyebrow}>VOTRE CLASSEMENT</span>
+                <h1>Tier Lists</h1>
+                <p className={styles.heroTagline}>Classez vos univers. Défendez vos favoris.</p>
+                <p className={styles.description}>
+                  Créez des classements visuels à partir de votre collection ou de vos listes, puis sauvegardez-les et exportez-les.
+                </p>
+              </div>
+
+              <div className={styles.heroStats}>
+                <div><strong>{rankedMediaCount}</strong><span>classés</span></div>
+                <div><strong>{rows.length}</strong><span>rangs</span></div>
+                <div><strong>{savedTierLists.length}</strong><span>sauvegardes</span></div>
+              </div>
             </div>
           </div>
 
-          <div className={styles.filters}>
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="⌕  Rechercher un média..."
-              className={styles.searchInput}
-            />
+          <div className={styles.libraryDeck}>
+            <div className={styles.libraryDeckHeader}>
+              <div>
+                <span className={styles.deckEyebrow}>RÉSERVE</span>
+                <h2>Choisissez les médias à classer</h2>
+              </div>
+              <span>{filteredUnranked.length} disponible{filteredUnranked.length > 1 ? 's' : ''}</span>
+            </div>
 
-            <div className={styles.typeFilters}>
-              {(Object.keys(mediaLabels) as Array<MediaType | 'tous'>).map((type) => (
+            <div className={styles.filters}>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="⌕  Rechercher un média..."
+                className={styles.searchInput}
+              />
+
+              <div className={styles.typeFilters}>
+                {(Object.keys(mediaLabels) as Array<MediaType | 'tous'>).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`${styles.filterButton} ${filter === type ? styles.filterButtonActive : ''}`}
+                    onClick={() => setFilter(type)}
+                  >
+                    {type === 'tous' ? 'Tous' : mediaLabels[type]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.sourcePicker}>
+              <button
+                type="button"
+                className={`${styles.sourceButton} ${activeSourceId === 'collection' ? styles.sourceButtonActive : ''}`}
+                onClick={() => setActiveSourceId('collection')}
+              >
+                Ma collection
+              </button>
+
+              {sourceLists.map((list) => (
                 <button
-                  key={type}
+                  key={list.id}
                   type="button"
-                  className={`${styles.filterButton} ${filter === type ? styles.filterButtonActive : ''}`}
-                  onClick={() => setFilter(type)}
+                  className={`${styles.sourceButton} ${activeSourceId === list.id ? styles.sourceButtonActive : ''}`}
+                  onClick={() => setActiveSourceId(list.id)}
                 >
-                  {type === 'tous' ? 'Tous' : mediaLabels[type]}
+                  {list.name}
+                  <span>{list.media.length}</span>
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className={styles.sourcePicker}>
-            <button
-              type="button"
-              className={`${styles.sourceButton} ${activeSourceId === 'collection' ? styles.sourceButtonActive : ''}`}
-              onClick={() => setActiveSourceId('collection')}
+            <div
+              data-tier-unranked
+              className={`${styles.unrankedGrid} ${dragOverRank === 'unranked' ? styles.unrankedDragOver : ''}`}
             >
-              Ma collection
-            </button>
-
-            {sourceLists.map((list) => (
-              <button
-                key={list.id}
-                type="button"
-                className={`${styles.sourceButton} ${activeSourceId === list.id ? styles.sourceButtonActive : ''}`}
-                onClick={() => setActiveSourceId(list.id)}
-              >
-                {list.name}
-                <span>{list.media.length}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.libraryStripHeader}>
-            <span>{filteredUnranked.length} disponible{filteredUnranked.length > 1 ? 's' : ''}</span>
-          </div>
-
-          <div
-            data-tier-unranked
-            className={`${styles.unrankedGrid} ${dragOverRank === 'unranked' ? styles.unrankedDragOver : ''}`}
-          >
-            {filteredUnranked.map((media) => (
-              <button
-                key={`${media.type}_${media.id}`}
-                type="button"
-                className={styles.libraryPoster}
-                onPointerDown={(event) => handlePointerDown(event, media)}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerCancel}
-                onClick={(event) => {
-                  if (suppressClickRef.current) {
-                    event.preventDefault();
-                    return;
-                  }
-                  openMedia(media);
-                }}
-                title={`${media.title} — ouvrir la fiche`}
-              >
-                <img
-                  src={getPosterUrl(media)}
-                  alt={media.title}
-                  onError={(event) => {
-                    event.currentTarget.onerror = null;
-                    event.currentTarget.src = '/steldra-poster-placeholder.svg';
+              {filteredUnranked.map((media) => (
+                <button
+                  key={`${media.type}_${media.id}`}
+                  type="button"
+                  className={styles.libraryPoster}
+                  onPointerDown={(event) => handlePointerDown(event, media)}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerCancel}
+                  onClick={(event) => {
+                    if (suppressClickRef.current) {
+                      event.preventDefault();
+                      return;
+                    }
+                    openMedia(media);
                   }}
-                />
-                <span>{media.title}</span>
-              </button>
-            ))}
+                  title={`${media.title} — ouvrir la fiche`}
+                >
+                  <img
+                    src={getPosterUrl(media)}
+                    alt={media.title}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src = '/steldra-poster-placeholder.svg';
+                    }}
+                  />
+                  <span>{media.title}</span>
+                </button>
+              ))}
 
-            {filteredUnranked.length === 0 && (
-              <p className={styles.emptyLibrary}>Aucune œuvre ne correspond à cette recherche.</p>
-            )}
+              {filteredUnranked.length === 0 && (
+                <p className={styles.emptyLibrary}>Aucune œuvre ne correspond à cette recherche.</p>
+              )}
+            </div>
           </div>
         </section>
 
