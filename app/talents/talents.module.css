@@ -1,0 +1,320 @@
+.page {
+  min-height: 100vh;
+  padding: 18px clamp(12px, 3vw, 42px) 88px;
+  color: #eef8fb;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(28, 146, 192, .12), transparent 30rem),
+    linear-gradient(180deg, #020912 0%, #06111c 52%, #030a12 100%);
+}
+.shell { width: min(1480px, 100%); margin: 0 auto; }
+.hero {
+  min-height: 270px;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  padding: 38px clamp(24px, 5vw, 58px);
+  border: 1px solid rgba(92,190,208,.18);
+  border-radius: 24px;
+  background:
+    linear-gradient(90deg, rgba(2,9,17,.97), rgba(3,12,23,.78) 45%, rgba(3,12,23,.22)),
+    url('/images/steldra-night.png') center 48% / cover no-repeat;
+  box-shadow: 0 24px 70px rgba(0,0,0,.30);
+}
+.hero::after {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background: radial-gradient(circle at 76% 28%, rgba(43,213,255,.18), transparent 23rem);
+}
+.heroCopy { position:relative; z-index:1; max-width:760px; }
+.eyebrow { margin:0 0 10px; color:#2bdce6; font-size:.64rem; font-weight:900; letter-spacing:.22em; text-transform:uppercase; }
+.hero h1 { margin:0 0 10px; font-family:var(--font-title); font-size:clamp(2rem,3.6vw,3.25rem); line-height:1.03; letter-spacing:-.045em; }
+.hero p { max-width:620px; margin:0; color:#b0c2cc; font-size:clamp(.88rem,1.15vw,1rem); line-height:1.58; }
+.searchBar { display:flex; align-items:center; gap:10px; max-width:760px; margin-top:22px; padding:8px; border:1px solid rgba(80,178,199,.22); border-radius:15px; background:rgba(3,14,24,.82); backdrop-filter:blur(14px); }
+.searchBar span { margin-left:8px; color:#6f96a6; }
+.searchBar input { flex:1; min-width:0; min-height:40px; border:0; outline:0; background:transparent; color:#f3fbfd; font:inherit; }
+.searchBar button { min-height:40px; padding:0 16px; border:1px solid rgba(42,218,229,.46); border-radius:10px; background:linear-gradient(135deg,#1db9c5,#078d9b); color:#fff; font-weight:800; cursor:pointer; }
+.roleGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:14px; }
+.roleCard { min-height:178px; padding:18px; border:1px solid rgba(84,183,203,.17); border-radius:18px; background:linear-gradient(145deg,rgba(8,23,36,.96),rgba(5,15,25,.96)); box-shadow:0 16px 36px rgba(0,0,0,.14); }
+.roleHead { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:13px; }
+.roleTitle { display:flex; align-items:center; gap:10px; }
+.roleIcon { width:34px; height:34px; display:grid; place-items:center; border:1px solid rgba(42,218,229,.22); border-radius:11px; background:rgba(0,173,181,.075); color:#38e0e9; font-size:1rem; }
+.roleHead h2 { margin:0; font-family:var(--font-title); font-size:.92rem; }
+.roleHead span { color:#6f8795; font-size:.65rem; }
+.avatarRow { display:flex; align-items:center; gap:9px; min-height:68px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.avatarRow::-webkit-scrollbar { display:none; }
+.avatar { flex:0 0 auto; width:54px; height:54px; border-radius:50%; overflow:hidden; border:2px solid rgba(43,213,230,.35); background:#10202d; }
+.avatar img { width:100%; height:100%; object-fit:cover; }
+.emptyAvatar { width:54px; height:54px; display:grid; place-items:center; color:#4e6a78; border:1px dashed rgba(84,183,203,.2); border-radius:50%; }
+.section { margin-top:14px; padding:18px; border:1px solid rgba(84,167,192,.15); border-radius:20px; background:linear-gradient(145deg,rgba(7,19,30,.92),rgba(4,13,21,.92)); }
+.sectionHead { display:flex; align-items:flex-end; justify-content:space-between; gap:14px; margin-bottom:14px; }
+.sectionHead h2 { margin:0; font-family:var(--font-title); font-size:1.15rem; }
+.sectionHead p { margin:4px 0 0; color:#748b98; font-size:.72rem; }
+.sectionHead span { color:#5edbe5; font-size:.68rem; }
+.peopleGrid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:11px; }
+.personCard { min-width:0; color:inherit; text-decoration:none; border:1px solid rgba(88,161,185,.14); border-radius:15px; overflow:hidden; background:#07131f; transition:transform .18s ease,border-color .18s ease; }
+.personCard:hover { transform:translateY(-3px); border-color:rgba(42,218,229,.38); }
+.personPortrait { aspect-ratio:4/5; background:linear-gradient(145deg,#102332,#07111b); overflow:hidden; }
+.personPortrait img { width:100%; height:100%; object-fit:cover; display:block; }
+.personMeta { padding:9px; }
+.personMeta strong { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:.75rem; }
+.personMeta span { display:block; margin-top:3px; color:#718896; font-size:.6rem; }
+.searchResults { margin-top:14px; }
+.empty { min-height:150px; display:grid; place-items:center; color:#708895; border:1px dashed rgba(82,155,180,.2); border-radius:16px; }
+.breadcrumbs { display:flex; align-items:center; gap:8px; margin:0 0 12px; color:#76909d; font-size:.68rem; }
+.breadcrumbs a { color:#8fdce4; text-decoration:none; }
+
+@media (max-width: 1000px) { .peopleGrid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media (max-width: 760px) {
+  .page { padding:10px 9px calc(94px + env(safe-area-inset-bottom)); }
+  .hero { min-height:250px; padding:24px 18px; border-radius:18px; }
+  .hero h1 { font-size:1.85rem; }
+  .hero p { max-width:92%; font-size:.78rem; }
+  .searchBar { margin-top:17px; }
+  .searchBar button { padding:0 12px; font-size:.7rem; }
+  .roleGrid { grid-template-columns:1fr; gap:8px; }
+  .roleCard { min-height:auto; padding:14px; border-radius:15px; }
+  .peopleGrid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .section { padding:13px 11px; border-radius:16px; }
+  .sectionHead h2 { font-size:1rem; }
+  .personMeta { padding:7px; }
+  .personMeta strong { font-size:.66rem; }
+  .personMeta span { font-size:.54rem; }
+}
+
+
+.sectionActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.refreshButton, .seeAllButton {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(42,218,229,.34);
+  border-radius: 999px;
+  background: rgba(0,173,181,.10);
+  color: #bff4f7;
+  font-size: .68rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.refreshButton:disabled, .seeAllButton:disabled { opacity: .6; cursor: wait; }
+.roleActions { display:flex; justify-content:flex-end; margin-top:10px; }
+.favoritePeopleGrid {
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(84,167,192,.12);
+}
+@media (max-width: 1000px) { .favoritePeopleGrid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 760px) {
+  .sectionActions { width:100%; justify-content:space-between; }
+  .refreshButton, .seeAllButton { min-height:32px; font-size:.62rem; padding:0 10px; }
+  .favoritePeopleGrid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+}
+@media (max-width: 420px) { .favoritePeopleGrid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+
+/* =========================================================
+   STELDRA V38 — Talents mobile plus compact
+========================================================= */
+.roleCard {
+  overflow: hidden;
+}
+
+.avatarRow {
+  flex-wrap: wrap;
+  overflow: visible;
+  min-height: auto;
+  row-gap: 8px;
+  padding-right: 2px;
+}
+
+.roleActions {
+  justify-content: flex-start;
+}
+
+.seeAllButton {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.favoritePeopleGrid {
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 8px;
+}
+
+.favoritePeopleGrid .personCard {
+  border-radius: 12px;
+}
+
+.favoritePeopleGrid .personPortrait {
+  aspect-ratio: 4 / 4.8;
+}
+
+.favoritePeopleGrid .personMeta {
+  padding: 6px;
+}
+
+.favoritePeopleGrid .personMeta strong {
+  font-size: .66rem;
+}
+
+.favoritePeopleGrid .personMeta span {
+  margin-top: 2px;
+  font-size: .54rem;
+}
+
+@media (max-width: 1000px) {
+  .favoritePeopleGrid {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .avatarRow {
+    gap: 7px;
+  }
+
+  .avatar,
+  .emptyAvatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .roleActions {
+    margin-top: 8px;
+  }
+
+  .seeAllButton {
+    width: 100%;
+    min-height: 34px;
+  }
+
+  .favoritePeopleGrid {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 7px;
+  }
+
+  .favoritePeopleGrid .personCard {
+    border-radius: 10px;
+  }
+
+  .favoritePeopleGrid .personMeta {
+    padding: 5px;
+  }
+
+  .favoritePeopleGrid .personMeta strong {
+    font-size: .58rem;
+  }
+
+  .favoritePeopleGrid .personMeta span {
+    font-size: .48rem;
+  }
+
+  .discoverSection .peopleGrid {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 7px;
+  }
+
+  .discoverSection .personMeta {
+    padding: 6px;
+  }
+
+  .discoverSection .personMeta strong {
+    font-size: .6rem;
+  }
+
+  .discoverSection .personMeta span {
+    font-size: .5rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .favoritePeopleGrid {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
+
+  .discoverSection .peopleGrid {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
+}
+
+
+/* =========================================================
+   STELDRA V41 — Talents aligné sur la palette Découvrir
+========================================================= */
+.hero {
+  border: 1px solid rgba(74, 167, 221, .22) !important;
+  background:
+    linear-gradient(90deg, rgba(3, 8, 19, .94) 0%, rgba(3, 8, 19, .78) 38%, rgba(3, 8, 19, .22) 76%, rgba(3, 8, 19, .08) 100%),
+    linear-gradient(0deg, rgba(4, 9, 20, .52), rgba(4, 9, 20, .12)),
+    url('/images/steldra-night.png') center 44% / cover no-repeat !important;
+  box-shadow: 0 26px 68px rgba(0,0,0,.36), inset 0 1px rgba(255,255,255,.035) !important;
+}
+
+.hero::after {
+  background:
+    radial-gradient(circle at 76% 28%, rgba(57, 217, 255, .14), transparent 23rem),
+    linear-gradient(180deg, transparent 56%, rgba(2,7,15,.18));
+}
+
+.eyebrow {
+  color: #39d9ff !important;
+}
+
+.hero p {
+  color: #c1d0da !important;
+}
+
+.searchBar {
+  border: 1px solid rgba(96, 152, 190, .22) !important;
+  border-radius: 16px !important;
+  background: rgba(4, 13, 26, .72) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.02);
+}
+
+.searchBar span {
+  color: #8aa6b6 !important;
+}
+
+.searchBar button {
+  border: 1px solid rgba(43, 201, 255, .55) !important;
+  background: linear-gradient(180deg, rgba(0, 153, 255, .9), rgba(0, 95, 210, .84)) !important;
+  box-shadow: 0 8px 28px rgba(0, 133, 255, .22), inset 0 1px rgba(255,255,255,.2) !important;
+}
+
+.searchBar button:hover {
+  filter: brightness(1.04);
+}
+
+.roleIcon,
+.sectionHead span,
+.refreshButton,
+.seeAllButton {
+  color: #bfefff;
+}
+
+.roleIcon {
+  border-color: rgba(43, 201, 255, .24) !important;
+  background: rgba(0, 125, 196, .14) !important;
+}
+
+.refreshButton,
+.seeAllButton {
+  border-color: rgba(43, 201, 255, .32) !important;
+  background: rgba(0, 125, 196, .16) !important;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    background-position: 63% 50% !important;
+  }
+
+  .searchBar {
+    border-radius: 15px !important;
+  }
+
+  .searchBar button {
+    min-width: 98px;
+  }
+}

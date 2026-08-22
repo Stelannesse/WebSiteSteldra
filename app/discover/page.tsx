@@ -49,7 +49,6 @@ export default function ExplorePage() {
   const [sortMode, setSortMode] = useState<SortMode>('popular');
   const [minimumRating, setMinimumRating] = useState(0);
   const [yearFilter, setYearFilter] = useState('all');
-  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [personQuery, setPersonQuery] = useState('');
   const [people, setPeople] = useState<PersonSearchResult[]>([]);
@@ -388,27 +387,13 @@ export default function ExplorePage() {
         <label><span>Trier par</span><select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}><option value="popular">Popularité</option><option value="rating">Note</option><option value="recent">Plus récents</option></select></label>
         <label><span>Année</span><select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}><option value="all">Toutes les années</option>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
         <label><span>Note minimum</span><select value={minimumRating} onChange={(event) => setMinimumRating(Number(event.target.value))}><option value={0}>Toutes</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option></select></label>
-        <button type="button" className={advancedOpen ? styles.discover2026AdvancedActive : styles.discover2026AdvancedButton} onClick={() => setAdvancedOpen((value) => !value)}><span aria-hidden="true">◎</span> Acteur / réalisateur</button>
+        <Link className={styles.discover2026AdvancedButton} href="/talents"><span aria-hidden="true">◎</span> Talents du cinéma</Link>
       </section>
 
-      {advancedOpen && <section className={styles.discover2026AdvancedPanel + ' ' + styles.discover2026PeopleOnly}>
-        <nav className={styles.discoverPeopleBreadcrumb} aria-label="Fil d’Ariane">
-          <Link href="/">Accueil</Link><span>›</span><button type="button" onClick={() => setAdvancedOpen(false)}>Découvrir</button><span>›</span><strong>Acteur / réalisateur</strong>
-        </nav>
-        <div className={styles.discover2026PersonBlock}>
-          <div className={styles.discoverPeopleIntro}>
-            <span className={styles.discoverPeopleIcon} aria-hidden="true">◎</span>
-            <div>
-              <small>PORTRAITS & FILMOGRAPHIES</small>
-              <h3>Trouvez un acteur ou un réalisateur</h3>
-              <p>Recherchez une personnalité et explorez directement ses films et séries.</p>
-            </div>
-          </div>
-          <form className={styles.discoverPeopleSearch} onSubmit={searchPeople}><span aria-hidden="true">⌕</span><input value={personQuery} onChange={(event) => setPersonQuery(event.target.value)} placeholder="Ex. Charlize Theron, Christopher Nolan…"/><button type="submit" disabled={personSearching || personQuery.trim().length < 2}>{personSearching ? 'Recherche…' : 'Rechercher'}</button></form>
-          {people.length > 0 && !selectedPerson && <div className={styles.discover2026PeopleGrid}>{people.map((person) => <button key={person.id} type="button" onClick={() => void openPerson(person)}>{person.profile_path ? <img src={person.profile_path} alt="" /> : <span>👤</span>}<strong>{person.name}</strong><small>{person.department}</small></button>)}</div>}
-          {selectedPerson && <div className={styles.discover2026PersonResult}><div className={styles.discover2026PersonTitle}>{selectedPerson.profile_path ? <img src={selectedPerson.profile_path} alt=""/> : <span>👤</span>}<div><strong>{selectedPerson.name}</strong><small>{selectedPerson.department}</small></div><button type="button" onClick={() => { setSelectedPerson(null); setPersonCredits([]); }}>Changer</button></div>{creditsLoading ? <div className={styles.discover2026Empty}>Chargement…</div> : renderMediaRail(refineItems(personCredits).slice(0, 18), 'Aucun titre disponible pour cette personne.')}</div>}
-        </div>
-      </section>}
+      <section className={styles.discoverTalentGateway}>
+        <div><span>TALENTS</span><h2>Les visages derrière vos histoires</h2><p>Retrouvez acteurs, réalisateurs et doubleurs, explorez leurs filmographies et ajoutez vos préférés en favoris.</p></div>
+        <Link href="/talents">Explorer les talents →</Link>
+      </section>
 
       <section className={styles.discover2026Section}>
         <div className={styles.discover2026SectionHead}><div><h2>À l’affiche</h2><span>Tendances et nouveautés du moment</span></div><span>Populaire cette semaine</span></div>

@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './mainNav.module.css';
 
-type IconName = 'home' | 'collection' | 'discover' | 'lists' | 'history' | 'tier' | 'settings';
+type IconName = 'home' | 'collection' | 'discover' | 'talents' | 'lists' | 'history' | 'tier' | 'settings';
 
 const links: { href: string; label: string; icon: IconName }[] = [
   { href: '/', label: 'Accueil', icon: 'home' },
   { href: '/collection', label: 'Collection', icon: 'collection' },
   { href: '/discover', label: 'Découvrir', icon: 'discover' },
+  { href: '/talents', label: 'Talents', icon: 'talents' },
   { href: '/lists', label: 'Mes listes', icon: 'lists' },
   { href: '/history', label: 'Historique', icon: 'history' },
   { href: '/tier-lists', label: 'Tier lists', icon: 'tier' },
@@ -22,6 +23,7 @@ function NavIcon({ name }: { name: IconName }) {
     home: <><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5.5h5V20"/></>,
     collection: <><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 7.5h8M8 12h8M8 16.5h5"/></>,
     discover: <><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z"/></>,
+    talents: <><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20c.6-4.1 3-6.2 6.5-6.2s5.9 2.1 6.5 6.2"/><path d="M4 8.8a8.8 8.8 0 0 1 16 0"/></>,
     lists: <><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></>,
     history: <><path d="M3.8 9A8.5 8.5 0 1 1 4 16"/><path d="M3.8 4.5V9h4.5"/><path d="M12 7.5V12l3 2"/></>,
     tier: <><path d="m12 3 2.5 5.1 5.6.8-4.1 4 1 5.6-5-2.6-5 2.6 1-5.6-4.1-4 5.6-.8L12 3Z"/></>,

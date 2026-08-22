@@ -636,6 +636,7 @@ if (!historyError && !cancelled) {
                 <Link href="/collection">🎭 Drama</Link>
                 <Link href="/collection">◉ Animés</Link>
                 <Link href="/collection">▥ Documentaires</Link>
+                <Link href="/talents">♙ Talents</Link>
               </div>
 
               <section className={`${styles.cinemaPanel} ${styles.moodPanel}`}>
