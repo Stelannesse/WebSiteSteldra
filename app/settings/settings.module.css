@@ -131,3 +131,65 @@
 @media (max-width: 760px) {
   .hero h1 { font-size: 1.85rem; }
 }
+
+/* STELDRA V22 — cohérence premium */
+.quickCard,.card { box-shadow:0 14px 38px rgba(0,0,0,.14); }
+.quickCard:hover,.card:hover { border-color:rgba(42,218,229,.27); }
+.setting,.backupRow,.accountRow { transition:background-color 180ms ease,padding 180ms ease; }
+.setting:hover,.backupRow:hover,.accountRow:hover { background:rgba(36,215,226,.025); }
+
+/* STELDRA V25 — palette uniforme du grand bandeau */
+.hero .eyebrow { color:#2bdce6 !important; }
+.hero h1 { color:#f7fbfc !important; }
+.heroContent > p:last-child { color:#b0c2cc !important; }
+
+
+/* =========================================================
+   STELDRA V30 — bandeau Paramètres harmonisé
+========================================================= */
+.hero {
+  min-height: 250px !important;
+  display: flex !important;
+  align-items: center !important;
+  border-radius: 24px !important;
+}
+.heroContent {
+  max-width: 700px !important;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 26px clamp(22px, 4vw, 52px) !important;
+}
+.eyebrow {
+  margin: 0 0 10px !important;
+  color: #2bdce6 !important;
+  font-family: var(--font-body) !important;
+  font-size: .64rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase;
+}
+.hero h1 {
+  margin: 0 0 10px !important;
+  color: #f7fbfc !important;
+  font-family: var(--font-title) !important;
+  font-size: clamp(2rem, 3.6vw, 3.25rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+}
+.heroContent > p:last-child {
+  max-width: 560px !important;
+  margin: 0 !important;
+  color: #b0c2cc !important;
+  font-size: clamp(.88rem, 1.15vw, 1rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.58 !important;
+}
+@media (max-width: 760px) {
+  .hero { min-height: 220px !important; border-radius: 18px !important; }
+  .heroContent { min-height: 220px; padding: 22px 18px !important; }
+  .hero h1 { font-size: 1.85rem !important; }
+  .heroContent > p:last-child { max-width: 92% !important; font-size: .78rem !important; line-height: 1.5 !important; }
+}

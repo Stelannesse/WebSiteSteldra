@@ -6635,3 +6635,730 @@ background-color: #181d23;
     font-size: 1.85rem;
   }
 }
+
+
+/* STELDRA V22 — rythme visuel et bandeaux */
+.dashboardSection { margin-bottom:clamp(1.9rem,3vw,2.6rem); }
+.sectionHeading { margin-bottom:1rem; }
+.sectionHeading h2 { letter-spacing:-.025em; }
+.dashboardSearchLink:hover { transform:translateY(-2px); border-color:rgba(36,215,226,.55); box-shadow:0 10px 28px rgba(0,173,181,.12); }
+.collectionHeroBanner,
+.collectionOptionHero,
+.discover2026Hero {
+  border:1px solid rgba(92,190,208,.18) !important;
+  border-radius:24px !important;
+  box-shadow:0 24px 70px rgba(0,0,0,.30) !important;
+}
+@media(max-width:760px){
+  .dashboardSection{margin-bottom:1.85rem;}
+  .collectionHeroBanner,.collectionOptionHero,.discover2026Hero{border-radius:18px !important;}
+}
+
+/* =========================================================
+   STELDRA V25 — palette uniforme des grands bandeaux
+   Règle : surtitre cyan / titre blanc / accroche gris-blanc
+========================================================= */
+.cinemaHeroContent .cinemaEyebrow,
+.collectionOptionHeroCopy > span,
+.discover2026HeroCopy > span,
+.stats2026HeroCopy > span {
+  color: #2bdce6 !important;
+}
+
+.cinemaHeroContent h1,
+.collectionOptionHeroCopy h1,
+.discover2026HeroCopy h1,
+.stats2026HeroCopy h1 {
+  color: #f7fbfc !important;
+}
+
+.cinemaHeroContent > p,
+.collectionOptionHeroCopy > p,
+.discover2026HeroCopy > p,
+.stats2026HeroCopy > p {
+  color: #b0c2cc !important;
+}
+
+/* =========================================================
+   STELDRA V27 — description du bandeau Collection
+   Alignée sur les descriptions des autres grands bandeaux
+========================================================= */
+.collectionOptionHeroCopy > p {
+  color: #b0c2cc !important;
+  font-family: var(--font-body) !important;
+  font-size: clamp(.85rem, 1.25vw, 1rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.65 !important;
+}
+
+@media (max-width: 760px) {
+  .collectionOptionHeroCopy > p {
+    display: block !important;
+    max-width: 88%;
+    margin-top: 10px;
+    font-size: .76rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V30 — grands cadres harmonisés
+   Même rythme visuel, contenu moins haut, style centré
+========================================================= */
+.cinemaHero,
+.collectionOptionHero,
+.discover2026Hero,
+.stats2026Hero {
+  border: 1px solid rgba(92, 190, 208, .18) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,.30) !important;
+}
+
+.cinemaHeroContent,
+.collectionOptionHeroCopy,
+.discover2026HeroCopy,
+.stats2026HeroCopy {
+  max-width: 700px !important;
+}
+
+.cinemaHeroContent .cinemaEyebrow,
+.collectionOptionHeroCopy > span,
+.discover2026HeroCopy > span,
+.stats2026HeroCopy > span {
+  margin: 0 0 10px !important;
+  color: #2bdce6 !important;
+  font-family: var(--font-body) !important;
+  font-size: .64rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase;
+}
+
+.cinemaHeroContent h1,
+.collectionOptionHeroCopy h1,
+.discover2026HeroCopy h1,
+.stats2026HeroCopy h1 {
+  margin: 0 0 10px !important;
+  color: #f7fbfc !important;
+  font-family: var(--font-title) !important;
+  font-size: clamp(2rem, 3.6vw, 3.25rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+}
+
+.cinemaHeroContent > p,
+.collectionOptionHeroCopy > p,
+.discover2026HeroCopy > p,
+.stats2026HeroCopy > p {
+  max-width: 560px !important;
+  margin: 0 !important;
+  color: #b0c2cc !important;
+  font-family: var(--font-body) !important;
+  font-size: clamp(.88rem, 1.15vw, 1rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.58 !important;
+}
+
+.cinemaHero {
+  min-height: 250px !important;
+  display: flex;
+  align-items: center;
+}
+.cinemaHeroContent {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 26px clamp(22px, 4vw, 52px) !important;
+}
+.heroLine { margin-top: 14px; }
+
+.collectionOptionHero {
+  min-height: 290px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-content: center !important;
+  gap: 16px !important;
+}
+.collectionOptionHeroCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 140px;
+  padding: 0 clamp(22px, 4vw, 52px) !important;
+}
+.collectionOptionHeroControls {
+  position: relative !important;
+  z-index: 2;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: auto !important;
+  margin: 0 clamp(22px, 4vw, 52px) 26px !important;
+}
+
+.discover2026Hero {
+  min-height: 290px !important;
+}
+.discover2026HeroCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 150px;
+  padding: 32px clamp(22px, 4vw, 52px) 14px !important;
+}
+.discover2026TypeTabs {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  max-width: none !important;
+  margin: 0 clamp(22px, 4vw, 52px) 24px !important;
+}
+
+.stats2026Hero {
+  min-height: 250px !important;
+  display: flex;
+  align-items: center;
+}
+.stats2026HeroCopy {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 26px clamp(22px, 4vw, 52px) !important;
+}
+.stats2026HeroActions { margin-top: 14px !important; }
+
+@media (max-width: 760px) {
+  .cinemaHero,
+  .collectionOptionHero,
+  .discover2026Hero,
+  .stats2026Hero {
+    border-radius: 18px !important;
+  }
+
+  .cinemaHero,
+  .stats2026Hero {
+    min-height: 220px !important;
+  }
+
+  .collectionOptionHero,
+  .discover2026Hero {
+    min-height: 270px !important;
+  }
+
+  .cinemaHeroContent,
+  .stats2026HeroCopy {
+    min-height: 220px;
+    padding: 22px 18px !important;
+  }
+
+  .collectionOptionHeroCopy,
+  .discover2026HeroCopy {
+    min-height: 120px;
+    padding: 22px 18px 10px !important;
+  }
+
+  .cinemaHeroContent h1,
+  .collectionOptionHeroCopy h1,
+  .discover2026HeroCopy h1,
+  .stats2026HeroCopy h1 {
+    font-size: 1.85rem !important;
+  }
+
+  .cinemaHeroContent > p,
+  .collectionOptionHeroCopy > p,
+  .discover2026HeroCopy > p,
+  .stats2026HeroCopy > p {
+    max-width: 92% !important;
+    font-size: .78rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .collectionOptionHeroControls,
+  .discover2026TypeTabs {
+    margin: 0 18px 18px !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V31 — Découvrir plus lisible
+   - Explorer par genre un peu plus discret
+   - titres des résultats sur 2 lignes
+========================================================= */
+.discover2026SectionHead h2 {
+  font-size: 1.35rem !important;
+  line-height: 1.12 !important;
+  letter-spacing: -.025em !important;
+}
+
+.discover2026CardMeta strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(1.28em * 2);
+  white-space: normal !important;
+  text-overflow: unset !important;
+  line-height: 1.28 !important;
+}
+
+@media (max-width: 760px) {
+  .discover2026SectionHead h2 {
+    font-size: 1.05rem !important;
+  }
+
+  .discover2026CardMeta strong {
+    font-size: .7rem !important;
+    min-height: calc(1.24em * 2);
+    line-height: 1.24 !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V32 — Découvrir affiné
+   - Explorer par genre encore plus discret
+   - Acteur / réalisateur plus visible
+   - rails transformés en vraie grille sur mobile
+========================================================= */
+.discover2026SectionHead h2 {
+  font-size: 1.22rem !important;
+  line-height: 1.1 !important;
+}
+
+/* Bouton Acteur / réalisateur : plus repérable */
+.discover2026AdvancedButton,
+.discover2026AdvancedActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700 !important;
+  letter-spacing: -.01em;
+}
+.discover2026AdvancedButton {
+  border-color: rgba(43, 203, 255, .34) !important;
+  background: linear-gradient(180deg, rgba(10, 32, 52, .94), rgba(7, 24, 40, .94)) !important;
+  color: #c7f2ff !important;
+}
+.discover2026AdvancedActive {
+  border-color: rgba(43, 203, 255, .62) !important;
+  background: linear-gradient(180deg, rgba(0, 138, 230, .34), rgba(0, 86, 154, .24)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1px rgba(43,203,255,.14) inset, 0 10px 28px rgba(0,120,210,.12) !important;
+}
+
+/* Bloc Acteur / réalisateur plus affirmé */
+.discover2026PersonBlock {
+  margin-top: 8px !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+.discover2026PersonBlock > div:first-child {
+  margin-bottom: 14px;
+  padding: 14px 15px;
+  border: 1px solid rgba(67, 157, 201, .22);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(8, 24, 40, .96), rgba(5, 16, 28, .96));
+  box-shadow: inset 0 1px rgba(255,255,255,.02);
+}
+.discover2026PersonBlock > div:first-child h3 {
+  margin: 0 0 6px !important;
+  color: #f3fbfd;
+  font-family: var(--font-title);
+  font-size: 1.08rem !important;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.discover2026PersonBlock > div:first-child p {
+  color: #99afbc !important;
+  font-size: .82rem !important;
+  line-height: 1.5 !important;
+}
+.discover2026PersonBlock form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px !important;
+}
+.discover2026PersonBlock form input {
+  min-height: 46px !important;
+  border-color: rgba(83, 150, 192, .24) !important;
+  border-radius: 12px !important;
+  background: #071421 !important;
+}
+.discover2026PersonBlock form button {
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, rgba(17, 178, 226, .26), rgba(0, 125, 190, .18)) !important;
+  color: #d9f8ff !important;
+  font-weight: 800;
+}
+.discover2026PeopleGrid {
+  margin-top: 14px !important;
+  gap: 10px !important;
+}
+.discover2026PeopleGrid > button {
+  border-color: rgba(80, 139, 176, .22) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(145deg, rgba(8, 21, 33, .96), rgba(5, 15, 24, .96)) !important;
+}
+.discover2026PeopleGrid > button strong {
+  font-size: .8rem;
+}
+
+/* Découvrir : résultats visibles en grille au lieu d'un seul rail sur mobile */
+@media (max-width: 760px) {
+  .discover2026SectionHead h2 {
+    font-size: .96rem !important;
+  }
+
+  .discover2026AdvancedButton,
+  .discover2026AdvancedActive {
+    width: 100%;
+    min-height: 41px !important;
+    font-size: .74rem !important;
+  }
+
+  .discover2026PersonBlock > div:first-child {
+    margin-bottom: 12px;
+    padding: 12px 13px;
+    border-radius: 14px;
+  }
+  .discover2026PersonBlock > div:first-child h3 {
+    font-size: .95rem !important;
+  }
+  .discover2026PersonBlock > div:first-child p {
+    font-size: .73rem !important;
+  }
+  .discover2026PersonBlock form {
+    grid-template-columns: 1fr !important;
+  }
+
+  .discover2026Rail {
+    grid-auto-flow: row !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-auto-columns: unset !important;
+    gap: 10px !important;
+    overflow-x: visible !important;
+    padding: 2px 0 2px !important;
+    scroll-snap-type: none !important;
+  }
+  .discover2026Card {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .discover2026CardMeta {
+    padding-top: 6px !important;
+  }
+  .discover2026CardMeta strong {
+    font-size: .69rem !important;
+  }
+  .discover2026CardMeta span {
+    font-size: .58rem !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .discover2026Rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V33 — grille uniquement pour Découvrir (genre)
+   - À l'affiche reste en ligne
+   - affiches plus petites dans le bloc Découvrir
+========================================================= */
+@media (max-width: 760px) {
+  /* Retour au rail horizontal pour les sections standard */
+  .discover2026Rail {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: 106px !important;
+    grid-template-columns: none !important;
+    gap: 9px !important;
+    overflow-x: auto !important;
+    padding: 2px 2px 8px !important;
+    scroll-snap-type: inline proximity !important;
+  }
+
+  .discover2026Card {
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  /* Uniquement le vrai bloc Découvrir par genre : grille visible */
+  .discover2026GenreResultArea .discover2026Rail {
+    grid-auto-flow: row !important;
+    grid-auto-columns: unset !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    overflow-x: visible !important;
+    padding: 2px 0 4px !important;
+    scroll-snap-type: none !important;
+  }
+
+  .discover2026GenreResultArea .discover2026CardMeta {
+    padding-top: 5px !important;
+  }
+
+  .discover2026GenreResultArea .discover2026CardMeta strong {
+    font-size: .64rem !important;
+    min-height: calc(1.2em * 2) !important;
+    line-height: 1.2 !important;
+  }
+
+  .discover2026GenreResultArea .discover2026CardMeta span {
+    font-size: .54rem !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .discover2026GenreResultArea .discover2026Rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .discover2026Rail {
+    grid-auto-columns: 100px !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V34 — 5 éléments par ligne sur mobile
+   - Découvrir par genre : 5 affiches par ligne
+   - Genres : 5 cases par ligne
+========================================================= */
+@media (max-width: 760px) {
+  .discover2026GenreResultArea .discover2026Rail {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .discover2026GenreResultArea .discover2026CardMeta strong {
+    font-size: .56rem !important;
+    min-height: calc(1.16em * 2) !important;
+    line-height: 1.16 !important;
+  }
+
+  .discover2026GenreResultArea .discover2026CardMeta span {
+    font-size: .47rem !important;
+  }
+
+  .discover2026GenreTiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .discover2026GenreTiles button {
+    min-height: 62px !important;
+    padding: 7px 3px !important;
+    gap: 5px !important;
+    border-radius: 10px !important;
+  }
+
+  .discover2026GenreTiles button span {
+    font-size: 1.02rem !important;
+  }
+
+  .discover2026GenreTiles button strong {
+    font-size: .52rem !important;
+    line-height: 1.12 !important;
+    text-align: center;
+  }
+}
+
+@media (max-width: 390px) {
+  .discover2026GenreResultArea .discover2026Rail,
+  .discover2026GenreTiles {
+    gap: 5px !important;
+  }
+
+  .discover2026GenreTiles button strong {
+    font-size: .49rem !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V35 — recherche Acteur / réalisateur identifiable
+========================================================= */
+.discoverPeopleBreadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 14px;
+  color: #688a9c;
+  font-size: .68rem;
+}
+.discoverPeopleBreadcrumb a,
+.discoverPeopleBreadcrumb button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #89c8d6;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.discoverPeopleBreadcrumb a:hover,
+.discoverPeopleBreadcrumb button:hover { color: #35dce7; }
+.discoverPeopleBreadcrumb strong { color: #d9edf2; font-weight: 700; }
+.discoverPeopleBreadcrumb > span { color: #46616f; }
+
+.discover2026AdvancedPanel.discover2026PeopleOnly {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(55, 205, 225, .26) !important;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(32, 196, 220, .10), transparent 22rem),
+    linear-gradient(145deg, rgba(6, 21, 34, .98), rgba(3, 13, 23, .98)) !important;
+}
+.discover2026AdvancedPanel.discover2026PeopleOnly::before {
+  content: '';
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  right: -95px;
+  top: -120px;
+  border: 1px solid rgba(43, 220, 230, .10);
+  border-radius: 50%;
+  box-shadow: 0 0 0 42px rgba(43,220,230,.018), 0 0 0 84px rgba(43,220,230,.012);
+  pointer-events: none;
+}
+
+.discover2026PersonBlock > .discoverPeopleIntro {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 17px 18px;
+  border: 1px solid rgba(66, 188, 211, .24);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 8% 15%, rgba(44, 216, 230, .10), transparent 8rem),
+    linear-gradient(145deg, rgba(8, 30, 45, .97), rgba(5, 19, 31, .97));
+  box-shadow: 0 16px 38px rgba(0,0,0,.16), inset 0 1px rgba(255,255,255,.025);
+}
+.discoverPeopleIcon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(48, 220, 231, .34);
+  border-radius: 17px;
+  background: rgba(0, 173, 181, .11);
+  color: #3ee3eb;
+  font-family: var(--font-title);
+  font-size: 1.65rem;
+  box-shadow: 0 0 24px rgba(0,173,181,.10);
+}
+.discoverPeopleIntro small {
+  display: block;
+  margin-bottom: 5px;
+  color: #2bdce6;
+  font-size: .56rem;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+.discover2026PersonBlock > .discoverPeopleIntro h3 {
+  margin: 0 0 5px !important;
+  color: #f4fbfd !important;
+  font-family: var(--font-title);
+  font-size: 1.12rem !important;
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+.discover2026PersonBlock > .discoverPeopleIntro p {
+  margin: 0;
+  color: #91a9b6 !important;
+  font-size: .78rem !important;
+  line-height: 1.5 !important;
+}
+
+.discover2026PersonBlock .discoverPeopleSearch {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 30px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 6px !important;
+  margin-top: 0 !important;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid rgba(72, 168, 197, .24);
+  border-radius: 15px;
+  background: rgba(2, 11, 19, .82);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+}
+.discoverPeopleSearch > span {
+  color: #45dce5;
+  font-size: 1.1rem;
+  text-align: center;
+}
+.discover2026PersonBlock .discoverPeopleSearch input {
+  min-height: 42px !important;
+  padding: 0 4px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.discover2026PersonBlock .discoverPeopleSearch button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(46, 221, 232, .38) !important;
+  border-radius: 11px !important;
+  background: linear-gradient(135deg, rgba(26, 193, 213, .92), rgba(0, 139, 158, .92)) !important;
+  color: #041318 !important;
+  font-weight: 900;
+}
+
+/* Le bouton d'accès ressemble maintenant à une vraie fonction dédiée */
+.discover2026AdvancedButton,
+.discover2026AdvancedActive {
+  min-width: 178px;
+  border-radius: 12px !important;
+}
+.discover2026AdvancedButton > span,
+.discover2026AdvancedActive > span {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 8px;
+  background: rgba(45, 216, 230, .10);
+  color: #43e2eb;
+  font-size: .9rem;
+}
+
+@media (max-width: 760px) {
+  .discoverPeopleBreadcrumb { margin-bottom: 11px; font-size: .6rem; }
+  .discover2026PersonBlock > .discoverPeopleIntro {
+    grid-template-columns: 44px minmax(0,1fr);
+    gap: 11px;
+    padding: 13px;
+    border-radius: 15px;
+  }
+  .discoverPeopleIcon { width: 44px; height: 44px; border-radius: 13px; font-size: 1.3rem; }
+  .discoverPeopleIntro small { font-size: .48rem; }
+  .discover2026PersonBlock > .discoverPeopleIntro h3 { font-size: .9rem !important; }
+  .discover2026PersonBlock > .discoverPeopleIntro p { font-size: .68rem !important; }
+  .discover2026PersonBlock .discoverPeopleSearch {
+    grid-template-columns: 24px minmax(0,1fr);
+    padding: 5px 8px 8px 10px;
+  }
+  .discover2026PersonBlock .discoverPeopleSearch button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

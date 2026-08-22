@@ -614,7 +614,7 @@ if (!historyError && !cancelled) {
           <div className={styles.cinemaHeroContent}>
             <span className={styles.cinemaEyebrow}>MON UNIVERS</span>
             <h1>Bienvenue, {displayName} !</h1>
-            <p>Plongez dans de nouveaux univers...</p>
+            <p>Explorez et retrouvez toutes vos histoires.</p>
             <span className={styles.heroLine}><i /></span>
           </div>
         </section>

@@ -156,12 +156,9 @@ export default function StatistiquesPage() {
       <main className={styles.stats2026Page}>
         <section className={styles.stats2026Hero}>
           <div className={styles.stats2026HeroCopy}>
-            <span>VOTRE UNIVERS EN CHIFFRES</span>
+            <span>VOTRE BILAN</span>
             <h1>Mes statistiques</h1>
-            <p>
-              Films, séries, dramas et animés : retrouve une vue claire de ton activité,
-              sans estimation artificielle.
-            </p>
+            <p>Suivez simplement toutes vos habitudes de visionnage.</p>
             <div className={styles.stats2026HeroActions}>
               <Link href="/collection">Voir ma collection</Link>
               <Link href="/history">Historique</Link>

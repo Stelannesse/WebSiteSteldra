@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import MainNav from '../components/mainNav';
 import MediaCard from '../components/mediaCard';
 import { createClient } from '../lib/supabase';
@@ -332,9 +333,9 @@ export default function ExplorePage() {
     <main className={styles.discover2026Page}>
       <section className={styles.discover2026Hero}>
         <div className={styles.discover2026HeroCopy}>
-          <span>DÉCOUVRIR</span>
-          <h1>Trouvez votre prochaine histoire</h1>
-          <p>Parcourez, explorez, laissez-vous inspirer.</p>
+          <span>À EXPLORER</span>
+          <h1>Découvrir</h1>
+          <p>Explorez et trouvez votre prochaine histoire.</p>
         </div>
         <div className={styles.discover2026TypeTabs} aria-label="Filtrer par type de média">
           {([
@@ -387,13 +388,23 @@ export default function ExplorePage() {
         <label><span>Trier par</span><select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}><option value="popular">Popularité</option><option value="rating">Note</option><option value="recent">Plus récents</option></select></label>
         <label><span>Année</span><select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}><option value="all">Toutes les années</option>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
         <label><span>Note minimum</span><select value={minimumRating} onChange={(event) => setMinimumRating(Number(event.target.value))}><option value={0}>Toutes</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option></select></label>
-        <button type="button" className={advancedOpen ? styles.discover2026AdvancedActive : styles.discover2026AdvancedButton} onClick={() => setAdvancedOpen((value) => !value)}>⌕ Acteur / réalisateur</button>
+        <button type="button" className={advancedOpen ? styles.discover2026AdvancedActive : styles.discover2026AdvancedButton} onClick={() => setAdvancedOpen((value) => !value)}><span aria-hidden="true">◎</span> Acteur / réalisateur</button>
       </section>
 
       {advancedOpen && <section className={styles.discover2026AdvancedPanel + ' ' + styles.discover2026PeopleOnly}>
+        <nav className={styles.discoverPeopleBreadcrumb} aria-label="Fil d’Ariane">
+          <Link href="/">Accueil</Link><span>›</span><button type="button" onClick={() => setAdvancedOpen(false)}>Découvrir</button><span>›</span><strong>Acteur / réalisateur</strong>
+        </nav>
         <div className={styles.discover2026PersonBlock}>
-          <div><h3>Acteur ou réalisateur</h3><p>Retrouvez directement les films et séries d’une personne.</p></div>
-          <form onSubmit={searchPeople}><input value={personQuery} onChange={(event) => setPersonQuery(event.target.value)} placeholder="Ex. Charlize Theron, Christopher Nolan…"/><button type="submit" disabled={personSearching || personQuery.trim().length < 2}>{personSearching ? 'Recherche…' : 'Rechercher'}</button></form>
+          <div className={styles.discoverPeopleIntro}>
+            <span className={styles.discoverPeopleIcon} aria-hidden="true">◎</span>
+            <div>
+              <small>PORTRAITS & FILMOGRAPHIES</small>
+              <h3>Trouvez un acteur ou un réalisateur</h3>
+              <p>Recherchez une personnalité et explorez directement ses films et séries.</p>
+            </div>
+          </div>
+          <form className={styles.discoverPeopleSearch} onSubmit={searchPeople}><span aria-hidden="true">⌕</span><input value={personQuery} onChange={(event) => setPersonQuery(event.target.value)} placeholder="Ex. Charlize Theron, Christopher Nolan…"/><button type="submit" disabled={personSearching || personQuery.trim().length < 2}>{personSearching ? 'Recherche…' : 'Rechercher'}</button></form>
           {people.length > 0 && !selectedPerson && <div className={styles.discover2026PeopleGrid}>{people.map((person) => <button key={person.id} type="button" onClick={() => void openPerson(person)}>{person.profile_path ? <img src={person.profile_path} alt="" /> : <span>👤</span>}<strong>{person.name}</strong><small>{person.department}</small></button>)}</div>}
           {selectedPerson && <div className={styles.discover2026PersonResult}><div className={styles.discover2026PersonTitle}>{selectedPerson.profile_path ? <img src={selectedPerson.profile_path} alt=""/> : <span>👤</span>}<div><strong>{selectedPerson.name}</strong><small>{selectedPerson.department}</small></div><button type="button" onClick={() => { setSelectedPerson(null); setPersonCredits([]); }}>Changer</button></div>{creditsLoading ? <div className={styles.discover2026Empty}>Chargement…</div> : renderMediaRail(refineItems(personCredits).slice(0, 18), 'Aucun titre disponible pour cette personne.')}</div>}
         </div>

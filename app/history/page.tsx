@@ -168,9 +168,9 @@ export default function HistoryPage() {
       <main className={styles.page}>
         <section className={styles.hero}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>VOTRE MÉMOIRE CINÉMA</span>
+            <span className={styles.eyebrow}>VOS VISIONNAGES</span>
             <h1>Historique</h1>
-            <p>Retrouvez chaque film, série, drama ou animé que vous avez regardé — y compris vos revisites.</p>
+            <p>Vos visionnages, réunis au même endroit.</p>
           </div>
           <div className={styles.heroStats} aria-label="Résumé de l’historique">
             <div><strong>{stats.views}</strong><span>visionnage{stats.views > 1 ? 's' : ''}</span></div>

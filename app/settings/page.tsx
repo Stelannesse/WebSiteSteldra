@@ -261,7 +261,7 @@ export default function SettingsPage() {
           <div className={styles.heroContent}>
             <p className={styles.eyebrow}>VOTRE ESPACE</p>
             <h1>Paramètres</h1>
-            <p>Personnalisez STELDRA, sécurisez vos données et gardez le contrôle sur votre univers.</p>
+            <p>Personnalisez votre espace selon vos envies.</p>
           </div>
         </section>
 

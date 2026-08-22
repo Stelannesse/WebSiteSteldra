@@ -601,3 +601,121 @@
   .titleInput { font-size: 1.18rem; }
   .savedTitleWrap h2 { font-size: .95rem; }
 }
+
+/* STELDRA V22 — cohérence premium */
+.pageHeader { border-radius:24px; border-color:rgba(92,190,208,.18); box-shadow:0 24px 70px rgba(0,0,0,.30); }
+.savedCard { transition:transform 180ms ease,border-color 180ms ease,box-shadow 180ms ease; }
+.savedCard:hover { transform:translateY(-3px); border-color:rgba(36,215,226,.28); box-shadow:0 16px 34px rgba(0,0,0,.20); }
+@media(max-width:760px){.pageHeader{border-radius:18px}.savedCard:hover{transform:none}}
+
+/* STELDRA V25 — palette uniforme du grand bandeau */
+.heroEyebrow { color:#2bdce6 !important; }
+.pageHeader h1 { color:#f7fbfc !important; }
+.heroTagline { color:#b0c2cc !important; }
+
+/* STELDRA V28 — Mes listes / Tier Lists alignés sur Collection & Accueil */
+.pageHeader h1 {
+  font-family: var(--font-title) !important;
+  font-size: clamp(2rem, 3.65vw, 3.45rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+}
+@media (max-width: 760px) {
+  .pageHeader h1 { font-size: 1.85rem !important; }
+}
+
+/* =========================================================
+   STELDRA V29 — bandeau Tier Lists = typographie Collection
+========================================================= */
+.heroEyebrow {
+  font-family: var(--font-body) !important;
+  font-size: .64rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+}
+.pageHeader h1 {
+  margin: 8px 0 2px !important;
+  font-family: var(--font-title) !important;
+  font-size: clamp(2rem, 3.65vw, 3.45rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+}
+.heroTagline {
+  margin: 0 !important;
+  color: #b0c2cc !important;
+  font-family: var(--font-body) !important;
+  font-size: clamp(.85rem, 1.25vw, 1rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.65 !important;
+}
+@media (max-width: 760px) {
+  .pageHeader h1 { font-size: 1.85rem !important; }
+  .heroTagline {
+    max-width: 88%;
+    margin-top: 10px !important;
+    font-size: .76rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
+
+/* =========================================================
+   STELDRA V30 — bandeau Tier Lists harmonisé
+========================================================= */
+.heroPanel {
+  border-radius: 24px !important;
+}
+.tierHero {
+  min-height: 250px !important;
+  align-items: center !important;
+}
+.pageHeader {
+  min-height: 250px;
+  align-items: center !important;
+  gap: 24px !important;
+  padding: 26px clamp(22px, 4vw, 52px) !important;
+  margin-bottom: 0 !important;
+}
+.heroEyebrow {
+  margin: 0 0 10px !important;
+  color: #2bdce6 !important;
+  font-family: var(--font-body) !important;
+  font-size: .64rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase;
+}
+.pageHeader h1 {
+  margin: 0 0 10px !important;
+  color: #f7fbfc !important;
+  font-family: var(--font-title) !important;
+  font-size: clamp(2rem, 3.6vw, 3.25rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+}
+.heroTagline {
+  max-width: 560px !important;
+  margin: 0 !important;
+  color: #b0c2cc !important;
+  font-family: var(--font-body) !important;
+  font-size: clamp(.88rem, 1.15vw, 1rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.58 !important;
+}
+@media (max-width: 760px) {
+  .heroPanel { border-radius: 18px !important; }
+  .tierHero { min-height: 240px !important; }
+  .pageHeader {
+    min-height: 240px;
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 16px !important;
+    padding: 22px 18px !important;
+  }
+  .pageHeader h1 { font-size: 1.85rem !important; }
+  .heroTagline { max-width: 92% !important; font-size: .78rem !important; line-height: 1.5 !important; }
+  .heroStats { width: 100% !important; }
+}

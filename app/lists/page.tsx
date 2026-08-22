@@ -196,8 +196,7 @@ export default function ListsPage() {
           <div className={styles.heroContent}>
             <span>VOTRE UNIVERS</span>
             <h1>Mes listes</h1>
-            <p className={styles.heroTagline}>Organisez. Retrouvez. Revivez vos histoires.</p>
-            <p>Créez vos listes, suivez vos envies et retrouvez en un instant les univers qui comptent pour vous.</p>
+            <p className={styles.heroTagline}>Créez et organisez vos listes facilement.</p>
           </div>
         </section>
 

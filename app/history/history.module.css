@@ -1,11 +1,13 @@
 .page {
   width: 100%;
-  max-width: 1480px;
-  min-height: calc(100vh - 64px);
-  margin: 0 auto;
-  padding: 24px clamp(14px, 3vw, 42px) 72px;
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px max(clamp(14px, 3vw, 42px), calc((100vw - 1480px) / 2 + 42px)) 72px;
   color: #eef7fa;
   font-family: var(--font-body);
+  background:
+    radial-gradient(circle at 10% 5%, rgba(20, 136, 180, .10), transparent 28rem),
+    linear-gradient(180deg, #030a11 0%, #06111b 55%, #030a11 100%);
 }
 
 .hero {
@@ -394,4 +396,74 @@
 }
 @media (max-width: 760px) {
   .hero h1 { font-size: 1.85rem; }
+}
+
+/* STELDRA V22 — cohérence premium */
+.hero { min-height:270px; border-radius:24px; border-color:rgba(92,190,208,.18); box-shadow:0 24px 70px rgba(0,0,0,.30); }
+.controlDeck,.monthSection,.empty { box-shadow:0 14px 38px rgba(0,0,0,.13); }
+@media(max-width:760px){.hero{min-height:210px;border-radius:18px;}}
+
+/* STELDRA V25 — palette uniforme du grand bandeau */
+.hero .eyebrow { color:#2bdce6 !important; }
+.hero h1 { color:#f7fbfc !important; }
+.hero p { color:#b0c2cc !important; }
+
+
+/* =========================================================
+   STELDRA V30 — bandeau Historique harmonisé
+========================================================= */
+.hero {
+  min-height: 250px !important;
+  align-items: center !important;
+  gap: 24px !important;
+  padding: 26px clamp(22px, 4vw, 52px) !important;
+  border-radius: 24px !important;
+}
+.heroCopy {
+  max-width: 700px !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.eyebrow {
+  margin: 0 0 10px !important;
+  color: #2bdce6 !important;
+  font-family: var(--font-body) !important;
+  font-size: .64rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase;
+}
+.hero h1 {
+  margin: 0 0 10px !important;
+  color: #f7fbfc !important;
+  font-family: var(--font-title) !important;
+  font-size: clamp(2rem, 3.6vw, 3.25rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -.045em !important;
+}
+.hero p {
+  max-width: 560px !important;
+  margin: 0 !important;
+  color: #b0c2cc !important;
+  font-size: clamp(.88rem, 1.15vw, 1rem) !important;
+  font-weight: 400 !important;
+  line-height: 1.58 !important;
+}
+.heroStats {
+  align-self: center !important;
+}
+@media (max-width: 760px) {
+  .hero {
+    min-height: 240px !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 22px 18px !important;
+    border-radius: 18px !important;
+  }
+  .heroCopy { max-width: 100% !important; }
+  .hero h1 { font-size: 1.85rem !important; }
+  .hero p { max-width: 92% !important; font-size: .78rem !important; line-height: 1.5 !important; }
+  .heroStats { width: 100% !important; min-width: 0 !important; }
 }

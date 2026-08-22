@@ -803,10 +803,7 @@ const deleteRow = (rowId: string) => {
               <div>
                 <span className={styles.heroEyebrow}>VOTRE CLASSEMENT</span>
                 <h1>Tier Lists</h1>
-                <p className={styles.heroTagline}>Classez vos univers. Défendez vos favoris.</p>
-                <p className={styles.description}>
-                  Créez des classements visuels à partir de votre collection ou de vos listes, puis sauvegardez-les et exportez-les.
-                </p>
+                <p className={styles.heroTagline}>Classez et sauvegardez tous vos favoris.</p>
               </div>
 
               <div className={styles.heroStats}>

@@ -1189,10 +1189,9 @@ return (
     <main className={styles.collectionOptionThreePage}>
       <section className={styles.collectionOptionHero}>
         <div className={styles.collectionOptionHeroCopy}>
-          <span>MA COLLECTION</span>
+          <span>VOTRE BIBLIOTHÈQUE</span>
           <h1>Collection</h1>
-          <h2>Vos histoires. Vos émotions. À portée de main.</h2>
-          <p>Un univers qui vous ressemble, organisé avec soin, pensé pour vous.</p>
+          <p>Toutes vos histoires, réunies au même endroit.</p>
         </div>
         <div className={styles.collectionOptionHeroScene} aria-hidden="true">
           <span className={styles.collectionOptionPlanet} />
