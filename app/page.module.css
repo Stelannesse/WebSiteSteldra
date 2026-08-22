@@ -5369,6 +5369,8 @@ background-color: #181d23;
    Navigation latérale volontairement supprimée : MainNav reste en haut.
    ========================================================= */
 .collectionOptionThreePage {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
   width: 100%;
   max-width: 1540px;
@@ -5376,8 +5378,21 @@ background-color: #181d23;
   padding: 22px clamp(16px, 3vw, 42px) 64px;
   background:
     radial-gradient(circle at 74% 8%, rgba(16, 118, 176, .11), transparent 27rem),
-    radial-gradient(circle at 10% 30%, rgba(0, 173, 181, .055), transparent 25rem);
+    radial-gradient(circle at 10% 30%, rgba(0, 173, 181, .055), transparent 25rem),
+    linear-gradient(180deg, rgba(3, 11, 18, .96), rgba(4, 15, 25, .98));
   color: #eef8fb;
+}
+
+.collectionOptionThreePage::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(0, 173, 181, .08), transparent 28rem),
+    radial-gradient(circle at 92% 18%, rgba(17, 96, 150, .10), transparent 34rem),
+    linear-gradient(180deg, #030a11 0%, #06111b 48%, #030a11 100%);
 }
 
 .collectionOptionHero {
