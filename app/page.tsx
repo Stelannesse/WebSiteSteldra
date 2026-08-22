@@ -631,12 +631,12 @@ if (!historyError && !cancelled) {
               </form>
 
               <div className={styles.typeChips}>
-                <Link href="/collection">🎬 Films</Link>
-                <Link href="/collection">▣ Séries</Link>
-                <Link href="/collection">🎭 Drama</Link>
-                <Link href="/collection">◉ Animés</Link>
-                <Link href="/collection">▥ Documentaires</Link>
-                <Link href="/talents">♙ Talents</Link>
+                <Link href="/collection">Films</Link>
+                <Link href="/collection">Séries</Link>
+                <Link href="/collection">Drama</Link>
+                <Link href="/collection">Animés</Link>
+                <Link href="/collection">Documentaires</Link>
+                <Link href="/talents">Talents</Link>
               </div>
 
               <section className={`${styles.cinemaPanel} ${styles.moodPanel}`}>
