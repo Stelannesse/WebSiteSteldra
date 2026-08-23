@@ -816,6 +816,148 @@ const deleteRow = (rowId: string) => {
     setActiveSavedId(null);
   };
 
+  const createMobileTierListBlob = async (statusWindow: Window | null) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas indisponible');
+
+    // Format compact identique à l'ancienne tier list téléchargée : rangs
+    // horizontaux, petites affiches et beaucoup de médias sur une ligne.
+    const width = 1200;
+    const posterWidth = 46;
+    const posterHeight = 69;
+    const posterGap = 7;
+    const columns = 19;
+    const contentStartX = 116;
+    const rowHeights = rows.map((row) => {
+      const lines = Math.max(1, Math.ceil(row.media.length / columns));
+      return 38 + lines * (posterHeight + posterGap) + 12;
+    });
+    const height = 104 + rowHeights.reduce((total, rowHeight) => total + rowHeight, 0) + 38;
+    const rankColors = [
+      '#ff5565', '#ff9a4d', '#ffd84a', '#52d66f',
+      '#4ca9f5', '#a54be7', '#f472b6', '#22d3ee',
+    ];
+
+    canvas.width = width;
+    canvas.height = height;
+    context.fillStyle = '#07121c';
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = '#f4fafc';
+    context.font = '800 32px system-ui, sans-serif';
+    context.fillText(title || 'Ma Tier List', 28, 52);
+    context.fillStyle = '#77a0b1';
+    context.font = '600 16px system-ui, sans-serif';
+    context.fillText(`${rows.reduce((total, row) => total + row.media.length, 0)} médias classés`, 30, 78);
+
+    const loadPoster = (source: string) => new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image();
+      const timeout = window.setTimeout(() => resolve(null), 6_000);
+      image.onload = () => {
+        window.clearTimeout(timeout);
+        resolve(image);
+      };
+      image.onerror = () => {
+        window.clearTimeout(timeout);
+        resolve(null);
+      };
+      image.src = source;
+    });
+
+    let y = 104;
+
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
+      const sectionHeight = rowHeights[rowIndex];
+
+      if (statusWindow) {
+        statusWindow.document.body.textContent =
+          `Préparation du rang ${row.title || row.label} (${rowIndex + 1}/${rows.length})…`;
+      }
+
+      context.fillStyle = '#0c1b27';
+      context.fillRect(24, y, width - 48, sectionHeight - 8);
+      context.fillStyle = rankColors[rowIndex % rankColors.length];
+      context.fillRect(24, y, 76, sectionHeight - 8);
+      context.fillStyle = '#101820';
+      context.font = '900 23px system-ui, sans-serif';
+      context.textAlign = 'center';
+      context.fillText(row.label, 62, y + 31);
+      context.textAlign = 'left';
+      context.fillStyle = '#f2f8fa';
+      context.font = '800 17px system-ui, sans-serif';
+      context.fillText(row.title || `Rang ${row.label}`, contentStartX, y + 24);
+      context.fillStyle = '#8ba5b0';
+      context.font = '700 14px system-ui, sans-serif';
+      context.fillText(`${row.media.length} média${row.media.length > 1 ? 's' : ''}`, width - 118, y + 23);
+
+      const loadingBatchSize = 16;
+      for (let mediaStart = 0; mediaStart < row.media.length; mediaStart += loadingBatchSize) {
+        const mediaBatch = row.media.slice(mediaStart, mediaStart + loadingBatchSize);
+        const loadedPosters = await Promise.all(
+          mediaBatch.map((media) => loadPoster(getPosterUrl(media)))
+        );
+
+        loadedPosters.forEach((poster, batchIndex) => {
+          const mediaIndex = mediaStart + batchIndex;
+          const column = mediaIndex % columns;
+          const line = Math.floor(mediaIndex / columns);
+          const posterX = contentStartX + column * (posterWidth + posterGap);
+          const posterY = y + 35 + line * (posterHeight + posterGap);
+
+          context.fillStyle = '#132633';
+          context.fillRect(posterX, posterY, posterWidth, posterHeight);
+          if (poster) {
+            context.drawImage(poster, posterX, posterY, posterWidth, posterHeight);
+          }
+          context.strokeStyle = 'rgba(115, 190, 211, .35)';
+          context.lineWidth = 2;
+          context.strokeRect(posterX, posterY, posterWidth, posterHeight);
+        });
+      }
+
+      y += sectionHeight;
+    }
+
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('Image mobile vide')),
+        'image/jpeg',
+        0.9
+      );
+    });
+  };
+
+  const showMobileTierListExport = (
+    exportBlob: Blob,
+    exportTitle: string,
+    previewWindow: Window
+  ) => {
+    const objectUrl = URL.createObjectURL(exportBlob);
+    const fileName = `${exportTitle.trim().toLowerCase().replaceAll(' ', '-') || 'tier-list'}.jpg`;
+    const previewDocument = previewWindow.document;
+    previewDocument.body.textContent = '';
+    previewDocument.body.style.cssText =
+      'margin:0;min-height:100vh;background:#07121c;color:#fff;font-family:system-ui;text-align:center;padding:18px;box-sizing:border-box;';
+
+    const instruction = previewDocument.createElement('p');
+    instruction.textContent = 'Touchez « Enregistrer », puis utilisez Partager si Safari ouvre simplement l’image.';
+    instruction.style.cssText = 'max-width:520px;margin:0 auto 14px;color:#c8d6df;font-size:15px;';
+
+    const downloadLink = previewDocument.createElement('a');
+    downloadLink.href = objectUrl;
+    downloadLink.download = fileName;
+    downloadLink.textContent = 'Enregistrer la Tier List';
+    downloadLink.style.cssText =
+      'display:inline-block;margin-bottom:18px;padding:13px 18px;border-radius:12px;background:#078ee8;color:#fff;text-decoration:none;font-weight:800;';
+
+    const previewImage = previewDocument.createElement('img');
+    previewImage.src = objectUrl;
+    previewImage.alt = exportTitle;
+    previewImage.style.cssText = 'display:block;width:100%;height:auto;margin:0 auto;border-radius:10px;';
+    previewDocument.body.append(instruction, downloadLink, previewImage);
+  };
+
   const captureTierList = async (
     exportTitle: string,
     preparedMobileWindow: Window | null = null
@@ -838,6 +980,12 @@ const deleteRow = (rowId: string) => {
     }
 
     try {
+      if (isMobileExport && mobilePreviewWindow) {
+        const mobileBlob = await createMobileTierListBlob(mobilePreviewWindow);
+        showMobileTierListExport(mobileBlob, exportTitle, mobilePreviewWindow);
+        return;
+      }
+
       const htmlToImage = await import('html-to-image');
 
       // Sur mobile, html-to-image peut sinon se limiter aux dimensions
@@ -906,30 +1054,7 @@ const deleteRow = (rowId: string) => {
         .toLowerCase()
         .replaceAll(' ', '-') || 'tier-list'}.png`;
 
-      if (mobilePreviewWindow) {
-        const previewDocument = mobilePreviewWindow.document;
-        previewDocument.body.textContent = '';
-        previewDocument.body.style.cssText =
-          'margin:0;min-height:100vh;background:#07121c;color:#fff;font-family:system-ui;text-align:center;padding:18px;box-sizing:border-box;';
-
-        const instruction = previewDocument.createElement('p');
-        instruction.textContent = 'Touchez « Enregistrer », puis utilisez Partager si Safari ouvre simplement l’image.';
-        instruction.style.cssText = 'max-width:520px;margin:0 auto 14px;color:#c8d6df;font-size:15px;';
-
-        const downloadLink = previewDocument.createElement('a');
-        downloadLink.href = objectUrl;
-        downloadLink.download = fileName;
-        downloadLink.textContent = 'Enregistrer la Tier List';
-        downloadLink.style.cssText =
-          'display:inline-block;margin-bottom:18px;padding:13px 18px;border-radius:12px;background:#078ee8;color:#fff;text-decoration:none;font-weight:800;';
-
-        const previewImage = previewDocument.createElement('img');
-        previewImage.src = objectUrl;
-        previewImage.alt = exportTitle;
-        previewImage.style.cssText = 'display:block;width:100%;height:auto;margin:0 auto;border-radius:10px;';
-
-        previewDocument.body.append(instruction, downloadLink, previewImage);
-      } else {
+      if (!mobilePreviewWindow) {
         const link = document.createElement('a');
         link.download = fileName;
         link.href = objectUrl;
@@ -947,7 +1072,10 @@ const deleteRow = (rowId: string) => {
       alert(
         "Le téléchargement n'a pas pu être effectué."
       );
-      mobilePreviewWindow?.close();
+      if (mobilePreviewWindow) {
+        mobilePreviewWindow.document.body.textContent =
+          "La création de l'image a échoué. Revenez à Steldra et réessayez.";
+      }
     } finally {
       posterImages.forEach((image, index) => {
         image.src = originalImageSources[index];
