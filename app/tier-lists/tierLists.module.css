@@ -487,6 +487,11 @@
 .addRowButton { border-radius: 9px; border-color: rgba(88, 175, 197, .18); background: rgba(8, 24, 35, .82); color: #9db2bb; }
 .signature { color: #536e79; }
 
+.mobileTierNav,
+.mobileRowHeader,
+.mobileShowMoreButton,
+.mobileBackToTop { display: none; }
+
 .savedTierListsSection { padding: 22px; }
 .savedTitleWrap h2 {
   font-family: Georgia, 'Times New Roman', serif;
@@ -538,11 +543,125 @@
   .titleInput { width: 100%; font-size: 1.35rem; }
   .headerActions { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
   .primaryButton, .secondaryButton { min-height: 36px; padding: 0 7px; font-size: .59rem; }
-  .tierRow { grid-template-columns: 52px minmax(0,1fr); min-height: 69px; }
-  .rowContent { min-height: 69px; padding: 6px 8px; overflow-x: auto; }
-  .rowMedia { flex-wrap: nowrap; min-width: max-content; }
-  .posterButton { flex: 0 0 38px; width: 38px; height: 57px; }
-  .rankInput { font-size: .9rem; }
+  .mobileTierNav {
+    position: sticky;
+    top: 8px;
+    z-index: 18;
+    display: flex;
+    gap: 7px;
+    margin: 0 0 12px;
+    padding: 8px;
+    overflow-x: auto;
+    border: 1px solid rgba(58, 173, 205, .2);
+    border-radius: 13px;
+    background: rgba(3, 15, 24, .94);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+    scrollbar-width: none;
+    backdrop-filter: blur(14px);
+  }
+  .mobileTierNav::-webkit-scrollbar { display: none; }
+  .mobileTierNav button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid rgba(77, 169, 193, .22);
+    border-radius: 999px;
+    background: rgba(10, 30, 42, .95);
+    color: #d9e7ec;
+    font: 700 .64rem/1 var(--font-poppins), sans-serif;
+    white-space: nowrap;
+  }
+  .mobileTierNav button span {
+    display: grid;
+    place-items: center;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: rgba(47, 157, 255, .18);
+    color: #72c3ff;
+    font-size: .58rem;
+  }
+  .tierRow {
+    scroll-margin-top: 62px;
+    grid-template-columns: 44px minmax(0,1fr);
+    min-height: 62px;
+  }
+  .rankLabel { align-items: flex-start; padding-top: 18px; }
+  .rowContent {
+    display: block;
+    min-height: 62px;
+    padding: 0;
+    overflow: visible;
+  }
+  .mobileRowHeader { display: block; }
+  .mobileRowToggle {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 52px;
+    padding: 9px 11px;
+    border: 0;
+    background: transparent;
+    color: #edf6f8;
+    text-align: left;
+  }
+  .mobileRowTitle {
+    overflow: hidden;
+    font: 800 .76rem/1.25 var(--font-poppins), sans-serif;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mobileRowCount {
+    display: grid;
+    place-items: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.07);
+    color: #a9bdc6;
+    font-size: .66rem;
+    font-weight: 800;
+  }
+  .mobileRowChevron { color: #8ea6b0; font-size: .9rem; }
+  .rowMedia {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+    width: auto;
+    padding: 0 10px 11px;
+  }
+  .posterButton {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    border-radius: 6px;
+  }
+  .posterBeyondMobilePreview { display: none; }
+  .tierRowMobileClosed .rowMedia,
+  .tierRowMobileClosed .mobileShowMoreButton { display: none; }
+  .tierRowMobileClosed .rankLabel { padding-top: 14px; }
+  .tierRowMobileClosed .rowContent { min-height: 52px; }
+  .mobileShowMoreButton {
+    display: block;
+    width: calc(100% - 20px);
+    min-height: 38px;
+    margin: 0 10px 11px;
+    border: 1px solid rgba(47, 157, 255, .3);
+    border-radius: 10px;
+    background: rgba(16, 75, 112, .18);
+    color: #82caff;
+    font: 800 .68rem/1 var(--font-poppins), sans-serif;
+  }
+  .emptyRowText { grid-column: 1 / -1; padding: 13px 2px; }
+  .rankInput { font-size: .78rem; }
   .rowEditControls { display: none; }
   .savedTierListsSection { padding: 14px 12px; }
   .savedHeader { align-items: center; }
@@ -551,6 +670,50 @@
   .savedPreview { width: 78px; height: 46px; }
   .savedPreview img { height: 46px; }
   .savedTierListActions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 38px; width: 100%; }
+  .mobileBackToTop {
+    position: fixed;
+    right: 16px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(43, 201, 255, .5);
+    border-radius: 50%;
+    background: linear-gradient(180deg, rgba(0, 153, 255, .96), rgba(0, 95, 210, .94));
+    box-shadow: 0 10px 28px rgba(0, 95, 210, .38);
+    color: #fff;
+    font-size: 1.15rem;
+    font-weight: 900;
+  }
+  .tierListExport[data-exporting="true"] .tierRow {
+    grid-template-columns: 76px minmax(0, 1fr);
+    min-height: 88px;
+  }
+  .tierListExport[data-exporting="true"] .rankLabel {
+    align-items: center;
+    padding-top: 0;
+  }
+  .tierListExport[data-exporting="true"] .rowContent {
+    display: flex;
+    min-height: 88px;
+    padding: 9px 12px;
+  }
+  .tierListExport[data-exporting="true"] .rowMedia {
+    display: flex !important;
+    gap: 7px;
+    width: 100%;
+    padding: 0;
+  }
+  .tierListExport[data-exporting="true"] .posterButton,
+  .tierListExport[data-exporting="true"] .posterBeyondMobilePreview {
+    display: block !important;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 69px;
+    aspect-ratio: auto;
+  }
 }
 
 @media (max-width: 430px) {
@@ -742,4 +905,3 @@
 /* Bleu exact de “LES TALENTS DU CINÉMA” pour le bandeau */
 .heroEyebrow,
 .deckEyebrow { color:#2f9dff !important; }
-

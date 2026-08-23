@@ -104,6 +104,12 @@ export default function TierListsPage() {
   const [activeSavedId, setActiveSavedId] = useState<string | null>(null);
   const [sourceLists, setSourceLists] = useState<TierSourceList[]>([]);
   const [activeSourceId, setActiveSourceId] = useState<'collection' | string>('collection');
+  const [mobileOpenRowIds, setMobileOpenRowIds] = useState<Set<string>>(
+    () => new Set([defaultRows[0].id])
+  );
+  const [mobileExpandedRowIds, setMobileExpandedRowIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('steldra_saved_tier_lists_v1');
@@ -683,9 +689,26 @@ const deleteRow = (rowId: string) => {
     setActiveSavedId(null);
   };
 
-  const captureTierList = async (exportTitle: string) => {
+  const captureTierList = async (
+    exportTitle: string,
+    preparedMobileWindow: Window | null = null
+  ) => {
     const exportNode = tierListRef.current;
     if (!exportNode) return;
+
+    const isMobileExport = window.matchMedia('(max-width: 760px)').matches;
+    const mobilePreviewWindow = isMobileExport
+      ? preparedMobileWindow || window.open('', '_blank')
+      : null;
+    const posterImages = Array.from(exportNode.querySelectorAll<HTMLImageElement>('img'));
+    const originalImageSources = posterImages.map((image) => image.src);
+
+    if (mobilePreviewWindow) {
+      mobilePreviewWindow.document.title = 'Préparation de la Tier List';
+      mobilePreviewWindow.document.body.style.cssText =
+        'margin:0;min-height:100vh;display:grid;place-items:center;background:#07121c;color:#fff;font-family:system-ui;text-align:center;padding:24px;';
+      mobilePreviewWindow.document.body.textContent = 'Préparation de votre Tier List…';
+    }
 
     try {
       const htmlToImage = await import('html-to-image');
@@ -694,6 +717,33 @@ const deleteRow = (rowId: string) => {
       // visibles du bloc. On passe brièvement en mode export : largeur
       // stable + rangs entièrement dépliés, puis on capture le scrollHeight.
       exportNode.dataset.exporting = 'true';
+
+      // Chaque affiche est convertie séparément en image locale avant la
+      // capture. Cela évite qu'un navigateur réutilise la même affiche pour
+      // plusieurs médias lorsqu'une longue tier list est exportée.
+      for (let index = 0; index < posterImages.length; index += 6) {
+        const batch = posterImages.slice(index, index + 6);
+
+        await Promise.all(batch.map(async (image) => {
+          try {
+            const response = await fetch(image.currentSrc || image.src, { cache: 'force-cache' });
+            if (!response.ok) return;
+
+            const blob = await response.blob();
+            const localSource = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result));
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(blob);
+            });
+
+            image.src = localSource;
+            await image.decode().catch(() => undefined);
+          } catch (error) {
+            console.warn('Affiche conservée dans son format original :', error);
+          }
+        }));
+      }
 
       await new Promise<void>((resolve) => {
         requestAnimationFrame(() =>
@@ -704,9 +754,9 @@ const deleteRow = (rowId: string) => {
       const exportWidth = Math.ceil(exportNode.scrollWidth);
       const exportHeight = Math.ceil(exportNode.scrollHeight);
 
-      const dataUrl = await htmlToImage.toPng(exportNode, {
-        cacheBust: true,
-        pixelRatio: 2,
+      const exportBlob = await htmlToImage.toBlob(exportNode, {
+        cacheBust: false,
+        pixelRatio: isMobileExport ? 1 : 1.5,
         backgroundColor: '#101720',
         width: exportWidth,
         height: exportHeight,
@@ -719,15 +769,48 @@ const deleteRow = (rowId: string) => {
         },
       });
 
-      const link = document.createElement('a');
+      if (!exportBlob) {
+        throw new Error('Image exportée vide');
+      }
 
-      link.download = `${exportTitle
+      const objectUrl = URL.createObjectURL(exportBlob);
+      const fileName = `${exportTitle
         .trim()
         .toLowerCase()
         .replaceAll(' ', '-') || 'tier-list'}.png`;
 
-      link.href = dataUrl;
-      link.click();
+      if (mobilePreviewWindow) {
+        const previewDocument = mobilePreviewWindow.document;
+        previewDocument.body.textContent = '';
+        previewDocument.body.style.cssText =
+          'margin:0;min-height:100vh;background:#07121c;color:#fff;font-family:system-ui;text-align:center;padding:18px;box-sizing:border-box;';
+
+        const instruction = previewDocument.createElement('p');
+        instruction.textContent = 'Touchez « Enregistrer », puis utilisez Partager si Safari ouvre simplement l’image.';
+        instruction.style.cssText = 'max-width:520px;margin:0 auto 14px;color:#c8d6df;font-size:15px;';
+
+        const downloadLink = previewDocument.createElement('a');
+        downloadLink.href = objectUrl;
+        downloadLink.download = fileName;
+        downloadLink.textContent = 'Enregistrer la Tier List';
+        downloadLink.style.cssText =
+          'display:inline-block;margin-bottom:18px;padding:13px 18px;border-radius:12px;background:#078ee8;color:#fff;text-decoration:none;font-weight:800;';
+
+        const previewImage = previewDocument.createElement('img');
+        previewImage.src = objectUrl;
+        previewImage.alt = exportTitle;
+        previewImage.style.cssText = 'display:block;width:100%;height:auto;margin:0 auto;border-radius:10px;';
+
+        previewDocument.body.append(instruction, downloadLink, previewImage);
+      } else {
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = objectUrl;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      }
     } catch (error) {
       console.error(
         'Erreur pendant le téléchargement :',
@@ -737,7 +820,12 @@ const deleteRow = (rowId: string) => {
       alert(
         "Le téléchargement n'a pas pu être effectué."
       );
+      mobilePreviewWindow?.close();
     } finally {
+      posterImages.forEach((image, index) => {
+        image.src = originalImageSources[index];
+      });
+
       if (exportNode) {
         delete exportNode.dataset.exporting;
       }
@@ -750,6 +838,9 @@ const deleteRow = (rowId: string) => {
   };
 
   const downloadSavedTierList = (saved: SavedTierList) => {
+    const preparedMobileWindow = window.matchMedia('(max-width: 760px)').matches
+      ? window.open('', '_blank')
+      : null;
     const previous = {
       title,
       rows,
@@ -763,7 +854,7 @@ const deleteRow = (rowId: string) => {
     setActiveSavedId(saved.id);
 
     window.setTimeout(async () => {
-      await captureTierList(saved.title || 'Tier List');
+      await captureTierList(saved.title || 'Tier List', preparedMobileWindow);
 
       setTitle(previous.title);
       setRows(previous.rows);
@@ -789,6 +880,42 @@ const deleteRow = (rowId: string) => {
       : `https://image.tmdb.org/t/p/w342${media.poster_path}`;
 
     return `/api/poster-proxy?url=${encodeURIComponent(remoteUrl)}`;
+  };
+
+  const toggleMobileRow = (rowId: string) => {
+    setMobileOpenRowIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+
+      return next;
+    });
+  };
+
+  const toggleMobileRowExpansion = (rowId: string) => {
+    setMobileExpandedRowIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+
+      return next;
+    });
+  };
+
+  const scrollToRow = (rowId: string) => {
+    setMobileOpenRowIds((current) => new Set(current).add(rowId));
+    document.getElementById(`tier-row-${rowId}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   };
 
   return (
@@ -936,12 +1063,24 @@ const deleteRow = (rowId: string) => {
             </div>
           </div>
 
+          <nav className={styles.mobileTierNav} aria-label="Accès rapide aux rangs" data-html2canvas-ignore="true">
+            {rows.map((row) => (
+              <button key={row.id} type="button" onClick={() => scrollToRow(row.id)}>
+                {row.title || row.label}
+                <span>{row.media.length}</span>
+              </button>
+            ))}
+          </nav>
+
           <div className={styles.rows}>
             {rows.map((row, rowIndex) => (
               <div
                 key={row.id}
+                id={`tier-row-${row.id}`}
                 data-tier-row-id={row.id}
-                className={`${styles.tierRow} ${dragOverRank === row.id ? styles.tierRowDragOver : ''}`}
+                className={`${styles.tierRow} ${dragOverRank === row.id ? styles.tierRowDragOver : ''} ${
+                  mobileOpenRowIds.has(row.id) ? styles.tierRowMobileOpen : styles.tierRowMobileClosed
+                }`}
               >
                 <div
                   className={styles.rankLabel}
@@ -961,16 +1100,36 @@ const deleteRow = (rowId: string) => {
                 </div>
 
                 <div className={styles.rowContent}>
-                  <div className={styles.rowMedia}>
+                  <div className={styles.mobileRowHeader} data-html2canvas-ignore="true">
+                    <button
+                      type="button"
+                      className={styles.mobileRowToggle}
+                      onClick={() => toggleMobileRow(row.id)}
+                      aria-expanded={mobileOpenRowIds.has(row.id)}
+                      aria-controls={`tier-row-media-${row.id}`}
+                    >
+                      <span className={styles.mobileRowTitle}>{row.title || `Rang ${row.label}`}</span>
+                      <span className={styles.mobileRowCount}>{row.media.length}</span>
+                      <span className={styles.mobileRowChevron} aria-hidden="true">
+                        {mobileOpenRowIds.has(row.id) ? '⌃' : '⌄'}
+                      </span>
+                    </button>
+                  </div>
+
+                  <div id={`tier-row-media-${row.id}`} className={styles.rowMedia}>
                     {row.media.length === 0 && (
                       <span className={styles.emptyRowText}>Glissez vos médias ici</span>
                     )}
 
-                    {row.media.map((media) => (
+                    {row.media.map((media, mediaIndex) => (
                       <button
                         key={`${media.type}_${media.id}`}
                         type="button"
-                        className={styles.posterButton}
+                        className={`${styles.posterButton} ${
+                          mediaIndex >= 15 && !mobileExpandedRowIds.has(row.id)
+                            ? styles.posterBeyondMobilePreview
+                            : ''
+                        }`}
                         onPointerDown={(event) => handlePointerDown(event, media)}
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
@@ -996,6 +1155,20 @@ const deleteRow = (rowId: string) => {
                       </button>
                     ))}
                   </div>
+
+                  {mobileOpenRowIds.has(row.id) && row.media.length > 15 && (
+                    <button
+                      type="button"
+                      className={styles.mobileShowMoreButton}
+                      onClick={() => toggleMobileRowExpansion(row.id)}
+                      data-html2canvas-ignore="true"
+                    >
+                      {mobileExpandedRowIds.has(row.id)
+                        ? 'Réduire'
+                        : `Voir les ${row.media.length - 15} autres`}
+                      <span aria-hidden="true">{mobileExpandedRowIds.has(row.id) ? ' ↑' : ' ↓'}</span>
+                    </button>
+                  )}
 
                   <div className={styles.rowEditControls} data-html2canvas-ignore="true">
                     <input
@@ -1026,6 +1199,16 @@ const deleteRow = (rowId: string) => {
 
           <p className={styles.signature}>Créé avec Steldra</p>
         </section>
+
+        <button
+          type="button"
+          className={styles.mobileBackToTop}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Revenir en haut de la page"
+          title="Revenir en haut"
+        >
+          ↑
+        </button>
 
         <section className={styles.savedTierListsSection}>
           <div className={styles.savedHeader}>
