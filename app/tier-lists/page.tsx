@@ -32,6 +32,17 @@ type TierSourceList = {
   media: MediaItem[];
 };
 
+type CloudSyncStatus = 'loading' | 'ready' | 'offline' | 'setup-required';
+
+type CloudTierListRecord = {
+  id: string;
+  title: string;
+  rows: TierRow[];
+  unranked: MediaItem[];
+  created_at: string;
+  updated_at: string;
+};
+
 const defaultRows: TierRow[] = [
   {
     id: 's',
@@ -110,6 +121,7 @@ export default function TierListsPage() {
   const [mobileExpandedRowIds, setMobileExpandedRowIds] = useState<Set<string>>(
     () => new Set()
   );
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>('loading');
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('steldra_saved_tier_lists_v1');
@@ -160,6 +172,85 @@ export default function TierListsPage() {
       console.error('Collection illisible :', error);
     }
   }, []);
+
+  useEffect(() => {
+    const loadCloudTierLists = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          setCloudSyncStatus('offline');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('tier_lists')
+          .select('id,title,rows,unranked,created_at,updated_at')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+
+        if (error) {
+          setCloudSyncStatus(['42P01', 'PGRST205'].includes(error.code) ? 'setup-required' : 'offline');
+          console.error('Synchronisation des tier lists indisponible :', error);
+          return;
+        }
+
+        const localHistory = localStorage.getItem('steldra_saved_tier_lists_v1');
+        const localTierLists: SavedTierList[] = localHistory
+          ? JSON.parse(localHistory)
+          : [];
+        const cloudTierLists: SavedTierList[] = ((data || []) as CloudTierListRecord[]).map((item) => ({
+          id: item.id,
+          title: item.title,
+          rows: item.rows,
+          unranked: item.unranked,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        }));
+        const merged = new Map<string, SavedTierList>();
+
+        [...cloudTierLists, ...localTierLists].forEach((item) => {
+          const current = merged.get(item.id);
+          if (!current || new Date(item.updatedAt).getTime() > new Date(current.updatedAt).getTime()) {
+            merged.set(item.id, item);
+          }
+        });
+
+        const synchronizedTierLists = Array.from(merged.values()).sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+
+        setSavedTierLists(synchronizedTierLists);
+        localStorage.setItem('steldra_saved_tier_lists_v1', JSON.stringify(synchronizedTierLists));
+
+        if (synchronizedTierLists.length > 0) {
+          const { error: migrationError } = await supabase.from('tier_lists').upsert(
+            synchronizedTierLists.map((item) => ({
+              id: item.id,
+              user_id: user.id,
+              title: item.title,
+              rows: item.rows,
+              unranked: item.unranked,
+              created_at: item.createdAt,
+              updated_at: item.updatedAt,
+            })),
+            { onConflict: 'id' }
+          );
+
+          if (migrationError) {
+            throw migrationError;
+          }
+        }
+
+        setCloudSyncStatus('ready');
+      } catch (error) {
+        console.error('Erreur pendant la synchronisation des tier lists :', error);
+        setCloudSyncStatus('offline');
+      }
+    };
+
+    void loadCloudTierLists();
+  }, [supabase]);
 
   useEffect(() => {
     const loadCustomLists = async () => {
@@ -571,6 +662,58 @@ const deleteRow = (rowId: string) => {
     router.push(`/media/${media.type}/${media.id}`);
   };
 
+  const syncTierListToCloud = async (snapshot: SavedTierList) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setCloudSyncStatus('offline');
+        return;
+      }
+
+      const { error } = await supabase.from('tier_lists').upsert({
+        id: snapshot.id,
+        user_id: user.id,
+        title: snapshot.title,
+        rows: snapshot.rows,
+        unranked: snapshot.unranked,
+        created_at: snapshot.createdAt,
+        updated_at: snapshot.updatedAt,
+      }, { onConflict: 'id' });
+
+      if (error) {
+        setCloudSyncStatus(['42P01', 'PGRST205'].includes(error.code) ? 'setup-required' : 'offline');
+        console.error('Tier list enregistrée localement, mais pas en ligne :', error);
+        return;
+      }
+
+      setCloudSyncStatus('ready');
+      setSavedMessage('Tier list synchronisée sur tous vos appareils');
+    } catch (error) {
+      console.error('Tier list enregistrée localement, mais pas en ligne :', error);
+      setCloudSyncStatus('offline');
+    }
+  };
+
+  const deleteTierListFromCloud = async (tierListId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('tier_lists')
+        .delete()
+        .eq('id', tierListId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        setCloudSyncStatus(['42P01', 'PGRST205'].includes(error.code) ? 'setup-required' : 'offline');
+        console.error('Suppression en ligne impossible :', error);
+      }
+    } catch (error) {
+      console.error('Suppression en ligne impossible :', error);
+    }
+  };
+
   const persistTierList = (message = 'Tier list enregistrée') => {
     const now = new Date().toISOString();
     const data: TierListData = { title, rows, unranked };
@@ -580,46 +723,28 @@ const deleteRow = (rowId: string) => {
       JSON.stringify(data)
     );
 
-    let savedId = activeSavedId;
+    const savedId = activeSavedId || (
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `tier-${Date.now()}`
+    );
+    const existing = savedTierLists.find((item) => item.id === savedId);
+    const snapshot: SavedTierList = {
+      ...data,
+      id: savedId,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    };
+    const next = existing
+      ? savedTierLists.map((item) => item.id === savedId ? snapshot : item)
+      : [snapshot, ...savedTierLists];
 
-    setSavedTierLists((current) => {
-      const existing = savedId
-        ? current.find((item) => item.id === savedId)
-        : undefined;
-
-      if (!savedId) {
-        savedId =
-          typeof crypto !== 'undefined' && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `tier-${Date.now()}`;
-      }
-
-      const snapshot: SavedTierList = {
-        ...data,
-        id: savedId!,
-        createdAt: existing?.createdAt || now,
-        updatedAt: now,
-      };
-
-      const next = existing
-        ? current.map((item) =>
-            item.id === savedId ? snapshot : item
-          )
-        : [snapshot, ...current];
-
-      next.sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() -
-          new Date(a.updatedAt).getTime()
-      );
-
-      localStorage.setItem(
-        'steldra_saved_tier_lists_v1',
-        JSON.stringify(next)
-      );
-
-      return next;
-    });
+    next.sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+    setSavedTierLists(next);
+    localStorage.setItem('steldra_saved_tier_lists_v1', JSON.stringify(next));
+    void syncTierListToCloud(snapshot);
 
     setActiveSavedId(savedId);
     setSavedMessage(message);
@@ -628,7 +753,7 @@ const deleteRow = (rowId: string) => {
       setSavedMessage('');
     }, 2200);
 
-    return savedId;
+    return snapshot.id;
   };
 
   const saveTierList = () => {
@@ -666,6 +791,8 @@ const deleteRow = (rowId: string) => {
     if (activeSavedId === saved.id) {
       setActiveSavedId(null);
     }
+
+    void deleteTierListFromCloud(saved.id);
   };
 
   const resetTierList = () => {
@@ -1101,6 +1228,13 @@ const deleteRow = (rowId: string) => {
 
                 <div className={styles.rowContent}>
                   <div className={styles.mobileRowHeader} data-html2canvas-ignore="true">
+                    <input
+                      className={styles.mobileRowTitleInput}
+                      value={row.title}
+                      onChange={(event) => updateRowTitle(row.id, event.target.value)}
+                      placeholder={`Nom du rang ${row.label}`}
+                      aria-label={`Renommer le rang ${row.label}`}
+                    />
                     <button
                       type="button"
                       className={styles.mobileRowToggle}
@@ -1108,7 +1242,6 @@ const deleteRow = (rowId: string) => {
                       aria-expanded={mobileOpenRowIds.has(row.id)}
                       aria-controls={`tier-row-media-${row.id}`}
                     >
-                      <span className={styles.mobileRowTitle}>{row.title || `Rang ${row.label}`}</span>
                       <span className={styles.mobileRowCount}>{row.media.length}</span>
                       <span className={styles.mobileRowChevron} aria-hidden="true">
                         {mobileOpenRowIds.has(row.id) ? '⌃' : '⌄'}
@@ -1170,7 +1303,7 @@ const deleteRow = (rowId: string) => {
                     </button>
                   )}
 
-                  <div className={styles.rowEditControls} data-html2canvas-ignore="true">
+                  <div className={styles.rowEditControls}>
                     <input
                       className={styles.rowTitleInput}
                       value={row.title}
@@ -1182,6 +1315,7 @@ const deleteRow = (rowId: string) => {
                       type="button"
                       className={styles.deleteRowButton}
                       onClick={() => deleteRow(row.id)}
+                      data-html2canvas-ignore="true"
                       aria-label={`Supprimer le rang ${row.label}`}
                       title="Supprimer ce rang"
                     >
@@ -1267,7 +1401,12 @@ const deleteRow = (rowId: string) => {
             </div>
           )}
 
-          <p className={styles.storageNote}>ⓘ Vos tier lists sont sauvegardées uniquement dans votre navigateur.</p>
+          <p className={`${styles.storageNote} ${styles.cloudSyncNote}`}>
+            {cloudSyncStatus === 'ready' && '☁ Tier lists synchronisées sur tous vos appareils.'}
+            {cloudSyncStatus === 'loading' && '☁ Synchronisation en cours…'}
+            {cloudSyncStatus === 'offline' && 'ⓘ Sauvegarde locale active. Connectez-vous pour synchroniser vos appareils.'}
+            {cloudSyncStatus === 'setup-required' && '⚠ Synchronisation à activer dans Supabase avec le fichier SQL fourni.'}
+          </p>
         </section>
       </main>
     </>
