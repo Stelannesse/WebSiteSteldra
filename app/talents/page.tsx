@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Talents : affiche et filtre les personnalités favorites de l'utilisateur.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -14,6 +18,7 @@ const roleConfig: Record<TalentRole, { label:string; icon:string; plural:string 
   voice: { label:'Doubleurs favoris', icon:'◉', plural:'doubleurs' },
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function TalentsPage() {
   const [favorites, setFavorites] = useState<TalentFavorite[]>([]);
   const [popular, setPopular] = useState<Person[]>([]);
@@ -72,14 +77,14 @@ export default function TalentsPage() {
 
   return <>
     <MainNav />
-    <main className={styles.page}>
-      <div className={styles.shell}>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <p className={styles.eyebrow}>LES TALENTS DU CINÉMA</p>
+    <main data-steldra-ui="page" className={styles.page}>
+      <div data-steldra-ui="shell" className={styles.shell}>
+        <section data-steldra-ui="hero" className={styles.hero}>
+          <div data-steldra-ui="heroCopy" className={styles.heroCopy}>
+            <p data-steldra-ui="eyebrow" className={styles.eyebrow}>LES TALENTS DU CINÉMA</p>
             <h1>Acteurs, Réalisateurs & Doubleurs</h1>
             <p>Explorez leurs parcours, retrouvez leurs œuvres et gardez vos talents préférés à portée de main.</p>
-            <form className={styles.searchBar} onSubmit={search}>
+            <form data-steldra-ui="searchBar" className={styles.searchBar} onSubmit={search}>
               <span>⌕</span>
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un acteur, réalisateur ou doubleur…" />
               <button type="submit" disabled={searching || query.trim().length < 2}>{searching ? 'Recherche…' : 'Rechercher'}</button>
@@ -87,42 +92,43 @@ export default function TalentsPage() {
           </div>
         </section>
 
-        {results.length > 0 && <section className={`${styles.section} ${styles.searchResults}`}>
-          <div className={styles.sectionHead}><div><h2>Résultats</h2><p>Choisissez un talent pour ouvrir sa filmographie.</p></div><span>{results.length} résultat{results.length > 1 ? 's' : ''}</span></div>
-          <div className={styles.peopleGrid}>{results.map((person) => <PersonCard key={person.id} person={person} />)}</div>
+        {results.length > 0 && <section data-steldra-ui="section searchResults" className={`${styles.section} ${styles.searchResults}`}>
+          <div data-steldra-ui="sectionHead" className={styles.sectionHead}><div><h2>Résultats</h2><p>Choisissez un talent pour ouvrir sa filmographie.</p></div><span>{results.length} résultat{results.length > 1 ? 's' : ''}</span></div>
+          <div data-steldra-ui="peopleGrid" className={styles.peopleGrid}>{results.map((person) => <PersonCard key={person.id} person={person} />)}</div>
         </section>}
 
-        <section className={styles.roleGrid}>
+        <section data-steldra-ui="roleGrid" className={styles.roleGrid}>
           {(Object.keys(roleConfig) as TalentRole[]).map((role) => {
             const items = grouped[role];
             const expanded = openRole === role;
             const shown = expanded ? items : items.slice(0, 8);
-            return <article className={styles.roleCard} key={role}>
-              <div className={styles.roleHead}><div className={styles.roleTitle}><span className={styles.roleIcon}>{roleConfig[role].icon}</span><h2>{roleConfig[role].label}</h2></div><span>{items.length} favori{items.length > 1 ? 's' : ''}</span></div>
-              <div className={styles.avatarRow}>
-                {shown.length ? shown.map((item) => <Link href={`/talents/${item.id}`} className={styles.avatar} key={`${item.id}-${role}`} title={item.name}>{item.profile_path ? <img src={item.profile_path} alt={item.name}/> : <span className={styles.emptyAvatar}>👤</span>}</Link>) : <div className={styles.emptyAvatar}>＋</div>}
+            return <article data-steldra-ui="roleCard" className={styles.roleCard} key={role}>
+              <div data-steldra-ui="roleHead" className={styles.roleHead}><div data-steldra-ui="roleTitle" className={styles.roleTitle}><span data-steldra-ui="roleIcon" className={styles.roleIcon}>{roleConfig[role].icon}</span><h2>{roleConfig[role].label}</h2></div><span>{items.length} favori{items.length > 1 ? 's' : ''}</span></div>
+              <div data-steldra-ui="avatarRow" className={styles.avatarRow}>
+                {shown.length ? shown.map((item) => <Link href={`/talents/${item.id}`} data-steldra-ui="avatar" className={styles.avatar} key={`${item.id}-${role}`} title={item.name}>{item.profile_path ? <img src={item.profile_path} alt={item.name}/> : <span data-steldra-ui="emptyAvatar" className={styles.emptyAvatar}>👤</span>}</Link>) : <div data-steldra-ui="emptyAvatar" className={styles.emptyAvatar}>＋</div>}
               </div>
-              {items.length > 8 && <div className={styles.roleActions}><button type="button" className={styles.seeAllButton} onClick={() => setOpenRole(expanded ? null : role)}>{expanded ? 'Réduire' : `Voir tout (${items.length})`}</button></div>}
-              {expanded && items.length > 0 && <div className={styles.favoritePeopleGrid}>{items.map((item) => <Link key={`${item.id}-${role}-card`} className={styles.personCard} href={`/talents/${item.id}`}>
-                <div className={styles.personPortrait}>{item.profile_path ? <img src={item.profile_path} alt={item.name}/> : null}</div>
-                <div className={styles.personMeta}><strong>{item.name}</strong><span>{item.department || roleConfig[role].plural}</span></div>
+              {items.length > 8 && <div data-steldra-ui="roleActions" className={styles.roleActions}><button type="button" data-steldra-ui="seeAllButton" className={styles.seeAllButton} onClick={() => setOpenRole(expanded ? null : role)}>{expanded ? 'Réduire' : `Voir tout (${items.length})`}</button></div>}
+              {expanded && items.length > 0 && <div data-steldra-ui="favoritePeopleGrid" className={styles.favoritePeopleGrid}>{items.map((item) => <Link key={`${item.id}-${role}-card`} data-steldra-ui="personCard" className={styles.personCard} href={`/talents/${item.id}`}>
+                <div data-steldra-ui="personPortrait" className={styles.personPortrait}>{item.profile_path ? <img src={item.profile_path} alt={item.name}/> : null}</div>
+                <div data-steldra-ui="personMeta" className={styles.personMeta}><strong>{item.name}</strong><span>{item.department || roleConfig[role].plural}</span></div>
               </Link>)}</div>}
             </article>;
           })}
         </section>
 
-        <section className={`${styles.section} ${styles.discoverSection}`}>
-          <div className={styles.sectionHead}><div><h2>À découvrir</h2><p>Des personnalités populaires à explorer.</p></div><div className={styles.sectionActions}><span>{popular.length} talents</span><button type="button" className={styles.refreshButton} onClick={refreshPopular} disabled={refreshingPopular}>{refreshingPopular ? 'Actualisation…' : 'Actualiser'}</button></div></div>
-          {popular.length ? <div className={styles.peopleGrid}>{popular.map((person) => <PersonCard key={`${popularPage}-${person.id}`} person={person}/>)}</div> : <div className={styles.empty}>Chargement des talents…</div>}
+        <section data-steldra-ui="section discoverSection" className={`${styles.section} ${styles.discoverSection}`}>
+          <div data-steldra-ui="sectionHead" className={styles.sectionHead}><div><h2>À découvrir</h2><p>Des personnalités populaires à explorer.</p></div><div data-steldra-ui="sectionActions" className={styles.sectionActions}><span>{popular.length} talents</span><button type="button" data-steldra-ui="refreshButton" className={styles.refreshButton} onClick={refreshPopular} disabled={refreshingPopular}>{refreshingPopular ? 'Actualisation…' : 'Actualiser'}</button></div></div>
+          {popular.length ? <div data-steldra-ui="peopleGrid" className={styles.peopleGrid}>{popular.map((person) => <PersonCard key={`${popularPage}-${person.id}`} person={person}/>)}</div> : <div data-steldra-ui="empty" className={styles.empty}>Chargement des talents…</div>}
         </section>
       </div>
     </main>
   </>;
 }
 
+/** Affiche la carte récapitulative d'une personnalité. */
 function PersonCard({ person }: { person: Person }) {
-  return <Link className={styles.personCard} href={`/talents/${person.id}`}>
-    <div className={styles.personPortrait}>{person.profile_path ? <img src={person.profile_path} alt={person.name}/> : null}</div>
-    <div className={styles.personMeta}><strong>{person.name}</strong><span>{person.department || 'Talent'}</span></div>
+  return <Link data-steldra-ui="personCard" className={styles.personCard} href={`/talents/${person.id}`}>
+    <div data-steldra-ui="personPortrait" className={styles.personPortrait}>{person.profile_path ? <img src={person.profile_path} alt={person.name}/> : null}</div>
+    <div data-steldra-ui="personMeta" className={styles.personMeta}><strong>{person.name}</strong><span>{person.department || 'Talent'}</span></div>
   </Link>;
 }

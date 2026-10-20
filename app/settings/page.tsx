@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Paramètres : permet de personnaliser le comportement et l'affichage de l'application.
+ */
+
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -24,6 +28,7 @@ const chunk = <T,>(rows: T[], size = 200) => {
   return result;
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function SettingsPage() {
   const [settings, setSettings] = useState(defaultSettings);
   const [supabase] = useState(() => createClient());
@@ -255,102 +260,102 @@ export default function SettingsPage() {
   return (
     <>
       <MainNav />
-      <main className={styles.page}>
-        <section className={styles.hero}>
-          <div className={styles.heroShade} />
-          <div className={styles.heroContent}>
-            <p className={styles.eyebrow}>VOTRE ESPACE</p>
+      <main data-steldra-ui="page" className={styles.page}>
+        <section data-steldra-ui="hero" className={styles.hero}>
+          <div data-steldra-ui="heroShade" className={styles.heroShade} />
+          <div data-steldra-ui="heroContent" className={styles.heroContent}>
+            <p data-steldra-ui="eyebrow" className={styles.eyebrow}>VOTRE ESPACE</p>
             <h1>Paramètres</h1>
             <p>Personnalisez votre espace selon vos envies.</p>
           </div>
         </section>
 
-        <section className={styles.quickGrid}>
-          <Link href="/statistiques" className={styles.quickCard}>
-            <span className={styles.quickIcon}>◫</span><div><strong>Statistiques</strong><small>Voir vos habitudes de visionnage</small></div><b>→</b>
+        <section data-steldra-ui="quickGrid" className={styles.quickGrid}>
+          <Link href="/statistiques" data-steldra-ui="quickCard" className={styles.quickCard}>
+            <span data-steldra-ui="quickIcon" className={styles.quickIcon}>◫</span><div><strong>Statistiques</strong><small>Voir vos habitudes de visionnage</small></div><b>→</b>
           </Link>
-          <button type="button" className={styles.quickCard} onClick={() => void exportBackup()} disabled={exporting || importing}>
-            <span className={styles.quickIcon}>⇩</span><div><strong>Sauvegarder</strong><small>Exporter toutes vos données</small></div><b>→</b>
+          <button type="button" data-steldra-ui="quickCard" className={styles.quickCard} onClick={() => void exportBackup()} disabled={exporting || importing}>
+            <span data-steldra-ui="quickIcon" className={styles.quickIcon}>⇩</span><div><strong>Sauvegarder</strong><small>Exporter toutes vos données</small></div><b>→</b>
           </button>
-          <button type="button" className={styles.quickCard} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>
-            <span className={styles.quickIcon}>⇧</span><div><strong>Restaurer</strong><small>Importer une sauvegarde STELDRA</small></div><b>→</b>
+          <button type="button" data-steldra-ui="quickCard" className={styles.quickCard} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>
+            <span data-steldra-ui="quickIcon" className={styles.quickIcon}>⇧</span><div><strong>Restaurer</strong><small>Importer une sauvegarde STELDRA</small></div><b>→</b>
           </button>
         </section>
 
-        <div className={styles.settingsGrid}>
-          <section className={`${styles.card} ${styles.profileCard}`}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardIcon}>◎</span>
+        <div data-steldra-ui="settingsGrid" className={styles.settingsGrid}>
+          <section data-steldra-ui="card profileCard" className={`${styles.card} ${styles.profileCard}`}>
+            <div data-steldra-ui="cardHead" className={styles.cardHead}>
+              <span data-steldra-ui="cardIcon" className={styles.cardIcon}>◎</span>
               <div><h2>Mon profil</h2><p>Les informations visibles dans STELDRA.</p></div>
             </div>
-            <div className={styles.profileForm}>
+            <div data-steldra-ui="profileForm" className={styles.profileForm}>
               <label><span>Prénom ou pseudo</span><input value={profileName} onChange={(event) => setProfileName(event.target.value)} maxLength={60} /></label>
               <label><span>E-mail</span><input value={profileEmail} disabled /></label>
             </div>
-            <div className={styles.cardActions}>
-              <button className={styles.actionButton} onClick={() => void saveProfile()} disabled={savingProfile}>{savingProfile ? 'Enregistrement…' : 'Enregistrer le profil'}</button>
-              <Link href="/forgot-password" className={styles.secondaryActionButton}>Modifier mon mot de passe</Link>
+            <div data-steldra-ui="cardActions" className={styles.cardActions}>
+              <button data-steldra-ui="actionButton" className={styles.actionButton} onClick={() => void saveProfile()} disabled={savingProfile}>{savingProfile ? 'Enregistrement…' : 'Enregistrer le profil'}</button>
+              <Link href="/forgot-password" data-steldra-ui="secondaryActionButton" className={styles.secondaryActionButton}>Modifier mon mot de passe</Link>
             </div>
-            {profileMessage && <p className={styles.message}>{profileMessage}</p>}
+            {profileMessage && <p data-steldra-ui="message" className={styles.message}>{profileMessage}</p>}
           </section>
 
-          <section className={styles.card}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardIcon}>✦</span>
+          <section data-steldra-ui="card" className={styles.card}>
+            <div data-steldra-ui="cardHead" className={styles.cardHead}>
+              <span data-steldra-ui="cardIcon" className={styles.cardIcon}>✦</span>
               <div><h2>Apparence</h2><p>Adaptez l'interface à votre confort.</p></div>
             </div>
-            <div className={styles.setting}>
+            <div data-steldra-ui="setting" className={styles.setting}>
               <div><strong>Réduire les animations</strong><small>Limite les transitions et effets visuels.</small></div>
-              <button aria-label="Réduire les animations" className={`${styles.switch} ${settings.reduceAnimations ? styles.switchOn : ''}`} onClick={() => update('reduceAnimations', !settings.reduceAnimations)}><span className={styles.switchThumb} /></button>
+              <button aria-label="Réduire les animations" data-steldra-ui="switch switchOn" className={`${styles.switch} ${settings.reduceAnimations ? styles.switchOn : ''}`} onClick={() => update('reduceAnimations', !settings.reduceAnimations)}><span data-steldra-ui="switchThumb" className={styles.switchThumb} /></button>
             </div>
           </section>
 
-          <section className={styles.card}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardIcon}>▦</span>
+          <section data-steldra-ui="card" className={styles.card}>
+            <div data-steldra-ui="cardHead" className={styles.cardHead}>
+              <span data-steldra-ui="cardIcon" className={styles.cardIcon}>▦</span>
               <div><h2>Collection</h2><p>Choisissez la présentation de votre bibliothèque.</p></div>
             </div>
-            <div className={styles.setting}>
+            <div data-steldra-ui="setting" className={styles.setting}>
               <div><strong>Afficher les titres</strong><small>Affiche le nom des médias sous leurs affiches lorsque l'espace le permet.</small></div>
-              <button aria-label="Afficher les titres" className={`${styles.switch} ${settings.showCollectionTitles ? styles.switchOn : ''}`} onClick={() => update('showCollectionTitles', !settings.showCollectionTitles)}><span className={styles.switchThumb} /></button>
+              <button aria-label="Afficher les titres" data-steldra-ui="switch switchOn" className={`${styles.switch} ${settings.showCollectionTitles ? styles.switchOn : ''}`} onClick={() => update('showCollectionTitles', !settings.showCollectionTitles)}><span data-steldra-ui="switchThumb" className={styles.switchThumb} /></button>
             </div>
           </section>
 
-          <section className={styles.card}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardIcon}>S</span>
+          <section data-steldra-ui="card" className={styles.card}>
+            <div data-steldra-ui="cardHead" className={styles.cardHead}>
+              <span data-steldra-ui="cardIcon" className={styles.cardIcon}>S</span>
               <div><h2>Tier Lists</h2><p>Réglez le comportement de vos classements.</p></div>
             </div>
-            <div className={styles.setting}><div><strong>Afficher la signature</strong><small>Ajoute la signature STELDRA à vos exports.</small></div><button aria-label="Afficher la signature" className={`${styles.switch} ${settings.showTierListSignature ? styles.switchOn : ''}`} onClick={() => update('showTierListSignature', !settings.showTierListSignature)}><span className={styles.switchThumb} /></button></div>
-            <div className={styles.setting}><div><strong>Confirmation avant réinitialisation</strong><small>Évite d'effacer un classement par erreur.</small></div><button aria-label="Confirmer avant réinitialisation" className={`${styles.switch} ${settings.confirmTierListReset ? styles.switchOn : ''}`} onClick={() => update('confirmTierListReset', !settings.confirmTierListReset)}><span className={styles.switchThumb} /></button></div>
+            <div data-steldra-ui="setting" className={styles.setting}><div><strong>Afficher la signature</strong><small>Ajoute la signature STELDRA à vos exports.</small></div><button aria-label="Afficher la signature" data-steldra-ui="switch switchOn" className={`${styles.switch} ${settings.showTierListSignature ? styles.switchOn : ''}`} onClick={() => update('showTierListSignature', !settings.showTierListSignature)}><span data-steldra-ui="switchThumb" className={styles.switchThumb} /></button></div>
+            <div data-steldra-ui="setting" className={styles.setting}><div><strong>Confirmation avant réinitialisation</strong><small>Évite d'effacer un classement par erreur.</small></div><button aria-label="Confirmer avant réinitialisation" data-steldra-ui="switch switchOn" className={`${styles.switch} ${settings.confirmTierListReset ? styles.switchOn : ''}`} onClick={() => update('confirmTierListReset', !settings.confirmTierListReset)}><span data-steldra-ui="switchThumb" className={styles.switchThumb} /></button></div>
           </section>
 
-          <section className={`${styles.card} ${styles.backupCard}`}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardIcon}>☁</span>
+          <section data-steldra-ui="card backupCard" className={`${styles.card} ${styles.backupCard}`}>
+            <div data-steldra-ui="cardHead" className={styles.cardHead}>
+              <span data-steldra-ui="cardIcon" className={styles.cardIcon}>☁</span>
               <div><h2>Sauvegarde & restauration</h2><p>Conservez une copie complète de votre univers STELDRA.</p></div>
             </div>
-            <div className={styles.backupRows}>
-              <div className={styles.backupRow}>
+            <div data-steldra-ui="backupRows" className={styles.backupRows}>
+              <div data-steldra-ui="backupRow" className={styles.backupRow}>
                 <div><strong>Exporter mes données</strong><small>Collection, listes, avis et historique dans un fichier JSON.</small></div>
-                <button className={styles.actionButton} onClick={() => void exportBackup()} disabled={exporting || importing}>{exporting ? 'Export…' : 'Télécharger'}</button>
+                <button data-steldra-ui="actionButton" className={styles.actionButton} onClick={() => void exportBackup()} disabled={exporting || importing}>{exporting ? 'Export…' : 'Télécharger'}</button>
               </div>
-              <div className={styles.backupRow}>
+              <div data-steldra-ui="backupRow" className={styles.backupRow}>
                 <div><strong>Importer une sauvegarde</strong><small>Fusionne vos médias et recrée vos listes sans écraser les données actuelles.</small></div>
-                <button className={styles.secondaryActionButton} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>{importing ? 'Import…' : 'Choisir un fichier'}</button>
+                <button data-steldra-ui="secondaryActionButton" className={styles.secondaryActionButton} onClick={() => fileInputRef.current?.click()} disabled={importing || exporting}>{importing ? 'Import…' : 'Choisir un fichier'}</button>
               </div>
             </div>
-            <input ref={fileInputRef} className={styles.hiddenInput} type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); }} />
-            {backupMessage && <p className={styles.message}>{backupMessage}</p>}
+            <input ref={fileInputRef} data-steldra-ui="hiddenInput" className={styles.hiddenInput} type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importBackup(file); }} />
+            {backupMessage && <p data-steldra-ui="message" className={styles.message}>{backupMessage}</p>}
           </section>
 
-          <section className={`${styles.card} ${styles.accountCard}`}>
-            <div className={styles.cardHead}>
-              <span className={styles.cardIcon}>⌁</span>
+          <section data-steldra-ui="card accountCard" className={`${styles.card} ${styles.accountCard}`}>
+            <div data-steldra-ui="cardHead" className={styles.cardHead}>
+              <span data-steldra-ui="cardIcon" className={styles.cardIcon}>⌁</span>
               <div><h2>Compte</h2><p>Accès et session STELDRA.</p></div>
             </div>
-            <div className={styles.accountRow}><div><strong>Adresse e-mail</strong><small>{profileEmail || 'Compte STELDRA'}</small></div></div>
-            <button type="button" className={styles.logoutButton} onClick={() => void signOut()}>Se déconnecter</button>
+            <div data-steldra-ui="accountRow" className={styles.accountRow}><div><strong>Adresse e-mail</strong><small>{profileEmail || 'Compte STELDRA'}</small></div></div>
+            <button type="button" data-steldra-ui="logoutButton" className={styles.logoutButton} onClick={() => void signOut()}>Se déconnecter</button>
           </section>
         </div>
       </main>

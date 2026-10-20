@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Hook d'avis : centralise la lecture et les mutations des avis associés à un média.
+ */
+
 import { useState } from 'react';
 import type {
   MediaItem,
@@ -11,6 +15,7 @@ type UseReviewsProps = {
   userName: string | null;
 };
 
+/** Expose les avis du média et les actions permettant de les gérer. */
 export default function useReviews({
   supabase,
   userId,

@@ -1,0 +1,176 @@
+BLOC-NOTES DES MODIFICATIONS — 18 OCTOBRE 2026
+
+DEMANDE TRAITÉE
+
+Séparer les lectures du cinéma, conserver films/séries/dramas/animés,
+faire évoluer le projet de livres, corriger les problèmes constatés et
+fournir des dossiers distincts faciles à installer.
+
+STELDRA — CE QUI A CHANGÉ
+
+1) Recherche cinéma
+- Retrait des requêtes MangaDex de /api/search.
+- Conservation de TMDB pour films, séries, dramas et animés.
+- Conservation de Jikan pour les animés.
+- Retrait des choix Mangas et Manhwas des filtres de recherche/collection.
+- Texte de recherche et invitation à ajouter des médias adaptés au cinéma.
+- Limitation de la longueur envoyée à la recherche et délai maximal de
+  8 secondes pour les recherches TMDB principales.
+- Protection contre les réponses arrivant dans le désordre : une ancienne
+  recherche ne peut plus remplacer les résultats d'une saisie plus récente.
+
+2) Collections, accueil, historique, listes et statistiques
+- Les lectures de données destinées à l'affichage cinéma sont limitées aux
+  types movie, tv, drama et anime.
+- La collection conserve les anciennes entrées dans son état chargé, mais
+  les exclut de l'affichage, des compteurs et des filtres cinéma.
+- Les anciennes sauvegardes locales ne sont pas nettoyées destructivement.
+- Les anciennes lectures sont exclues de l'indexation des métadonnées cinéma.
+- Les filtres restaurés depuis une ancienne session reviennent à Tous si
+  le filtre enregistré correspondait à un type de lecture.
+- Historique : retrait des choix de lecture.
+- Listes privées/partagées : cartes et aperçus limités aux médias cinéma.
+- Statistiques : les lectures ne sont pas comptées comme statuts cinéma,
+  y compris lorsqu'elles proviennent d'une ancienne sauvegarde locale.
+- Tier lists : masquage des lectures dans les filtres, affiches, aperçus,
+  compteurs et exports visuels. Les anciennes données restent conservées.
+- Les listes elles-mêmes ne sont pas supprimées automatiquement ; une liste
+  anciennement consacrée à la lecture peut donc rester vide côté cinéma.
+
+3) Fiches de lecture
+- Les URL /media/manga/... et /media/manhwa/... ne servent plus une fiche
+  cinéma : ces types sont rejetés par la page serveur.
+- L'API de détails cinéma ne contacte plus MangaDex et refuse les types
+  qui ne sont pas des médias cinéma.
+- Protection supplémentaire dans les cartes partagées.
+- Les anciens champs/types internes de lecture restent présents lorsqu'ils
+  servent à relire les sauvegardes et à éviter une réécriture risquée des
+  hooks de progression communs. Ils ne réactivent pas le catalogue lecture.
+
+4) Export non destructif vers LIRDRA
+- Nouvelle page /export-lectures et lien dans Collection.
+- Export des lectures locales et des lectures du compte Supabase connecté.
+- Pagination de l'export pour ne pas s'arrêter à la première page.
+- Fusion par type et identifiant, avec priorité aux données du compte.
+- Titres, types, statuts, progression chapitres, couvertures, genres,
+  résumés disponibles, favoris et noms de listes récupérables.
+- Les lectures présentes seulement dans une liste sont également exportées.
+- Les listes sont exportées par leur nom, pas par leurs anciens jetons de partage.
+- Aucune opération de suppression dans l'export.
+- La sauvegarde intégrale existante de Paramètres est conservée telle quelle,
+  pour ne pas perdre les archives de lecture encore dans le compte cinéma.
+- Les avis détaillés, classements et dates d'historique STELDRA ne sont pas
+  convertis en historique LIRDRA. Ils restent dans la sauvegarde STELDRA.
+
+5) Corrections précédentes conservées
+- Un seul dossier app dans STELDRA : pas de app/app à installer.
+- Déplacement des sélecteurs CSS globaux hors de page.module.css vers
+  globals.css : règles de base, focus visible et réduction des animations.
+- Suppression de journaux affichant la collection brute dans la console.
+- Le lancement avec Webpack reste celui indiqué dans les instructions.
+
+Fichiers principaux modifiés :
+app/api/search/route.ts
+app/api/media-details/route.ts
+app/page.tsx
+app/page.module.css
+app/globals.css
+app/collection/page.tsx
+app/components/header.tsx
+app/components/mediaCard.tsx
+app/discover/page.tsx
+app/history/page.tsx
+app/lists/page.tsx
+app/lists/[id]/page.tsx
+app/shared-list/[token]/page.tsx
+app/media/[type]/[id]/page.tsx
+app/media/[type]/[id]/MediaPageClient.tsx
+app/statistiques/page.tsx
+app/tier-lists/page.tsx
+Nouveaux : app/lib/cinemaScope.ts et app/export-lectures/page.tsx.
+
+LIRDRA — DE LA MAQUETTE À UNE BIBLIOTHÈQUE LOCALE
+
+1) Projet exécutable
+- Ajout de package.json, verrouillage npm, configuration TypeScript,
+  fichier d'exemple d'environnement et exclusions des fichiers générés.
+- Next.js 16.2.10, React 19 et commandes dev/build/start/typecheck.
+- Le code fourni ne nécessite pas d'identifiants Supabase pour démarrer.
+
+2) Données réelles
+- Retrait des livres répétés, du prénom imposé et des compteurs fictifs.
+- Accueil calculé à partir de la bibliothèque enregistrée.
+- Ajout manuel de romans, mangas, manhwas, webtoons, BD et comics.
+- Auteur, couverture, statut, pages/chapitres, total, notes, genres,
+  favoris, lien de lecture externe et appartenance aux listes.
+- Filtres de type/statut et recherche de bibliothèque fonctionnels.
+- Fiche dédiée pour modifier la progression et les informations.
+- Historique des changements de progression et de statut.
+- Création de listes et affectation depuis les fiches.
+- Navigation mobile donnant aussi accès à Lire et Paramètres.
+- Couverture de remplacement quand l'image manque ou ne charge pas.
+
+3) Recherche de catalogue
+- Nouvelle API serveur de recherche de lectures.
+- Recherche MangaDex adaptée depuis la logique du projet cinéma.
+- Recherche des romans de fiction via Open Library.
+- Sources interrogées en parallèle, délais maximaux et message explicite
+  en cas d'indisponibilité ; les résultats d'une source peuvent rester
+  visibles si l'autre échoue.
+- Filtres Manga, Manhwa et Webtoon ; ce dernier utilise le tag de format
+  vertical de MangaDex. Il ne couvre pas tout le catalogue de WEBTOON.
+- Le type d'un titre peut être corrigé manuellement dans sa fiche.
+- Pas de contenu de livre ou de scans embarqué : suivi et métadonnées.
+
+4) Sauvegardes et import
+- Sauvegarde locale dans une clé LIRDRA indépendante de STELDRA.
+- Aucun écrasement par une bibliothèque vide au premier chargement.
+- Messages en cas de stockage plein ou de sauvegarde illisible.
+- Une sauvegarde corrompue n'est pas effacée automatiquement.
+- Téléchargement de la sauvegarde brute pour récupération.
+- Export complet des lectures, de l'historique LIRDRA et des listes en JSON.
+- Import LIRDRA et import de l'export dédié STELDRA.
+- Fusion sans écraser les identifiants déjà présents.
+- Validation du contenu et refus des formats non reconnus.
+- Une progression importée n'est pas réduite si un ancien total est erroné :
+  le total devient alors inconnu et peut être corrigé dans la fiche.
+- Limite de 10 Mo pour un fichier importé depuis l'interface.
+- Actualisation après une modification du stockage dans un autre onglet.
+- Les liens de couverture/lecture sont limités à http et https.
+
+VÉRIFICATIONS EFFECTUÉES
+
+- Construction de production LIRDRA avec Next.js/Webpack et contrôle
+  TypeScript : réussis.
+- Construction de production de l'application STELDRA : réussie dans un
+  projet de contrôle, avec les dépendances requises et des variables
+  Supabase factices uniquement pour permettre la construction.
+- Tests de logique : import STELDRA, exclusion des films, conversion des
+  statuts, chapitres, favoris, listes, export/réimport, dédoublonnage,
+  fichiers invalides et URL interdites : réussis.
+- Tests d'interface dans un DOM simulé : ajout par formulaire, sauvegarde,
+  import, filtre Manga, rechargement et préservation d'un JSON corrompu : réussis.
+- Test de l'export cinéma avec données Supabase simulées : fusion local/
+  compte, noms de listes, progression et absence de suppression : réussi.
+- Tests de l'API avec réponses simulées : conversion MangaDex/Open Library,
+  filtre vertical et échec partiel d'une source : réussis.
+- Vérification HTTP de toutes les pages LIRDRA et de la recherche courte : 200.
+- Recherche réelle Open Library : 18 résultats reçus lors du contrôle final.
+  Un essai précédent avait rencontré une indisponibilité réseau : la réponse
+  de repli a également été vérifiée. L'exhaustivité et la disponibilité des
+  catalogues externes ne sont pas garanties.
+- Aucun test avec votre vrai compte Supabase ni déploiement Vercel.
+- Pas de contrôle visuel dans un navigateur réel : le navigateur de test
+  n'a pas pu être installé ici. Les tests d'interface utilisent un DOM simulé.
+
+LIMITES ET ÉTAPE SUIVANTE
+
+Vos ZIP ne contiennent pas le projet cinéma complet (package.json,
+configuration Next.js, middleware/proxy et ressources public manquants).
+Ces éléments actuels doivent rester dans votre projet STELDRA.
+L'avertissement middleware/proxy n'est pas modifié sans son fichier source.
+
+LIRDRA est autonome et fonctionne localement ; son authentification et sa
+synchronisation Supabase ne sont pas encore implémentées. Les ajouter exige
+un vrai projet de base de données et une configuration dédiée.
+Aucune donnée de votre compte et aucun hébergement n'ont été modifiés.

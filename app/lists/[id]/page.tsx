@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Détail d'une liste : gère son contenu, son ordre, son partage et ses informations.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -20,6 +24,7 @@ const TYPE_LABELS: Record<string, string> = {
   manhwa: 'Manhwa',
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function ListDetailsPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -101,7 +106,7 @@ export default function ListDetailsPage() {
       const [{ data: listData, error: listError }, { data: itemData, error: itemsError }] =
         await Promise.all([
           supabase.from('custom_lists').select('*').eq('id', listId).eq('user_id', user.id).single(),
-          fetchAllPages<CustomListItem>((from, to) => supabase.from('custom_list_items').select('*').eq('list_id', listId).order('position', { ascending: true }).range(from, to)),
+          fetchAllPages<CustomListItem>((from, to) => supabase.from('custom_list_items').select('*').in('media_type', ['movie', 'tv', 'drama', 'anime']).eq('list_id', listId).order('position', { ascending: true }).range(from, to)),
         ]);
 
       if (listError || !listData) {
@@ -123,7 +128,7 @@ export default function ListDetailsPage() {
       if (ids.length > 0) {
         const { data: progressData, error: progressError } = await supabase
           .from('media_progress')
-          .select('media_id, media_type, status')
+          .select('media_id, media_type, status').in('media_type', ['movie', 'tv', 'drama', 'anime'])
           .eq('user_id', user.id)
           .in('media_id', ids);
 
@@ -208,7 +213,7 @@ export default function ListDetailsPage() {
     const { data, error } = await fetchAllPages<any>((from, to) =>
       supabase
         .from('media_progress')
-        .select('media_id, media_type, media_data')
+        .select('media_id, media_type, media_data').in('media_type', ['movie', 'tv', 'drama', 'anime'])
         .eq('user_id', user.id)
         .order('media_id', { ascending: true })
         .range(from, to)
@@ -726,42 +731,42 @@ export default function ListDetailsPage() {
   return (
     <>
       <MainNav />
-      <main className={styles.page}>
-        <Link href="/lists" className={styles.backLink}>← Retour à mes listes</Link>
+      <main data-steldra-ui="page" className={styles.page}>
+        <Link href="/lists" data-steldra-ui="backLink" className={styles.backLink}>← Retour à mes listes</Link>
 
         {loading ? (
           <p>Chargement de la liste…</p>
         ) : errorMessage && !list ? (
-          <p className={styles.error}>{errorMessage}</p>
+          <p data-steldra-ui="error" className={styles.error}>{errorMessage}</p>
         ) : list ? (
           <>
-            <header className={styles.header}>
-              <div className={styles.headerTop}>
-                <div className={styles.headerContent}>
-                  <p className={styles.eyebrow}>Liste personnalisée</p>
+            <header data-steldra-ui="header" className={styles.header}>
+              <div data-steldra-ui="headerTop" className={styles.headerTop}>
+                <div data-steldra-ui="headerContent" className={styles.headerContent}>
+                  <p data-steldra-ui="eyebrow" className={styles.eyebrow}>Liste personnalisée</p>
 
                   {isEditingMeta ? (
-                    <div className={styles.editMeta}>
+                    <div data-steldra-ui="editMeta" className={styles.editMeta}>
                       <input
-                        className={styles.titleInput}
+                        data-steldra-ui="titleInput" className={styles.titleInput}
                         value={editedTitle}
                         onChange={(event) => setEditedTitle(event.target.value)}
                         maxLength={80}
                         autoFocus
                       />
                       <textarea
-                        className={styles.descriptionInput}
+                        data-steldra-ui="descriptionInput" className={styles.descriptionInput}
                         value={editedDescription}
                         onChange={(event) => setEditedDescription(event.target.value)}
                         maxLength={250}
                         rows={2}
                         placeholder="Description de la liste…"
                       />
-                      <div className={styles.editActions}>
+                      <div data-steldra-ui="editActions" className={styles.editActions}>
                         <button type="button" onClick={() => void saveListMeta()} disabled={savingMeta}>
                           {savingMeta ? 'Enregistrement…' : '✓ Enregistrer'}
                         </button>
-                        <button type="button" className={styles.secondaryButton} onClick={() => {
+                        <button type="button" data-steldra-ui="secondaryButton" className={styles.secondaryButton} onClick={() => {
                           setEditedTitle(list.name);
                           setEditedDescription(list.description || '');
                           setIsEditingMeta(false);
@@ -770,47 +775,47 @@ export default function ListDetailsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className={styles.titleRow}>
+                      <div data-steldra-ui="titleRow" className={styles.titleRow}>
                         <h1>{list.name}</h1>
-                        <button type="button" className={styles.iconButton} onClick={() => setIsEditingMeta(true)} title="Modifier le nom et la description">✎</button>
-                        <span className={styles.countInline}>{items.length} {items.length > 1 ? 'médias' : 'média'}</span>
+                        <button type="button" data-steldra-ui="iconButton" className={styles.iconButton} onClick={() => setIsEditingMeta(true)} title="Modifier le nom et la description">✎</button>
+                        <span data-steldra-ui="countInline" className={styles.countInline}>{items.length} {items.length > 1 ? 'médias' : 'média'}</span>
                       </div>
-                      <p className={styles.description}>{list.description || 'Liste organisée dans votre ordre personnalisé.'}</p>
+                      <p data-steldra-ui="description" className={styles.description}>{list.description || 'Liste organisée dans votre ordre personnalisé.'}</p>
                     </>
                   )}
                 </div>
 
-                <div className={styles.listActions}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void shareList()} disabled={sharingList}>
+                <div data-steldra-ui="listActions" className={styles.listActions}>
+                  <button type="button" data-steldra-ui="secondaryButton" className={styles.secondaryButton} onClick={() => void shareList()} disabled={sharingList}>
                     {sharingList ? 'Partage…' : 'Partager'}
                   </button>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void duplicateList()} disabled={duplicatingList}>
+                  <button type="button" data-steldra-ui="secondaryButton" className={styles.secondaryButton} onClick={() => void duplicateList()} disabled={duplicatingList}>
                     {duplicatingList ? 'Copie…' : '⧉ Dupliquer'}
                   </button>
-                  <button type="button" className={styles.dangerButton} onClick={() => void deleteList()} disabled={deletingList}>
+                  <button type="button" data-steldra-ui="dangerButton" className={styles.dangerButton} onClick={() => void deleteList()} disabled={deletingList}>
                     {deletingList ? 'Suppression…' : 'Supprimer la liste'}
                   </button>
                 </div>
               </div>
 
               {items.length > 0 && (
-                <div className={styles.progressBlock}>
-                  <div className={styles.progressText}>
+                <div data-steldra-ui="progressBlock" className={styles.progressBlock}>
+                  <div data-steldra-ui="progressText" className={styles.progressText}>
                     <span>{watchedCount} / {items.length} vus</span>
                     <strong>{progressPercent} %</strong>
                   </div>
-                  <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${progressPercent}%` }} /></div>
+                  <div data-steldra-ui="progressTrack" className={styles.progressTrack}><div data-steldra-ui="progressFill" className={styles.progressFill} style={{ width: `${progressPercent}%` }} /></div>
                 </div>
               )}
             </header>
 
-            {errorMessage && <p className={styles.error}>{errorMessage}</p>}
+            {errorMessage && <p data-steldra-ui="error" className={styles.error}>{errorMessage}</p>}
 
             {nextItem && (
-              <section className={styles.nextCard}>
+              <section data-steldra-ui="nextCard" className={styles.nextCard}>
                 <img src={getPosterUrl(nextItem.media_data)} alt={nextItem.media_data.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                 <div>
-                  <p className={styles.eyebrow}>À regarder ensuite</p>
+                  <p data-steldra-ui="eyebrow" className={styles.eyebrow}>À regarder ensuite</p>
                   <h2>{nextItem.media_data.title}</h2>
                   <span>{TYPE_LABELS[nextItem.media_type] || nextItem.media_type}</span>
                 </div>
@@ -819,44 +824,44 @@ export default function ListDetailsPage() {
             )}
 
             {items.length === 0 ? (
-              <section className={styles.empty}>
-                <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter des médias</button>
+              <section data-steldra-ui="empty" className={styles.empty}>
+                <button type="button" data-steldra-ui="addMediaButton" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter des médias</button>
                 <h2>Cette liste est encore vide</h2>
-                <p>Ajoutez films, séries, animés, mangas ou manhwas depuis votre collection.</p>
+                <p>Ajoutez films, séries, dramas ou animés depuis votre collection.</p>
               </section>
             ) : (
               <>
-                <div className={styles.listToolbar}>
-                  <div className={styles.listControls}>
+                <div data-steldra-ui="listToolbar" className={styles.listToolbar}>
+                  <div data-steldra-ui="listControls" className={styles.listControls}>
                     <input
-                      className={styles.listSearch}
+                      data-steldra-ui="listSearch" className={styles.listSearch}
                       type="search"
                       value={itemSearchQuery}
                       onChange={(event) => setItemSearchQuery(event.target.value)}
                       placeholder={`Rechercher parmi ${items.length} médias…`}
                       aria-label="Rechercher dans cette liste"
                     />
-                    <select className={styles.listSelect} value={itemSort} onChange={(event) => setItemSort(event.target.value as typeof itemSort)} aria-label="Trier la liste">
+                    <select data-steldra-ui="listSelect" className={styles.listSelect} value={itemSort} onChange={(event) => setItemSort(event.target.value as typeof itemSort)} aria-label="Trier la liste">
                       <option value="manual">Ordre personnalisé</option>
                       <option value="title">Titre A → Z</option>
                       <option value="type">Type de média</option>
                       <option value="status">Vus en premier</option>
                     </select>
-                    <select className={styles.listSelect} value={itemStatusFilter} onChange={(event) => setItemStatusFilter(event.target.value as typeof itemStatusFilter)} aria-label="Filtrer par statut">
+                    <select data-steldra-ui="listSelect" className={styles.listSelect} value={itemStatusFilter} onChange={(event) => setItemStatusFilter(event.target.value as typeof itemStatusFilter)} aria-label="Filtrer par statut">
                       <option value="all">Tous les statuts</option>
                       <option value="vu">Vus</option>
                       <option value="a_voir">À voir</option>
                     </select>
-                    <select className={styles.listSelect} value={itemTypeFilter} onChange={(event) => setItemTypeFilter(event.target.value)} aria-label="Filtrer par type">
+                    <select data-steldra-ui="listSelect" className={styles.listSelect} value={itemTypeFilter} onChange={(event) => setItemTypeFilter(event.target.value)} aria-label="Filtrer par type">
                       <option value="all">Tous les types</option>
                       {Object.entries(TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </div>
-                  <p className={styles.dragHint}>{itemSort === 'manual' ? <>↕ {isTouchDevice ? 'Glissez ⠿ pour déplacer · approchez du bord pour faire défiler' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span className={styles.savingLabel}>Enregistrement…</span>}</> : 'Le déplacement manuel est disponible avec « Ordre personnalisé ».'}</p>
-                  <button type="button" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
+                  <p data-steldra-ui="dragHint" className={styles.dragHint}>{itemSort === 'manual' ? <>↕ {isTouchDevice ? 'Glissez ⠿ pour déplacer · approchez du bord pour faire défiler' : 'Glissez les affiches pour modifier l’ordre'} {savingOrder && <span data-steldra-ui="savingLabel" className={styles.savingLabel}>Enregistrement…</span>}</> : 'Le déplacement manuel est disponible avec « Ordre personnalisé ».'}</p>
+                  <button type="button" data-steldra-ui="addMediaButton" className={styles.addMediaButton} onClick={openMediaPicker}>＋ Ajouter plusieurs médias</button>
                 </div>
 
-                <section className={styles.items}>
+                <section data-steldra-ui="items" className={styles.items}>
                   {displayedItems.map((item) => {
                     const index = items.findIndex((entry) => entry.id === item.id);
                     const key = getMediaKey({ id: item.media_id, type: item.media_type });
@@ -865,18 +870,18 @@ export default function ListDetailsPage() {
                       <article
                         key={item.id}
                         data-list-item-id={item.id}
-                        className={`${styles.item} ${draggedItemId === item.id ? styles.itemDragging : ''}`}
+                        data-steldra-ui="item itemDragging" className={`${styles.item} ${draggedItemId === item.id ? styles.itemDragging : ''}`}
                         draggable={itemSort === 'manual' && !savingOrder && !isTouchDevice}
                         onDragStart={(event) => { if (itemSort === 'manual') handleDragStart(item.id, event); }}
                         onDragOver={(event) => { if (itemSort === 'manual') handleDragOver(item.id, event); }}
                         onDragEnd={() => void handleDragEnd()}
                       >
-                        <div className={styles.posterWrapper} onDoubleClick={() => openMedia(item)}>
-                          <img src={getPosterUrl(item.media_data, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={item.media_data.title} className={styles.poster} draggable={false} />
-                          <span className={styles.position}>{itemSort === 'manual' ? index + 1 : displayedItems.findIndex((entry) => entry.id === item.id) + 1}</span>
+                        <div data-steldra-ui="posterWrapper" className={styles.posterWrapper} onDoubleClick={() => openMedia(item)}>
+                          <img src={getPosterUrl(item.media_data, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={item.media_data.title} data-steldra-ui="poster" className={styles.poster} draggable={false} />
+                          <span data-steldra-ui="position" className={styles.position}>{itemSort === 'manual' ? index + 1 : displayedItems.findIndex((entry) => entry.id === item.id) + 1}</span>
                           <button
                             type="button"
-                            className={`${styles.watchedButton} ${watched ? styles.watchedButtonActive : ''}`}
+                            data-steldra-ui="watchedButton watchedButtonActive" className={`${styles.watchedButton} ${watched ? styles.watchedButtonActive : ''}`}
                             onMouseDown={(event) => event.stopPropagation()}
                             onClick={(event) => { event.stopPropagation(); void toggleWatched(item); }}
                             disabled={updatingStatusKey === key}
@@ -884,14 +889,14 @@ export default function ListDetailsPage() {
                           >{watched ? '✓ Vu' : '○'}</button>
                           <button
                             type="button"
-                            className={styles.deleteButton}
+                            data-steldra-ui="deleteButton" className={styles.deleteButton}
                             onMouseDown={(event) => event.stopPropagation()}
                             onClick={(event) => { event.stopPropagation(); void removeItem(item); }}
                             disabled={deletingItemId === item.id}
                             title="Retirer de la liste"
                           >{deletingItemId === item.id ? '…' : '×'}</button>
                           <span
-                            className={styles.dragHandle}
+                            data-steldra-ui="dragHandle" className={styles.dragHandle}
                             role="button"
                             aria-label={`Déplacer ${item.media_data.title}`}
                             title="Maintenir et glisser pour déplacer"
@@ -899,10 +904,10 @@ export default function ListDetailsPage() {
                           >⠿</span>
                         </div>
 
-                        <div className={styles.itemContent}>
-                          <button type="button" className={styles.mediaTitleButton} onClick={() => openMedia(item)} title={item.media_data.title}>{item.media_data.title}</button>
+                        <div data-steldra-ui="itemContent" className={styles.itemContent}>
+                          <button type="button" data-steldra-ui="mediaTitleButton" className={styles.mediaTitleButton} onClick={() => openMedia(item)} title={item.media_data.title}>{item.media_data.title}</button>
                           <p>{TYPE_LABELS[item.media_type] || item.media_type}</p>
-                          <div className={styles.mobileMoveButtons}>
+                          <div data-steldra-ui="mobileMoveButtons" className={styles.mobileMoveButtons}>
                             <button type="button" onClick={() => void moveItem(item.id, -1)} disabled={itemSort !== 'manual' || index === 0 || savingOrder}>←</button>
                             <button type="button" onClick={() => void moveItem(item.id, 1)} disabled={itemSort !== 'manual' || index === items.length - 1 || savingOrder}>→</button>
                           </div>
@@ -915,24 +920,24 @@ export default function ListDetailsPage() {
             )}
 
             {showPicker && (
-              <div className={styles.pickerOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget) closeMediaPicker(); }}>
-                <section className={styles.picker} role="dialog" aria-modal="true" aria-labelledby="media-picker-title">
-                  <div className={styles.pickerHeader}>
-                    <div><p className={styles.eyebrow}>Ajouter à la liste</p><h2 id="media-picker-title">{list.name}</h2></div>
-                    <button type="button" className={styles.closeButton} onClick={closeMediaPicker}>×</button>
+              <div data-steldra-ui="pickerOverlay" className={styles.pickerOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget) closeMediaPicker(); }}>
+                <section data-steldra-ui="picker" className={styles.picker} role="dialog" aria-modal="true" aria-labelledby="media-picker-title">
+                  <div data-steldra-ui="pickerHeader" className={styles.pickerHeader}>
+                    <div><p data-steldra-ui="eyebrow" className={styles.eyebrow}>Ajouter à la liste</p><h2 id="media-picker-title">{list.name}</h2></div>
+                    <button type="button" data-steldra-ui="closeButton" className={styles.closeButton} onClick={closeMediaPicker}>×</button>
                   </div>
-                  <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className={styles.pickerSearch} placeholder="Rechercher dans ma collection…" />
+                  <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} data-steldra-ui="pickerSearch" className={styles.pickerSearch} placeholder="Rechercher dans ma collection…" />
 
-                  {loadingCollection ? <p className={styles.pickerMessage}>Chargement de la collection…</p> : filteredCollection.length === 0 ? <p className={styles.pickerMessage}>Aucun média disponible.</p> : (
-                    <div className={styles.mediaGrid}>
+                  {loadingCollection ? <p data-steldra-ui="pickerMessage" className={styles.pickerMessage}>Chargement de la collection…</p> : filteredCollection.length === 0 ? <p data-steldra-ui="pickerMessage" className={styles.pickerMessage}>Aucun média disponible.</p> : (
+                    <div data-steldra-ui="mediaGrid" className={styles.mediaGrid}>
                       {filteredCollection.map((media) => {
                         const key = getMediaKey(media);
                         const selected = selectedMediaKeys.includes(key);
                         return (
-                          <button type="button" key={key} className={`${styles.mediaChoice} ${selected ? styles.mediaChoiceSelected : ''}`} onClick={() => toggleMediaSelection(key)}>
-                            <div className={styles.mediaPosterWrapper}>
-                              <img src={getPosterUrl(media, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={media.title} className={styles.mediaChoicePoster} />
-                              {selected && <span className={styles.selectedMark}>✓</span>}
+                          <button type="button" key={key} data-steldra-ui="mediaChoice mediaChoiceSelected" className={`${styles.mediaChoice} ${selected ? styles.mediaChoiceSelected : ''}`} onClick={() => toggleMediaSelection(key)}>
+                            <div data-steldra-ui="mediaPosterWrapper" className={styles.mediaPosterWrapper}>
+                              <img src={getPosterUrl(media, 'w342')} onError={(event) => usePosterFallback(event.currentTarget)} alt={media.title} data-steldra-ui="mediaChoicePoster" className={styles.mediaChoicePoster} />
+                              {selected && <span data-steldra-ui="selectedMark" className={styles.selectedMark}>✓</span>}
                             </div>
                             <strong>{media.title}</strong>
                             <span>{TYPE_LABELS[media.type] || media.type}</span>
@@ -942,9 +947,9 @@ export default function ListDetailsPage() {
                     </div>
                   )}
 
-                  <div className={styles.pickerFooter}>
+                  <div data-steldra-ui="pickerFooter" className={styles.pickerFooter}>
                     <span>{selectedMediaKeys.length} sélectionné{selectedMediaKeys.length > 1 ? 's' : ''}</span>
-                    <button type="button" className={styles.confirmButton} disabled={!selectedMediaKeys.length || addingItems} onClick={() => void addSelectedMedia()}>
+                    <button type="button" data-steldra-ui="confirmButton" className={styles.confirmButton} disabled={!selectedMediaKeys.length || addingItems} onClick={() => void addSelectedMedia()}>
                       {addingItems ? 'Ajout en cours…' : `Ajouter ${selectedMediaKeys.length || ''}`}
                     </button>
                   </div>

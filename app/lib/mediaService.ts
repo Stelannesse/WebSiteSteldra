@@ -1,5 +1,10 @@
+/**
+ * Rôle du fichier : Service média : regroupe les appels du navigateur vers les API de recherche, de détail et de saisons.
+ */
+
 import { MediaItem } from '../types/media';
 
+/** Recherche des films et séries correspondant au texte saisi. */
 export async function searchMedia(text: string) {
   if (text.trim().length < 2) {
     return [];
@@ -33,6 +38,7 @@ export type MediaDetailsResult = {
   poster_path?: string | null;
 };
 
+/** Récupère la fiche complète d'un média. */
 export async function getMediaDetails(
   media: MediaItem
 ) {
@@ -77,6 +83,7 @@ export async function getMediaDetails(
   return await res.json();
 }
 
+/** Récupère les épisodes d'une saison donnée. */
 export async function getSeasonEpisodes(
   mediaId: string | number,
   seasonNumber: number

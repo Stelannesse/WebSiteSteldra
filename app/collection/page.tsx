@@ -1,7 +1,11 @@
+/**
+ * Rôle du fichier : Page Collection : affiche, recherche, filtre et met à jour les films et séries enregistrés par l'utilisateur.
+ */
+
 'use client'; // Permet d'utiliser les fonctionnalités côté client
 
 import { createClient } from '../lib/supabase';
-import { useState, useEffect, useMemo } from 'react'; // Gérer les données et les actions
+import { useState, useEffect, useMemo, useRef } from 'react'; // Gérer les données et les actions
 import styles from '../page.module.css'; //Importer le style de la page
 import MediaCard from '../components/mediaCard';
 import useReviews from '../hooks/useReviews';
@@ -12,6 +16,7 @@ import MainNav from '../components/mainNav';
 import Link from 'next/link';
 import { sortMediaAlphabetically } from "../lib/sortMedia";
 import { getPosterUrl, usePosterFallback } from '../lib/poster';
+import { isCinemaType } from '../lib/cinemaScope';
 import { fetchAllPages } from '../lib/supabasePaging';
 import type {
   MediaItem,
@@ -26,6 +31,7 @@ import {
   getSeasonEpisodes,
 } from '../lib/mediaService';
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function Home() {
 const [supabase] = useState(() => createClient());
   const [query, setQuery] = useState(''); // État pour la recherche
@@ -98,7 +104,7 @@ const distribution = useMemo(() => {
     manhwa: 0,
   };
 
-  Object.values(myList).forEach((entry) => {
+  Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type)).forEach((entry) => {
     const type = entry.media.type;
     counts[type] = (counts[type] || 0) + 1;
   });
@@ -131,6 +137,7 @@ const distribution = useMemo(() => {
 
 
 
+/** Uniformise le nom d'un genre pour fiabiliser les filtres. */
 const normalizeGenre = (value: string) => {
   const normalized = value.trim().toLowerCase();
 
@@ -187,6 +194,7 @@ const normalizeGenre = (value: string) => {
   return aliases[normalized] || value.trim();
 };
 
+/** Rassemble les genres utilisables pour filtrer un média. */
 const getMediaGenres = (media: MediaItem) => {
   const officialGenres = (media.genres || [])
     .map(normalizeGenre)
@@ -229,6 +237,7 @@ const {
     return hasWatched || progressValue > 0;
   };
 
+/** Détermine le statut de suivi utilisé par les filtres de collection. */
 const getFilterStatus = (
   media: MediaItem,
   currentStatus?: WatchStatus
@@ -254,6 +263,7 @@ const getFilterStatus = (
 };
 
 // Fonction pour sauvegarder les données dans Supabase
+/** Enregistre le média et son statut dans la collection Supabase. */
 const saveToSupabase = async (mediaData: MediaItem, status: string, user: any) => {
   const mediaKey = `${mediaData.type}_${mediaData.id}`;
   const { error } = await supabase
@@ -272,11 +282,13 @@ const saveToSupabase = async (mediaData: MediaItem, status: string, user: any) =
   if (error) console.error("Erreur de sauvegarde globale:", error);
 };
 
+/** Complète les informations absentes d'un média avant son enregistrement. */
 const enrichMissingMetadata = async (
   list: Record<string, MyListItem>,
   currentUserId: string
 ) => {
   const missing = Object.entries(list).filter(([, entry]) => {
+    if (!isCinemaType(entry?.media?.type)) return false;
     const hasGenres =
       Array.isArray(entry.media.genres) &&
       entry.media.genres.length > 0;
@@ -549,7 +561,7 @@ useEffect(() => {
         .range(from, to)
     );
       if (data && !error) {
-        console.log("Données brutes reçues de Supabase :", data);
+        
 
         const newList: any = {};
         const newEpisodes: any = {};
@@ -629,7 +641,7 @@ useEffect(() => {
         yearFilter?: string;
       };
 
-      if (parsed.typeFilter) setTypeFilter(parsed.typeFilter);
+      if (parsed.typeFilter) setTypeFilter(isCinemaType(parsed.typeFilter) ? parsed.typeFilter! : 'tous');
       if (parsed.statusFilter) setStatusFilter(parsed.statusFilter);
       if (parsed.sortBy) setSortBy(parsed.sortBy as 'title' | 'added' | 'year' | 'rating' | 'status');
       if (parsed.viewMode) setViewMode(parsed.viewMode as 'grid' | 'list');
@@ -697,7 +709,6 @@ useEffect(() => {
     scrollTimeout = setTimeout(() => {
       const isScrolled = window.scrollY > 400;
       setShowScrollTop(isScrolled);
-      console.log('Scroll position:', window.scrollY, 'Show button:', isScrolled);
     }, 50);
   };
   
@@ -708,6 +719,7 @@ useEffect(() => {
   };
 }, []);
 
+/** Ramène doucement l'affichage en haut de la page. */
 const scrollToTop = () => {
   window.document.documentElement.scrollTop = 0; // Pour la plupart des navigateurs
   window.document.body.scrollTop = 0;           // Pour Safari
@@ -748,12 +760,6 @@ const handleReset = () => {
 try {
   const data = await getMediaDetails(media);
 
-  console.log('DÉTAILS REÇUS :', data);
-  console.log('RUNTIME FILM :', data.runtime);
-  console.log(
-    'RUNTIME ÉPISODE :',
-    data.episode_runtime
-  );
 
 const enrichedMedia: MediaItem = {
   ...media,
@@ -962,10 +968,13 @@ const handleToggleFavorite = async (media: MediaItem) => {
 
 
 // Fonction pour effectuer la recherche de médias via l'API interne
+const searchSequence = useRef(0);
 const handleSearch = async (text: string) => {
+  const sequence = ++searchSequence.current;
   setQuery(text);
 
   if (text.trim().length < 2) {
+    setLoading(false);
     setResults([]);
     return;
   }
@@ -974,23 +983,22 @@ const handleSearch = async (text: string) => {
 
   try {
     const mediaResults = await searchMedia(text);
-    setResults(mediaResults);
+    if (sequence === searchSequence.current) setResults(mediaResults);
   } catch (error) {
     console.error('Erreur de recherche :', error);
-    setResults([]);
+    if (sequence === searchSequence.current) setResults([]);
   } finally {
-    setLoading(false);
+    if (sequence === searchSequence.current) setLoading(false);
   }
 };
 
   // Fonction pour gérer la déconnexion de l'utilisateur
   const isSearching = query.trim().length >= 2;
 
-console.log("Contenu de myList :", Object.values(myList));
-let displayItems = isSearching ? results : Object.values(myList).map(item => item.media);
+let displayItems = isSearching ? results.filter((media) => isCinemaType(media.type)) : Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type)).map(item => item.media);
 
 // Comptages des statuts
-const itemsForCount = Object.values(myList).filter(item => typeFilter === 'tous' || item.media.type === typeFilter);
+const itemsForCount = Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type)).filter(item => typeFilter === 'tous' || item.media.type === typeFilter);
 const totalCount = itemsForCount.length;
 const termineCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'termine').length;
 const enCoursCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'en_cours').length;
@@ -998,13 +1006,13 @@ const aVoirCount = itemsForCount.filter(item => getFilterStatus(item.media, item
 const enPauseCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'en_pause').length;
 const abandonneCount = itemsForCount.filter(item => getFilterStatus(item.media, item.status) === 'abandonne').length;
 
-const allCollectionEntries = Object.values(myList);
+const allCollectionEntries = Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type));
 const globalTotalCount = allCollectionEntries.length;
 const globalTermineCount = allCollectionEntries.filter((item) => getFilterStatus(item.media, item.status) === 'termine').length;
 
 const collectionItemsForFacets = useMemo(
   () =>
-    Object.values(myList)
+    Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type))
       .map((entry) => entry.media)
       .filter(
         (media) =>
@@ -1162,14 +1170,14 @@ displayItems = [...displayItems].sort((a, b) => {
 
 const visibleDisplayItems = isSearching ? displayItems : displayItems.slice(0, visibleCount);
 
-const continueItems = Object.values(myList)
+const continueItems = Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type))
   .filter((entry) => getFilterStatus(entry.media, entry.status) === 'en_cours');
 const movieContinueItems = continueItems.filter((entry) => entry.media.type === 'movie').slice(0, 8);
 const seriesContinueItems = continueItems.filter((entry) => ['tv', 'drama', 'anime'].includes(entry.media.type)).slice(0, 8);
 const visibleContinueItems = collectionContinueType === 'movies' ? movieContinueItems : seriesContinueItems;
 
 const genreCounts = new Map<string, number>();
-Object.values(myList).forEach((entry) => {
+Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type)).forEach((entry) => {
   getMediaGenres(entry.media).forEach((genre) => {
     genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
   });
@@ -1186,19 +1194,19 @@ return (
   <>
     <MainNav />
 
-    <main className={styles.collectionOptionThreePage}>
-      <section className={styles.collectionOptionHero}>
-        <div className={styles.collectionOptionHeroCopy}>
+    <main data-steldra-ui="collectionOptionThreePage" className={styles.collectionOptionThreePage}>
+      <section data-steldra-ui="collectionOptionHero" className={styles.collectionOptionHero}>
+        <div data-steldra-ui="collectionOptionHeroCopy" className={styles.collectionOptionHeroCopy}>
           <span>VOTRE BIBLIOTHÈQUE</span>
           <h1>Collection</h1>
           <p>Toutes vos histoires, réunies au même endroit.</p>
         </div>
-        <div className={styles.collectionOptionHeroScene} aria-hidden="true">
-          <span className={styles.collectionOptionPlanet} />
-          <span className={styles.collectionOptionFigure}>✦</span>
+        <div data-steldra-ui="collectionOptionHeroScene" className={styles.collectionOptionHeroScene} aria-hidden="true">
+          <span data-steldra-ui="collectionOptionPlanet" className={styles.collectionOptionPlanet} />
+          <span data-steldra-ui="collectionOptionFigure" className={styles.collectionOptionFigure}>✦</span>
         </div>
-        <div className={styles.collectionOptionHeroControls}>
-          <div className={styles.collectionSearchPremium}>
+        <div data-steldra-ui="collectionOptionHeroControls" className={styles.collectionOptionHeroControls}>
+          <div data-steldra-ui="collectionSearchPremium" className={styles.collectionSearchPremium}>
             <span aria-hidden="true">⌕</span>
             <input
               type="search"
@@ -1209,10 +1217,11 @@ return (
             />
             {query && <button type="button" onClick={() => handleSearch('')} aria-label="Effacer">×</button>}
           </div>
-          <div className={styles.collectionTypeTabs}>
+          <a href="/export-lectures">Exporter mes anciennes lectures vers LIRDRA</a>
+          <div data-steldra-ui="collectionTypeTabs" className={styles.collectionTypeTabs}>
             {[
               ['tous', 'Tous'], ['movie', 'Films'], ['tv', 'Séries'], ['drama', 'Dramas'],
-              ['anime', 'Animés'], ['manga', 'Mangas'], ['manhwa', 'Manhwas'],
+              ['anime', 'Animés'],
             ].map(([value, label]) => (
               <button key={value} type="button" className={typeFilter === value ? styles.collectionTypeActive : ''}
                 onClick={() => setTypeFilter(value as MediaType | 'tous')}>{label}</button>
@@ -1221,26 +1230,26 @@ return (
         </div>
       </section>
 
-      <section className={styles.collectionOptionDashboard}>
-        <article className={styles.collectionOptionPanel}>
+      <section data-steldra-ui="collectionOptionDashboard" className={styles.collectionOptionDashboard}>
+        <article data-steldra-ui="collectionOptionPanel" className={styles.collectionOptionPanel}>
           <header><span>Genres favoris</span></header>
-          <div className={styles.collectionOptionChips}>
+          <div data-steldra-ui="collectionOptionChips" className={styles.collectionOptionChips}>
             {topGenres.length > 0 ? topGenres.map(([genre, count]) => <span key={genre}>{genre}<small>{count}</small></span>) : <p>Aucun genre disponible pour le moment.</p>}
           </div>
           <Link href="/discover">Découvrir selon mes envies →</Link>
         </article>
 
-        <article className={styles.collectionOptionPanel}>
+        <article data-steldra-ui="collectionOptionPanel" className={styles.collectionOptionPanel}>
           <header><span>Listes rapides</span></header>
-          <div className={styles.collectionOptionQuickLists}>
+          <div data-steldra-ui="collectionOptionQuickLists" className={styles.collectionOptionQuickLists}>
             {quickLists.length > 0 ? quickLists.map((list) => <Link key={list.id} href={`/lists/${list.id}`}><span>☷</span>{list.name}<b>›</b></Link>) : <Link href="/lists"><span>＋</span>Créer ma première liste<b>›</b></Link>}
           </div>
           <Link href="/lists">Gérer mes listes →</Link>
         </article>
 
-        <article className={styles.collectionOptionPanel}>
+        <article data-steldra-ui="collectionOptionPanel" className={styles.collectionOptionPanel}>
           <header><span>Raccourcis</span></header>
-          <div className={styles.collectionOptionShortcuts}>
+          <div data-steldra-ui="collectionOptionShortcuts" className={styles.collectionOptionShortcuts}>
             <Link href="/discover"><span>✦</span><small>Recommandations</small></Link>
             <Link href="/history"><span>◷</span><small>Activité récente</small></Link>
             <Link href="/lists"><span>☷</span><small>Mes listes</small></Link>
@@ -1248,7 +1257,7 @@ return (
           </div>
         </article>
 
-        <article className={`${styles.collectionOptionPanel} ${styles.collectionOptionTools}`}>
+        <article data-steldra-ui="collectionOptionPanel collectionOptionTools" className={`${styles.collectionOptionPanel} ${styles.collectionOptionTools}`}>
           <header><span>Outils</span></header>
           <label>Statut
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as FilterStatus)}>
@@ -1262,7 +1271,7 @@ return (
               <option value="rating">Note</option><option value="status">Statut</option>
             </select>
           </label>
-          <div className={styles.collectionOptionViewButtons}>
+          <div data-steldra-ui="collectionOptionViewButtons" className={styles.collectionOptionViewButtons}>
             <button type="button" className={viewMode === 'grid' ? styles.collectionViewActive : ''} onClick={() => setViewMode('grid')}>▦</button>
             <button type="button" className={viewMode === 'list' ? styles.collectionViewActive : ''} onClick={() => setViewMode('list')}>☷</button>
             <button type="button" className={favoritesOnly ? styles.collectionViewActive : ''} onClick={() => setFavoritesOnly((value) => !value)}>★</button>
@@ -1270,63 +1279,63 @@ return (
         </article>
       </section>
 
-      {loading && <div className={styles.collectionLoading}>Recherche en cours…</div>}
+      {loading && <div data-steldra-ui="collectionLoading" className={styles.collectionLoading}>Recherche en cours…</div>}
 
       {!isSearching && continueItems.length > 0 && (
-        <section className={styles.collectionOptionContinue}>
-          <div className={styles.collectionOptionSectionHeading}>
+        <section data-steldra-ui="collectionOptionContinue" className={styles.collectionOptionContinue}>
+          <div data-steldra-ui="collectionOptionSectionHeading" className={styles.collectionOptionSectionHeading}>
             <h2>Reprendre le visionnage</h2>
-            <div className={styles.continueTabs} role="tablist" aria-label="Type de média à reprendre">
+            <div data-steldra-ui="continueTabs" className={styles.continueTabs} role="tablist" aria-label="Type de média à reprendre">
               <button type="button" className={collectionContinueType === 'series' ? styles.continueTabActive : ''} onClick={() => setCollectionContinueType('series')}>Séries</button>
               <button type="button" className={collectionContinueType === 'movies' ? styles.continueTabActive : ''} onClick={() => setCollectionContinueType('movies')}>Films</button>
             </div>
           </div>
-          {visibleContinueItems.length > 0 ? <div className={styles.collectionOptionContinueRail}>
+          {visibleContinueItems.length > 0 ? <div data-steldra-ui="collectionOptionContinueRail" className={styles.collectionOptionContinueRail}>
             {visibleContinueItems.map((entry) => {
               const media = entry.media;
-              return <Link key={getMediaKey(media)} href={`/media/${media.type}/${media.id}`} className={styles.collectionOptionContinueCard}>
+              return <Link key={getMediaKey(media)} href={`/media/${media.type}/${media.id}`} data-steldra-ui="collectionOptionContinueCard" className={styles.collectionOptionContinueCard}>
                 <img src={getPosterUrl(media, 'w342')} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                 <div><strong>{media.title}</strong><small>{media.type === 'movie' ? 'Film' : media.type === 'tv' ? 'Série' : media.type === 'drama' ? 'Drama' : media.type === 'anime' ? 'Animé' : media.type}</small><span>Reprendre</span></div>
               </Link>;
             })}
-          </div> : <p className={styles.emptyDashboard}>Aucun {collectionContinueType === 'movies' ? 'film' : 'épisode de série'} en cours.</p>}
+          </div> : <p data-steldra-ui="emptyDashboard" className={styles.emptyDashboard}>Aucun {collectionContinueType === 'movies' ? 'film' : 'épisode de série'} en cours.</p>}
         </section>
       )}
 
-      <section id="collection-medias" className={styles.collectionOptionLibrary}>
-        <div className={styles.collectionOptionSectionHeading}>
+      <section id="collection-medias" data-steldra-ui="collectionOptionLibrary" className={styles.collectionOptionLibrary}>
+        <div data-steldra-ui="collectionOptionSectionHeading" className={styles.collectionOptionSectionHeading}>
           <div><h2>{isSearching ? 'Résultats de recherche' : 'Toute la collection'}</h2><span>{displayItems.length} média{displayItems.length > 1 ? 's' : ''}</span></div>
-          <div className={styles.collectionOptionStatusBar}>
+          <div data-steldra-ui="collectionOptionStatusBar" className={styles.collectionOptionStatusBar}>
             {[
               ['tout', `Tous ${totalCount}`], ['termine', `Vus ${termineCount}`], ['a_voir', `À voir ${aVoirCount}`], ['en_cours', `En cours ${enCoursCount}`]
             ].map(([value, label]) => <button key={value} type="button" className={statusFilter === value ? styles.collectionStatusActive : ''} onClick={() => setStatusFilter(value as FilterStatus)}>{label}</button>)}
           </div>
         </div>
 
-        <div className={viewMode === 'grid' || isSearching ? `${styles.liste} ${styles.collectionPremiumGrid} ${styles.collectionOptionMediaGrid}` : styles.collectionListView}>
+        <div data-steldra-grid={viewMode === 'grid' || isSearching ? 'posters' : 'list'} className={viewMode === 'grid' || isSearching ? `${styles.liste} ${styles.collectionPremiumGrid} ${styles.collectionOptionMediaGrid}` : styles.collectionListView}>
           {visibleDisplayItems.map((item) => {
             const mediaKey = getMediaKey(item);
             const currentItem = myList[mediaKey];
             if (!isSearching && viewMode === 'list') {
               const status = getFilterStatus(item, currentItem?.status);
               const year = getMediaYear(item) || '';
-              return <article key={mediaKey} className={`${styles.collectionListRow} ${styles.collectionPremiumListRow}`}>
-                <button type="button" className={styles.collectionListOpen} onClick={() => {
+              return <article key={mediaKey} data-steldra-ui="collectionListRow collectionPremiumListRow" className={`${styles.collectionListRow} ${styles.collectionPremiumListRow}`}>
+                <button type="button" data-steldra-ui="collectionListOpen" className={styles.collectionListOpen} onClick={() => {
                   sessionStorage.setItem('steldra_selected_media', JSON.stringify(item));
                   sessionStorage.setItem('steldra_collection_scroll_y', String(window.scrollY));
                   window.location.href = `/media/${item.type}/${item.id}`;
                 }}><img src={getPosterUrl(item, 'w154')} alt={item.title} onError={(event) => usePosterFallback(event.currentTarget)} /><span><strong>{item.title}</strong><small>{item.type}{year ? ` · ${year}` : ''} · {status === 'termine' ? 'Vu' : status === 'en_cours' ? 'En cours' : status === 'en_pause' ? 'En pause' : status === 'abandonne' ? 'Abandonné' : 'À voir'}</small></span></button>
-                <div className={styles.collectionListActions}><button type="button" className={currentItem?.favorite ? styles.favoriteActive : ''} onClick={() => void handleToggleFavorite(item)}>{currentItem?.favorite ? '★' : '☆'}</button><button type="button" className={currentItem?.status === 'en_cours' ? styles.collectionListProgressActive : ''} onClick={() => void handleToggleInProgress(item)}>En cours</button><button type="button" className={currentItem?.status === 'vu' ? styles.collectionListWatchedActive : ''} onClick={() => void handleMarkWatched(item)}>Vu</button><button type="button" className={currentItem?.status === 'a_voir' ? styles.collectionListToWatchActive : ''} onClick={() => void handleMarkToWatch(item)}>À voir</button></div>
+                <div data-steldra-ui="collectionListActions" className={styles.collectionListActions}><button type="button" className={currentItem?.favorite ? styles.favoriteActive : ''} onClick={() => void handleToggleFavorite(item)}>{currentItem?.favorite ? '★' : '☆'}</button><button type="button" className={currentItem?.status === 'en_cours' ? styles.collectionListProgressActive : ''} onClick={() => void handleToggleInProgress(item)}>En cours</button><button type="button" className={currentItem?.status === 'vu' ? styles.collectionListWatchedActive : ''} onClick={() => void handleMarkWatched(item)}>Vu</button><button type="button" className={currentItem?.status === 'a_voir' ? styles.collectionListToWatchActive : ''} onClick={() => void handleMarkToWatch(item)}>À voir</button></div>
               </article>;
             }
             return <MediaCard key={mediaKey} item={item} currentItem={currentItem} onMarkWatched={handleMarkWatched} onToggleInProgress={handleToggleInProgress} onMarkToWatch={handleMarkToWatch} onRemove={handleRemove} onToggleFavorite={handleToggleFavorite} showMeta />;
           })}
         </div>
 
-        {!isSearching && visibleCount < displayItems.length && <div className={styles.collectionLoadMoreWrap}><button type="button" className={styles.collectionPremiumLoadMore} onClick={() => setVisibleCount((count) => count + 120)}>Afficher 120 médias de plus <span>{Math.min(visibleCount, displayItems.length)} / {displayItems.length}</span></button></div>}
+        {!isSearching && visibleCount < displayItems.length && <div data-steldra-ui="collectionLoadMoreWrap" className={styles.collectionLoadMoreWrap}><button type="button" data-steldra-ui="collectionPremiumLoadMore" className={styles.collectionPremiumLoadMore} onClick={() => setVisibleCount((count) => count + 120)}>Afficher 120 médias de plus <span>{Math.min(visibleCount, displayItems.length)} / {displayItems.length}</span></button></div>}
       </section>
 
-      <footer className={styles.collectionOptionFooter}><blockquote>« Le cinéma, ce n’est pas seulement une question de technique. C’est une question d’être humain. »</blockquote><span>— Andreï Tarkovski</span></footer>
+      <footer data-steldra-ui="collectionOptionFooter" className={styles.collectionOptionFooter}><blockquote>« Le cinéma, ce n’est pas seulement une question de technique. C’est une question d’être humain. »</blockquote><span>— Andreï Tarkovski</span></footer>
 
       {/* Fiche détaillée "TV Time" */}
           <MediaModal
@@ -1380,7 +1389,7 @@ return (
 
       <button
         onClick={scrollToTop}
-        className={styles.floatS}
+        data-steldra-ui="floatS" className={styles.floatS}
         aria-label="Retour en haut"
         title="Retour en haut"
       >

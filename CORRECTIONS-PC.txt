@@ -1,0 +1,63 @@
+STELDRA — REFONTE ORDINATEUR
+18 octobre 2026
+
+PRÉSENTATION
+
+- Navigation latérale fixe sur ordinateur, identité STELDRA, indication de
+  la rubrique active, accès permanent aux pages et lien Statistiques.
+- Palette bleu nuit et accents turquoise conservés, avec des bordures plus
+  fines et une hiérarchie visuelle plus calme sur grand écran.
+- Largeur de lecture maîtrisée et marges adaptées aux moniteurs larges.
+- Accueil réorganisé en colonnes : recherche et contenus principaux d'un
+  côté, statistiques, listes et derniers ajouts de l'autre.
+- Bandeau d'accueil PC redessiné avec une composition graphique CSS.
+- Collection : filtres et outils agrandis, grille d'affiches adaptée à
+  la largeur, informations plus lisibles et cartes de reprise plus grandes.
+- Découverte : bandeau PC, tuiles de genres et rails d'affiches redimensionnés.
+- Harmonisation du cadre PC sur Listes, Historique, Talents, Paramètres,
+  Statistiques et Tier lists ; ajustement des colonnes des fiches cinéma.
+- Aucun nouveau bouton factice ; les actions restent celles du site existant.
+
+ORGANISATION TECHNIQUE
+
+Nouveau fichier : app/desktop.css.
+Il est importé après globals.css dans app/layout.tsx.
+Toutes ses règles sont contenues dans des media queries >= 1024 pixels.
+Des ajustements PC distincts couvrent les petits ordinateurs et grands écrans.
+
+Ajout de repères data-steldra-ui dans le JSX pour cibler les éléments sans
+utiliser les noms générés des CSS Modules. Ces attributs ne changent pas
+l'apparence mobile et ne modifient ni les états ni les traitements.
+
+La marque et le bas de navigation PC portent l'attribut hidden : ils ne
+s'affichent que lorsque la feuille PC les active sur grand écran.
+
+Les fichiers CSS existants, API, hooks, types, accès Supabase et données
+sont conservés. La séparation cinéma/lecture de la version précédente reste
+incluse. Le ZIP ne contient que STELDRA et ne modifie pas LIRDRA.
+
+Les styles PC évoluent dans desktop.css. Les styles téléphone restent dans
+les feuilles existantes. Une évolution future des composants ou de leurs
+règles générales devra toujours être vérifiée sur les deux formats.
+
+VÉRIFICATIONS
+
+- Compilation de production Next.js/Webpack et contrôle TypeScript.
+- Comparaison octet pour octet des feuilles CSS historiques avec la version
+  précédente : aucune modification.
+- Comparaison des API, hooks, types et bibliothèques : aucun changement.
+- Contrôles dans Chromium à 1440 pixels sur Accueil, Collection, Découvrir,
+  Listes, Historique, Statistiques, Paramètres, Talents et Tier lists : pas
+  de débordement horizontal et aucune erreur JavaScript détectée.
+- Collection également vérifiée à 1024, 1280 et 1920 pixels.
+- Comparaison pixel par pixel sur Accueil, Collection et Découvrir aux
+  largeurs 360, 390, 760, 900 et 1023 pixels, en retirant uniquement les
+  nouvelles règles PC du CSS chargé : captures strictement identiques.
+- Contrôles visuels et vérification des largeurs réalisés dans un projet de
+  test avec données et connexion simulées ; aucune donnée de compte réelle
+  n'est utilisée ou modifiée pour ces contrôles.
+
+Le projet de contrôle reconstitue les dépendances autour du dossier app,
+car votre package.json, votre middleware/proxy et votre dossier public ne
+font pas partie des ZIP sources. Conservez ces fichiers actuels à l'installation.
+Aucun déploiement Vercel et aucune modification Supabase n'ont été effectués.

@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Proxy d'affiche : récupère une image distante côté serveur et applique les contrôles nécessaires avant de la renvoyer.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_HOSTS = new Set([
@@ -7,6 +11,7 @@ const ALLOWED_HOSTS = new Set([
   'uploads.mangadex.org',
 ]);
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: NextRequest) {
   const rawUrl = request.nextUrl.searchParams.get('url');
 

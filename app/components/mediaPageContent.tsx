@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Contenu détaillé d'un média : affiche synopsis, crédits, informations techniques, progression et avis.
+ */
+
 'use client';
 
 import { useState } from 'react';
@@ -65,6 +69,7 @@ type MediaPageContentProps = {
   onToggleWholeSeason: (episodeNumbers: number[]) => void;
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function MediaPageContent(props: MediaPageContentProps) {
   const {
     selectedMedia,
@@ -195,22 +200,22 @@ export default function MediaPageContent(props: MediaPageContentProps) {
   };
 
   const renderCast = (limit = 20) => {
-    if (!mediaDetails?.actors?.length) return <p className={styles.empty}>Aucun casting disponible.</p>;
+    if (!mediaDetails?.actors?.length) return <p data-steldra-ui="empty" className={styles.empty}>Aucun casting disponible.</p>;
     return (
-      <div className={styles.castRail}>
+      <div data-steldra-ui="castRail" className={styles.castRail}>
         {mediaDetails.actors.slice(0, limit).map((actor) => {
           const imageUrl = actor.image_url || actor.profile_path || null;
           return (
-            <article key={`${actor.id}_${actor.name}`} className={styles.castCard}>
+            <article key={`${actor.id}_${actor.name}`} data-steldra-ui="castCard" className={styles.castCard}>
               {imageUrl ? (
-                <img className={styles.castImage} src={imageUrl} alt={actor.name} referrerPolicy="no-referrer" />
+                <img data-steldra-ui="castImage" className={styles.castImage} src={imageUrl} alt={actor.name} referrerPolicy="no-referrer" />
               ) : (
-                <div className={styles.castPlaceholder}>👤</div>
+                <div data-steldra-ui="castPlaceholder" className={styles.castPlaceholder}>👤</div>
               )}
-              <div className={styles.castInfo}>
-                <strong className={styles.castName}>{actor.name}</strong>
-                {actor.character && <span className={styles.castRole}>{actor.character}</span>}
-                {actor.voice_actor && <span className={styles.castVoice}>Voix : {actor.voice_actor}</span>}
+              <div data-steldra-ui="castInfo" className={styles.castInfo}>
+                <strong data-steldra-ui="castName" className={styles.castName}>{actor.name}</strong>
+                {actor.character && <span data-steldra-ui="castRole" className={styles.castRole}>{actor.character}</span>}
+                {actor.voice_actor && <span data-steldra-ui="castVoice" className={styles.castVoice}>Voix : {actor.voice_actor}</span>}
               </div>
             </article>
           );
@@ -220,81 +225,81 @@ export default function MediaPageContent(props: MediaPageContentProps) {
   };
 
   return (
-    <div className={styles.page}>
+    <div data-steldra-ui="page" className={styles.page}>
       <MainNav />
-      <main className={styles.shell}>
-        <button type="button" className={styles.backButton} onClick={() => router.back()}>← Retour</button>
+      <main data-steldra-ui="shell" className={styles.shell}>
+        <button type="button" data-steldra-ui="backButton" className={styles.backButton} onClick={() => router.back()}>← Retour</button>
 
-        <section className={styles.hero}>
-          <img className={styles.backdrop} src={backdropUrl} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
-          <div className={styles.heroContent}>
+        <section data-steldra-ui="hero" className={styles.hero}>
+          <img data-steldra-ui="backdrop" className={styles.backdrop} src={backdropUrl} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+          <div data-steldra-ui="heroContent" className={styles.heroContent}>
             <img
-              className={styles.poster}
+              data-steldra-ui="poster" className={styles.poster}
               src={posterUrl}
               alt={`Affiche de ${selectedMedia.title}`}
               referrerPolicy="no-referrer"
               onError={(event) => usePosterFallback(event.currentTarget)}
             />
 
-            <div className={styles.heroMain}>
-              <div className={styles.kicker}>{hasEpisodes ? 'Série' : isManga ? 'Lecture' : 'Film'} · STELDRA</div>
-              <h1 className={styles.title}>{selectedMedia.title}</h1>
-              {mediaDetails?.tagline && <p className={styles.tagline}>{mediaDetails.tagline}</p>}
+            <div data-steldra-ui="heroMain" className={styles.heroMain}>
+              <div data-steldra-ui="kicker" className={styles.kicker}>{hasEpisodes ? 'Série' : isManga ? 'Lecture' : 'Film'} · STELDRA</div>
+              <h1 data-steldra-ui="title" className={styles.title}>{selectedMedia.title}</h1>
+              {mediaDetails?.tagline && <p data-steldra-ui="tagline" className={styles.tagline}>{mediaDetails.tagline}</p>}
 
-              <div className={styles.metaRow}>
+              <div data-steldra-ui="metaRow" className={styles.metaRow}>
                 {releaseYear && <span>{releaseYear}</span>}
-                {formatRuntime() && <span className={styles.metaDot}>{formatRuntime()}</span>}
+                {formatRuntime() && <span data-steldra-ui="metaDot" className={styles.metaDot}>{formatRuntime()}</span>}
                 {hasEpisodes && (mediaDetails?.seasons_count || 0) > 0 && (
-                  <span className={styles.metaDot}>{mediaDetails?.seasons_count} {(mediaDetails?.seasons_count || 0) > 1 ? 'saisons' : 'saison'}</span>
+                  <span data-steldra-ui="metaDot" className={styles.metaDot}>{mediaDetails?.seasons_count} {(mediaDetails?.seasons_count || 0) > 1 ? 'saisons' : 'saison'}</span>
                 )}
               </div>
 
               {typeof mediaDetails?.rating === 'number' && mediaDetails.rating > 0 && (
-                <div className={styles.rating}>★ {mediaDetails.rating.toFixed(1)} / 10</div>
+                <div data-steldra-ui="rating" className={styles.rating}>★ {mediaDetails.rating.toFixed(1)} / 10</div>
               )}
 
               {(mediaDetails?.genres?.length || selectedMedia.genres?.length) ? (
-                <div className={styles.genreRow}>
+                <div data-steldra-ui="genreRow" className={styles.genreRow}>
                   {(mediaDetails?.genres?.length ? mediaDetails.genres : selectedMedia.genres || []).slice(0, 7).map((genre) => (
-                    <span key={genre} className={styles.genrePill}>{genre}</span>
+                    <span key={genre} data-steldra-ui="genrePill" className={styles.genrePill}>{genre}</span>
                   ))}
                 </div>
               ) : null}
 
               {hasEpisodes && seasonEpisodes.length > 0 && (
-                <div className={styles.progressBlock}>
-                  <div className={styles.progressMeta}>
+                <div data-steldra-ui="progressBlock" className={styles.progressBlock}>
+                  <div data-steldra-ui="progressMeta" className={styles.progressMeta}>
                     <span>Saison {activeSeason} · {watchedCount}/{seasonEpisodes.length} épisodes vus</span>
                     <strong>{progressPercentage} %</strong>
                   </div>
-                  <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${progressPercentage}%` }} /></div>
+                  <div data-steldra-ui="progressTrack" className={styles.progressTrack}><div data-steldra-ui="progressFill" className={styles.progressFill} style={{ width: `${progressPercentage}%` }} /></div>
                 </div>
               )}
 
               {isManga && totalChapters > 0 && (
-                <div className={styles.progressBlock}>
-                  <div className={styles.progressMeta}><span>Chapitre {currentChapter} sur {totalChapters}</span><strong>{mangaProgressPercentage} %</strong></div>
-                  <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${mangaProgressPercentage}%` }} /></div>
+                <div data-steldra-ui="progressBlock" className={styles.progressBlock}>
+                  <div data-steldra-ui="progressMeta" className={styles.progressMeta}><span>Chapitre {currentChapter} sur {totalChapters}</span><strong>{mangaProgressPercentage} %</strong></div>
+                  <div data-steldra-ui="progressTrack" className={styles.progressTrack}><div data-steldra-ui="progressFill" className={styles.progressFill} style={{ width: `${mangaProgressPercentage}%` }} /></div>
                 </div>
               )}
 
-              <div className={styles.actionRow}>
-                <button type="button" onClick={() => onMarkWatched(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'vu' ? styles.activeWatched : ''}`}>✓ {isManga ? 'Lu' : 'Vu'}</button>
-                <button type="button" onClick={() => onToggleInProgress(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'en_cours' ? styles.activeProgress : ''}`}> En cours</button>
-                <button type="button" onClick={() => onMarkToWatch(selectedMedia)} className={`${styles.actionButton} ${currentItem?.status === 'a_voir' ? styles.activeWatchlist : ''}`}>◉ {isManga ? 'À lire' : 'À voir'}</button>
-                <button type="button" onClick={() => onSetStatus(selectedMedia, 'en_pause')} className={`${styles.actionButton} ${currentItem?.status === 'en_pause' ? styles.activePause : ''}`}>Ⅱ En pause</button>
-                <button type="button" onClick={() => onSetStatus(selectedMedia, 'abandonne')} className={`${styles.actionButton} ${currentItem?.status === 'abandonne' ? styles.activeAbandoned : ''}`}>× Abandonné</button>
+              <div data-steldra-ui="actionRow" className={styles.actionRow}>
+                <button type="button" onClick={() => onMarkWatched(selectedMedia)} data-steldra-ui="actionButton activeWatched" className={`${styles.actionButton} ${currentItem?.status === 'vu' ? styles.activeWatched : ''}`}>✓ {isManga ? 'Lu' : 'Vu'}</button>
+                <button type="button" onClick={() => onToggleInProgress(selectedMedia)} data-steldra-ui="actionButton activeProgress" className={`${styles.actionButton} ${currentItem?.status === 'en_cours' ? styles.activeProgress : ''}`}> En cours</button>
+                <button type="button" onClick={() => onMarkToWatch(selectedMedia)} data-steldra-ui="actionButton activeWatchlist" className={`${styles.actionButton} ${currentItem?.status === 'a_voir' ? styles.activeWatchlist : ''}`}>◉ {isManga ? 'À lire' : 'À voir'}</button>
+                <button type="button" onClick={() => onSetStatus(selectedMedia, 'en_pause')} data-steldra-ui="actionButton activePause" className={`${styles.actionButton} ${currentItem?.status === 'en_pause' ? styles.activePause : ''}`}>Ⅱ En pause</button>
+                <button type="button" onClick={() => onSetStatus(selectedMedia, 'abandonne')} data-steldra-ui="actionButton activeAbandoned" className={`${styles.actionButton} ${currentItem?.status === 'abandonne' ? styles.activeAbandoned : ''}`}>× Abandonné</button>
                 {currentItem && (
-                  <button type="button" onClick={() => onToggleFavorite(selectedMedia)} className={`${styles.favoriteButton} ${currentItem.favorite ? styles.favoriteActive : ''}`}>
+                  <button type="button" onClick={() => onToggleFavorite(selectedMedia)} data-steldra-ui="favoriteButton favoriteActive" className={`${styles.favoriteButton} ${currentItem.favorite ? styles.favoriteActive : ''}`}>
                     {currentItem.favorite ? '♥ Favori' : '♡ Favori'}
                   </button>
                 )}
                 {currentItem && (
-                  <button type="button" onClick={() => { if (window.confirm(`Supprimer « ${selectedMedia.title} » de ta collection ?`)) onRemoveFromCollection(selectedMedia); }} className={styles.dangerButton}>Retirer</button>
+                  <button type="button" onClick={() => { if (window.confirm(`Supprimer « ${selectedMedia.title} » de ta collection ?`)) onRemoveFromCollection(selectedMedia); }} data-steldra-ui="dangerButton" className={styles.dangerButton}>Retirer</button>
                 )}
               </div>
 
-              <div className={styles.listPicker}>
+              <div data-steldra-ui="listPicker" className={styles.listPicker}>
                 <span>+ Ajouter à une liste</span>
                 {customLists.length > 0 ? (
                   <select defaultValue="" disabled={addingToList} onChange={(event) => {
@@ -312,7 +317,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
               </div>
             </div>
 
-            <aside className={styles.sideCard}>
+            <aside data-steldra-ui="sideCard" className={styles.sideCard}>
               <InfoRow label={selectedMedia.type === 'tv' ? 'Création' : 'Réalisation'} value={creators || '—'} />
               <InfoRow label="Pays" value={mediaDetails?.countries?.join(', ') || '—'} />
               <InfoRow label="Statut" value={formatStatus(mediaDetails?.status)} />
@@ -321,9 +326,9 @@ export default function MediaPageContent(props: MediaPageContentProps) {
           </div>
         </section>
 
-        <nav className={styles.tabs} aria-label="Informations du média">
+        <nav data-steldra-ui="tabs" className={styles.tabs} aria-label="Informations du média">
           {tabs.map((tab) => (
-            <button key={tab.value} type="button" onClick={() => setActiveTab(tab.value)} className={`${styles.tab} ${activeTab === tab.value ? styles.tabActive : ''}`}>
+            <button key={tab.value} type="button" onClick={() => setActiveTab(tab.value)} data-steldra-ui="tab tabActive" className={`${styles.tab} ${activeTab === tab.value ? styles.tabActive : ''}`}>
               {tab.label}
             </button>
           ))}
@@ -331,20 +336,20 @@ export default function MediaPageContent(props: MediaPageContentProps) {
 
         {activeTab === 'overview' && (
           <>
-            <section className={styles.section}>
-              <div className={styles.overviewGrid}>
+            <section data-steldra-ui="section" className={styles.section}>
+              <div data-steldra-ui="overviewGrid" className={styles.overviewGrid}>
                 <div>
-                  <div className={styles.sectionHeader}>
-                    <div><h2 className={styles.sectionTitle}>Synopsis</h2><p className={styles.sectionSubtitle}>L’histoire en quelques lignes</p></div>
+                  <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}>
+                    <div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>Synopsis</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>L’histoire en quelques lignes</p></div>
                   </div>
-                  {detailsLoading ? <p className={styles.empty}>Chargement du résumé…</p> : (
+                  {detailsLoading ? <p data-steldra-ui="empty" className={styles.empty}>Chargement du résumé…</p> : (
                     <>
-                      <p className={styles.synopsis}>{displayedSynopsis}</p>
-                      {shouldShortenSynopsis && <button type="button" className={styles.linkButton} onClick={() => setShowFullSynopsis((value) => !value)}>{showFullSynopsis ? 'Voir moins' : 'Voir plus'}</button>}
+                      <p data-steldra-ui="synopsis" className={styles.synopsis}>{displayedSynopsis}</p>
+                      {shouldShortenSynopsis && <button type="button" data-steldra-ui="linkButton" className={styles.linkButton} onClick={() => setShowFullSynopsis((value) => !value)}>{showFullSynopsis ? 'Voir moins' : 'Voir plus'}</button>}
                     </>
                   )}
                 </div>
-                <div className={styles.techGrid}>
+                <div data-steldra-ui="techGrid" className={styles.techGrid}>
                   <TechItem label="Type" value={hasEpisodes ? (selectedMedia.type === 'anime' ? 'Animé' : selectedMedia.type === 'drama' ? 'Drama' : 'Série') : isManga ? selectedMedia.type : 'Film'} />
                   <TechItem label="Année" value={releaseYear ? String(releaseYear) : '—'} />
                   <TechItem label="Durée" value={formatRuntime() || '—'} />
@@ -355,31 +360,31 @@ export default function MediaPageContent(props: MediaPageContentProps) {
             </section>
 
             {mediaDetails?.actors?.length ? (
-              <section className={styles.section}>
-                <div className={styles.sectionHeader}>
-                  <div><h2 className={styles.sectionTitle}>Casting principal</h2><p className={styles.sectionSubtitle}>Les visages derrière l’histoire</p></div>
-                  <button type="button" className={styles.linkButton} onClick={() => setActiveTab('cast')}>Tout voir →</button>
+              <section data-steldra-ui="section" className={styles.section}>
+                <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}>
+                  <div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>Casting principal</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>Les visages derrière l’histoire</p></div>
+                  <button type="button" data-steldra-ui="linkButton" className={styles.linkButton} onClick={() => setActiveTab('cast')}>Tout voir →</button>
                 </div>
                 {renderCast(10)}
               </section>
             ) : null}
 
             {isManga && (
-              <section className={styles.section}>
-                <div className={styles.sectionHeader}><div><h2 className={styles.sectionTitle}>Progression de lecture</h2><p className={styles.sectionSubtitle}>Continue exactement où tu t’es arrêté</p></div></div>
-                <div className={styles.mangaStats}>
+              <section data-steldra-ui="section" className={styles.section}>
+                <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}><div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>Progression de lecture</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>Continue exactement où tu t’es arrêté</p></div></div>
+                <div data-steldra-ui="mangaStats" className={styles.mangaStats}>
                   <Stat label="Chapitre actuel" value={currentChapter} />
                   {remainingChapters !== null && <Stat label="Restant à lire" value={remainingChapters} />}
                   {totalVolumes > 0 && <Stat label="Tomes connus" value={totalVolumes} />}
                 </div>
-                <div className={styles.chapterControls}>
-                  <button type="button" className={styles.chapterButton} disabled={currentChapter <= 0} onClick={() => onChapterChange(Math.max(currentChapter - 1, 0))}>− 1</button>
+                <div data-steldra-ui="chapterControls" className={styles.chapterControls}>
+                  <button type="button" data-steldra-ui="chapterButton" className={styles.chapterButton} disabled={currentChapter <= 0} onClick={() => onChapterChange(Math.max(currentChapter - 1, 0))}>− 1</button>
                   <input type="number" min={0} step={0.1} max={totalChapters > 0 ? totalChapters : undefined} value={currentChapter} onChange={(event) => {
                     const value = Number.parseFloat(event.target.value) || 0;
                     onChapterChange(totalChapters > 0 ? Math.min(Math.max(value, 0), totalChapters) : Math.max(value, 0));
                   }} />
-                  <button type="button" className={styles.chapterButton} disabled={totalChapters > 0 && currentChapter >= totalChapters} onClick={() => onChapterChange(nextChapter)}>+ 1</button>
-                  <button type="button" className={styles.chapterButton} disabled={totalChapters > 0 && currentChapter >= totalChapters} onClick={() => onChapterChange(nextChapter)}>✓ Chapitre {nextChapter} lu</button>
+                  <button type="button" data-steldra-ui="chapterButton" className={styles.chapterButton} disabled={totalChapters > 0 && currentChapter >= totalChapters} onClick={() => onChapterChange(nextChapter)}>+ 1</button>
+                  <button type="button" data-steldra-ui="chapterButton" className={styles.chapterButton} disabled={totalChapters > 0 && currentChapter >= totalChapters} onClick={() => onChapterChange(nextChapter)}>✓ Chapitre {nextChapter} lu</button>
                 </div>
               </section>
             )}
@@ -387,51 +392,51 @@ export default function MediaPageContent(props: MediaPageContentProps) {
         )}
 
         {activeTab === 'cast' && (
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}><div><h2 className={styles.sectionTitle}>{selectedMedia.type === 'anime' ? 'Personnages et doubleurs' : 'Distribution'}</h2><p className={styles.sectionSubtitle}>Casting principal</p></div></div>
+          <section data-steldra-ui="section" className={styles.section}>
+            <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}><div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>{selectedMedia.type === 'anime' ? 'Personnages et doubleurs' : 'Distribution'}</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>Casting principal</p></div></div>
             {renderCast(24)}
           </section>
         )}
 
         {activeTab === 'reviews' && (
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}><div><h2 className={styles.sectionTitle}>Avis</h2><p className={styles.sectionSubtitle}>{reviews.length ? `${reviews.length} avis STELDRA` : 'Partage ton ressenti'}</p></div></div>
+          <section data-steldra-ui="section" className={styles.section}>
+            <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}><div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>Avis</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>{reviews.length ? `${reviews.length} avis STELDRA` : 'Partage ton ressenti'}</p></div></div>
             <ReviewSection media={selectedMedia} reviews={reviews} reviewRating={reviewRating} reviewComment={reviewComment} userId={userId} userName={userName} onRatingChange={onRatingChange} onCommentChange={onCommentChange} onSubmit={onSubmitReview} onCancel={onCancelReview} onDelete={onDeleteReview} />
           </section>
         )}
 
         {activeTab === 'trailers' && (
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}><div><h2 className={styles.sectionTitle}>Bandes-annonces</h2><p className={styles.sectionSubtitle}>Vidéos disponibles pour ce titre</p></div></div>
+          <section data-steldra-ui="section" className={styles.section}>
+            <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}><div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>Bandes-annonces</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>Vidéos disponibles pour ce titre</p></div></div>
             {trailers.length ? (
-              <div className={styles.trailerGrid}>
+              <div data-steldra-ui="trailerGrid" className={styles.trailerGrid}>
                 {trailers.map((trailer) => (
-                  <article key={trailer.key} className={styles.trailerCard}>
-                    <iframe className={styles.trailerFrame} src={`https://www.youtube-nocookie.com/embed/${trailer.key}`} title={trailer.name} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                    <div className={styles.trailerName}>{trailer.name}</div>
+                  <article key={trailer.key} data-steldra-ui="trailerCard" className={styles.trailerCard}>
+                    <iframe data-steldra-ui="trailerFrame" className={styles.trailerFrame} src={`https://www.youtube-nocookie.com/embed/${trailer.key}`} title={trailer.name} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                    <div data-steldra-ui="trailerName" className={styles.trailerName}>{trailer.name}</div>
                   </article>
                 ))}
               </div>
-            ) : <p className={styles.empty}>Aucune bande-annonce disponible.</p>}
+            ) : <p data-steldra-ui="empty" className={styles.empty}>Aucune bande-annonce disponible.</p>}
           </section>
         )}
 
         {activeTab === 'episodes' && hasEpisodes && (
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}><div><h2 className={styles.sectionTitle}>Saisons & épisodes</h2><p className={styles.sectionSubtitle}>Coche les épisodes réellement vus</p></div></div>
-            <div className={styles.seasonTools}>
+          <section data-steldra-ui="section" className={styles.section}>
+            <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}><div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>Saisons & épisodes</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>Coche les épisodes réellement vus</p></div></div>
+            <div data-steldra-ui="seasonTools" className={styles.seasonTools}>
               {(mediaDetails?.seasons_count || 0) > 0 && (
                 <select value={activeSeason} onChange={(event) => onLoadSeason(selectedMedia.id, Number(event.target.value))}>
                   {Array.from({ length: mediaDetails?.seasons_count || 0 }, (_, index) => index + 1).map((seasonNumber) => <option key={seasonNumber} value={seasonNumber}>Saison {seasonNumber}</option>)}
                 </select>
               )}
-              <button type="button" className={styles.seasonAction} disabled={releasedEpisodeNumbers.length === 0} onClick={() => onToggleWholeSeason(releasedEpisodeNumbers)}>
+              <button type="button" data-steldra-ui="seasonAction" className={styles.seasonAction} disabled={releasedEpisodeNumbers.length === 0} onClick={() => onToggleWholeSeason(releasedEpisodeNumbers)}>
                 {wholeSeasonWatched ? '↩ Réinitialiser la saison' : '✓ Toute la saison vue'}
               </button>
             </div>
 
-            {episodesLoading ? <p className={styles.empty}>Chargement des épisodes…</p> : seasonEpisodes.length === 0 ? <p className={styles.empty}>Aucun épisode disponible.</p> : (
-              <div className={styles.episodeList}>
+            {episodesLoading ? <p data-steldra-ui="empty" className={styles.empty}>Chargement des épisodes…</p> : seasonEpisodes.length === 0 ? <p data-steldra-ui="empty" className={styles.empty}>Aucun épisode disponible.</p> : (
+              <div data-steldra-ui="episodeList" className={styles.episodeList}>
                 {seasonEpisodes.map((episode) => {
                   const key = `${selectedMedia.type}_${selectedMedia.id}_S${activeSeason}E${episode.episode_number}`;
                   const isWatched = Boolean(watchedEpisodes[key]);
@@ -439,14 +444,14 @@ export default function MediaPageContent(props: MediaPageContentProps) {
                   const isReleased = !airDate || airDate <= today;
                   const isExpanded = Boolean(expandedEpisodes[key]);
                   return (
-                    <article key={episode.id} className={`${styles.episode} ${isWatched ? styles.episodeWatched : ''}`} style={{ opacity: isReleased ? 1 : .55 }}>
-                      <div className={styles.episodeMain}>
-                        <button type="button" className={styles.episodeNumber} onClick={() => setExpandedEpisodes((current) => ({ ...current, [key]: !current[key] }))}>E{String(episode.episode_number).padStart(2, '0')}</button>
-                        <button type="button" className={styles.episodeTitleButton} onClick={() => setExpandedEpisodes((current) => ({ ...current, [key]: !current[key] }))}>
-                          <strong className={styles.episodeTitle}>{episode.name || `Épisode ${episode.episode_number}`}</strong>
-                          <span className={styles.episodeMeta}>{formatEpisodeDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime} min` : ''}</span>
+                    <article key={episode.id} data-steldra-ui="episode episodeWatched" className={`${styles.episode} ${isWatched ? styles.episodeWatched : ''}`} style={{ opacity: isReleased ? 1 : .55 }}>
+                      <div data-steldra-ui="episodeMain" className={styles.episodeMain}>
+                        <button type="button" data-steldra-ui="episodeNumber" className={styles.episodeNumber} onClick={() => setExpandedEpisodes((current) => ({ ...current, [key]: !current[key] }))}>E{String(episode.episode_number).padStart(2, '0')}</button>
+                        <button type="button" data-steldra-ui="episodeTitleButton" className={styles.episodeTitleButton} onClick={() => setExpandedEpisodes((current) => ({ ...current, [key]: !current[key] }))}>
+                          <strong data-steldra-ui="episodeTitle" className={styles.episodeTitle}>{episode.name || `Épisode ${episode.episode_number}`}</strong>
+                          <span data-steldra-ui="episodeMeta" className={styles.episodeMeta}>{formatEpisodeDate(episode.air_date)}{episode.runtime ? ` · ${episode.runtime} min` : ''}</span>
                         </button>
-                        <button type="button" disabled={!isReleased} className={`${styles.episodeStatus} ${isWatched ? styles.episodeStatusWatched : ''}`} onClick={() => {
+                        <button type="button" disabled={!isReleased} data-steldra-ui="episodeStatus episodeStatusWatched" className={`${styles.episodeStatus} ${isWatched ? styles.episodeStatusWatched : ''}`} onClick={() => {
                           const selectedEpisodeNumber = episode.episode_number;
                           if (isWatched) { onToggleEpisode(selectedEpisodeNumber); return; }
                           const hasPreviousUnwatchedEpisodes = seasonEpisodes.some((previousEpisode) => {
@@ -464,7 +469,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
                           {!isReleased ? 'À venir' : isWatched ? '✓ Vu' : 'À voir'}
                         </button>
                       </div>
-                      {isExpanded && <p className={styles.episodeOverview}>{episode.overview || 'Aucun résumé disponible pour cet épisode.'}</p>}
+                      {isExpanded && <p data-steldra-ui="episodeOverview" className={styles.episodeOverview}>{episode.overview || 'Aucun résumé disponible pour cet épisode.'}</p>}
                     </article>
                   );
                 })}
@@ -473,21 +478,21 @@ export default function MediaPageContent(props: MediaPageContentProps) {
           </section>
         )}
 
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div><h2 className={styles.sectionTitle}>À voir aussi</h2><p className={styles.sectionSubtitle}>Saga, réalisateur, casting commun et titres similaires en priorité</p></div>
+        <section data-steldra-ui="section" className={styles.section}>
+          <div data-steldra-ui="sectionHeader" className={styles.sectionHeader}>
+            <div><h2 data-steldra-ui="sectionTitle" className={styles.sectionTitle}>À voir aussi</h2><p data-steldra-ui="sectionSubtitle" className={styles.sectionSubtitle}>Saga, réalisateur, casting commun et titres similaires en priorité</p></div>
           </div>
-          {recommendationsLoading ? <p className={styles.empty}>Recherche de recommandations…</p> : recommendations.length === 0 ? <p className={styles.empty}>Aucune recommandation disponible pour ce média.</p> : (
-            <div className={styles.recommendationGrid}>
+          {recommendationsLoading ? <p data-steldra-ui="empty" className={styles.empty}>Recherche de recommandations…</p> : recommendations.length === 0 ? <p data-steldra-ui="empty" className={styles.empty}>Aucune recommandation disponible pour ce média.</p> : (
+            <div data-steldra-ui="recommendationGrid" className={styles.recommendationGrid}>
               {recommendations.map((recommendation) => {
                 const recommendationKey = `${recommendation.type}_${recommendation.id}`;
                 return (
-                  <div key={recommendationKey} className={styles.recommendationItem}>
+                  <div key={recommendationKey} data-steldra-ui="recommendationItem" className={styles.recommendationItem}>
                     <MediaCard item={recommendation} currentItem={myList[recommendationKey]} onMarkWatched={onMarkWatched} onToggleInProgress={onToggleInProgress} onMarkToWatch={onMarkToWatch} onRemove={onRemoveFromCollection} onToggleFavorite={onToggleFavorite} navigationMode="replace" rememberCollectionPosition={false} />
-                    <strong className={styles.recommendationTitle}>{recommendation.title}</strong>
-                    {recommendation.recommendation_label && <span className={styles.reason}>{recommendation.recommendation_label}</span>}
+                    <strong data-steldra-ui="recommendationTitle" className={styles.recommendationTitle}>{recommendation.title}</strong>
+                    {recommendation.recommendation_label && <span data-steldra-ui="reason" className={styles.reason}>{recommendation.recommendation_label}</span>}
                     {customLists.length > 0 && (
-                      <select className={styles.recommendationSelect} defaultValue="" disabled={addingToList} onChange={(event) => {
+                      <select data-steldra-ui="recommendationSelect" className={styles.recommendationSelect} defaultValue="" disabled={addingToList} onChange={(event) => {
                         const listId = event.target.value;
                         if (!listId) return;
                         onAddToCustomList(recommendation, listId);
@@ -508,14 +513,17 @@ export default function MediaPageContent(props: MediaPageContentProps) {
   );
 }
 
+/** Affiche une ligne libellé/valeur dans les informations du média. */
 function InfoRow({ label, value }: { label: string; value: string }) {
-  return <div className={styles.infoRow}><span className={styles.infoLabel}>{label}</span><strong className={styles.infoValue}>{value}</strong></div>;
+  return <div data-steldra-ui="infoRow" className={styles.infoRow}><span data-steldra-ui="infoLabel" className={styles.infoLabel}>{label}</span><strong data-steldra-ui="infoValue" className={styles.infoValue}>{value}</strong></div>;
 }
 
+/** Affiche une caractéristique technique du média. */
 function TechItem({ label, value }: { label: string; value: string }) {
-  return <div className={styles.techItem}><span>{label}</span><strong>{value}</strong></div>;
+  return <div data-steldra-ui="techItem" className={styles.techItem}><span>{label}</span><strong>{value}</strong></div>;
 }
 
+/** Affiche un indicateur numérique accompagné de son libellé. */
 function Stat({ label, value }: { label: string; value: number }) {
-  return <div className={styles.statCard}><span className={styles.statLabel}>{label}</span><strong className={styles.statValue}>{value}</strong></div>;
+  return <div data-steldra-ui="statCard" className={styles.statCard}><span data-steldra-ui="statLabel" className={styles.statLabel}>{label}</span><strong data-steldra-ui="statValue" className={styles.statValue}>{value}</strong></div>;
 }

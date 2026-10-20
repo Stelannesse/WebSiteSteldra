@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Statistiques : calcule et présente les principaux indicateurs de la bibliothèque personnelle.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -26,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
   abandonne: 'Abandonnés',
 };
 
+/** Affiche une durée sous une forme courte adaptée aux statistiques. */
 const formatCompactDuration = (minutes: number) => {
   if (minutes <= 0) return '0 h';
   const hours = Math.floor(minutes / 60);
@@ -34,6 +39,7 @@ const formatCompactDuration = (minutes: number) => {
   return rest ? `${hours} h ${rest.toString().padStart(2, '0')}` : `${hours} h`;
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function StatistiquesPage() {
   const [supabase] = useState(() => createClient());
   const [myList, setMyList] = useState<Record<string, MyListItem>>({});
@@ -56,7 +62,7 @@ export default function StatistiquesPage() {
           const { data, error: supabaseError } = await fetchAllPages<any>((from, to) =>
             supabase
               .from('media_progress')
-              .select('*')
+              .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
               .eq('user_id', user.id)
               .order('media_id', { ascending: true })
               .range(from, to)
@@ -127,7 +133,7 @@ export default function StatistiquesPage() {
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = { movie: 0, tv: 0, drama: 0, anime: 0 };
-    Object.values(myList).forEach((entry) => {
+    Object.values(myList).filter((entry) => ['movie', 'tv', 'drama', 'anime'].includes(entry?.media?.type)).forEach((entry) => {
       if (entry?.media?.type in counts) counts[entry.media.type] += 1;
     });
     return counts;
@@ -141,7 +147,7 @@ export default function StatistiquesPage() {
       en_pause: 0,
       abandonne: 0,
     };
-    Object.values(myList).forEach((entry) => {
+    Object.values(myList).filter((entry) => ['movie', 'tv', 'drama', 'anime'].includes(entry?.media?.type)).forEach((entry) => {
       if (entry?.status && entry.status in counts) counts[entry.status] += 1;
     });
     return counts;
@@ -153,13 +159,13 @@ export default function StatistiquesPage() {
   return (
     <>
       <MainNav />
-      <main className={styles.stats2026Page}>
-        <section className={styles.stats2026Hero}>
-          <div className={styles.stats2026HeroCopy}>
+      <main data-steldra-ui="stats2026Page" className={styles.stats2026Page}>
+        <section data-steldra-ui="stats2026Hero" className={styles.stats2026Hero}>
+          <div data-steldra-ui="stats2026HeroCopy" className={styles.stats2026HeroCopy}>
             <span>VOTRE BILAN</span>
             <h1>Mes statistiques</h1>
             <p>Suivez simplement toutes vos habitudes de visionnage.</p>
-            <div className={styles.stats2026HeroActions}>
+            <div data-steldra-ui="stats2026HeroActions" className={styles.stats2026HeroActions}>
               <Link href="/collection">Voir ma collection</Link>
               <Link href="/history">Historique</Link>
             </div>
@@ -167,12 +173,12 @@ export default function StatistiquesPage() {
         </section>
 
         {loading ? (
-          <div className={styles.stats2026State}>Chargement des statistiques…</div>
+          <div data-steldra-ui="stats2026State" className={styles.stats2026State}>Chargement des statistiques…</div>
         ) : error ? (
-          <div className={`${styles.stats2026State} ${styles.stats2026Error}`}>{error}</div>
+          <div data-steldra-ui="stats2026State stats2026Error" className={`${styles.stats2026State} ${styles.stats2026Error}`}>{error}</div>
         ) : (
           <>
-            <section className={styles.stats2026SummaryGrid}>
+            <section data-steldra-ui="stats2026SummaryGrid" className={styles.stats2026SummaryGrid}>
               <article>
                 <span>MÉDIAS VUS</span>
                 <strong>{stats.watchedMediaCount}</strong>
@@ -195,20 +201,20 @@ export default function StatistiquesPage() {
               </article>
             </section>
 
-            <div className={styles.stats2026MainGrid}>
-              <section className={styles.stats2026Panel}>
-                <div className={styles.stats2026PanelHead}>
+            <div data-steldra-ui="stats2026MainGrid" className={styles.stats2026MainGrid}>
+              <section data-steldra-ui="stats2026Panel" className={styles.stats2026Panel}>
+                <div data-steldra-ui="stats2026PanelHead" className={styles.stats2026PanelHead}>
                   <div>
                     <span>COLLECTION</span>
                     <h2>Répartition par format</h2>
                   </div>
                   <strong>{stats.totalCinemaMedia} titres</strong>
                 </div>
-                <div className={styles.stats2026Bars}>
+                <div data-steldra-ui="stats2026Bars" className={styles.stats2026Bars}>
                   {Object.entries(typeCounts).map(([type, count]) => (
-                    <div className={styles.stats2026BarRow} key={type}>
+                    <div data-steldra-ui="stats2026BarRow" className={styles.stats2026BarRow} key={type}>
                       <div><span>{TYPE_LABELS[type]}</span><strong>{count}</strong></div>
-                      <div className={styles.stats2026BarTrack}>
+                      <div data-steldra-ui="stats2026BarTrack" className={styles.stats2026BarTrack}>
                         <span style={{ width: `${(count / maxTypeCount) * 100}%` }} />
                       </div>
                     </div>
@@ -216,18 +222,18 @@ export default function StatistiquesPage() {
                 </div>
               </section>
 
-              <section className={styles.stats2026Panel}>
-                <div className={styles.stats2026PanelHead}>
+              <section data-steldra-ui="stats2026Panel" className={styles.stats2026Panel}>
+                <div data-steldra-ui="stats2026PanelHead" className={styles.stats2026PanelHead}>
                   <div>
                     <span>STATUTS</span>
                     <h2>Où en est ta collection ?</h2>
                   </div>
                 </div>
-                <div className={styles.stats2026Bars}>
+                <div data-steldra-ui="stats2026Bars" className={styles.stats2026Bars}>
                   {Object.entries(statusCounts).map(([status, count]) => (
-                    <div className={styles.stats2026BarRow} key={status}>
+                    <div data-steldra-ui="stats2026BarRow" className={styles.stats2026BarRow} key={status}>
                       <div><span>{STATUS_LABELS[status]}</span><strong>{count}</strong></div>
-                      <div className={styles.stats2026BarTrack}>
+                      <div data-steldra-ui="stats2026BarTrack" className={styles.stats2026BarTrack}>
                         <span style={{ width: `${(count / maxStatusCount) * 100}%` }} />
                       </div>
                     </div>
@@ -239,7 +245,7 @@ export default function StatistiquesPage() {
             <TimeStats myList={myList} watchedEpisodes={watchedEpisodes} />
 
             {stats.totalCinemaMedia === 0 && (
-              <div className={styles.stats2026Empty}>
+              <div data-steldra-ui="stats2026Empty" className={styles.stats2026Empty}>
                 <h2>Ton univers est encore vide</h2>
                 <p>Ajoute un premier film ou une première série pour voir tes statistiques apparaître ici.</p>
                 <Link href="/discover">Découvrir des médias</Link>

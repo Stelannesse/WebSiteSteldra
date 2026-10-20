@@ -1,7 +1,12 @@
+/**
+ * Rôle du fichier : Route de retour d'authentification : échange le code Supabase contre une session puis redirige l'utilisateur.
+ */
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server' // Important ici
 
 // Route de callback pour gérer l'authentification OAuth avec Supabase
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')

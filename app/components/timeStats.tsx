@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Bloc de statistiques : transforme le temps de visionnage en indicateurs lisibles.
+ */
+
 'use client';
 
 import { useMemo } from 'react';
@@ -13,6 +17,7 @@ type TimeStatsProps = {
   watchedEpisodes: Record<string, boolean>;
 };
 
+/** Transforme une durée en minutes en texte lisible. */
 const formatDuration = (minutes: number) => {
   if (minutes <= 0) {
     return '0 min';
@@ -43,6 +48,7 @@ const formatDuration = (minutes: number) => {
 
 
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function TimeStats({
   myList,
   watchedEpisodes,
@@ -53,19 +59,19 @@ export default function TimeStats({
   );
 
   return (
-    <section className={styles.timeStats}>
-      <div className={styles.timeStatsHeader}>
+    <section data-steldra-ui="timeStats" className={styles.timeStats}>
+      <div data-steldra-ui="timeStatsHeader" className={styles.timeStatsHeader}>
         <div>
-          <span className={styles.timeStatsEyebrow}>
+          <span data-steldra-ui="timeStatsEyebrow" className={styles.timeStatsEyebrow}>
             Statistiques
           </span>
 
-          <h2 className={styles.timeStatsTitle}>
+          <h2 data-steldra-ui="timeStatsTitle" className={styles.timeStatsTitle}>
             Temps passé devant tes écrans
           </h2>
         </div>
 
-        <div className={styles.timeStatsTotal}>
+        <div data-steldra-ui="timeStatsTotal" className={styles.timeStatsTotal}>
           <span>Temps total</span>
 
           <strong>
@@ -74,20 +80,20 @@ export default function TimeStats({
         </div>
       </div>
 
-      <div className={styles.timeStatsGrid}>
-        <article className={styles.timeStatCard}>
+      <div data-steldra-ui="timeStatsGrid" className={styles.timeStatsGrid}>
+        <article data-steldra-ui="timeStatCard" className={styles.timeStatCard}>
           
 
           <div>
-            <span className={styles.timeStatLabel}>
+            <span data-steldra-ui="timeStatLabel" className={styles.timeStatLabel}>
               Films
             </span>
 
-            <strong className={styles.timeStatValue}>
+            <strong data-steldra-ui="timeStatValue" className={styles.timeStatValue}>
               {formatDuration(stats.movieMinutes)}
             </strong>
 
-            <small className={styles.timeStatDetail}>
+            <small data-steldra-ui="timeStatDetail" className={styles.timeStatDetail}>
               {stats.watchedMovieCount} film
               {stats.watchedMovieCount > 1 ? 's' : ''}{' '}
               vu
@@ -96,19 +102,19 @@ export default function TimeStats({
           </div>
         </article>
 
-        <article className={styles.timeStatCard}>
+        <article data-steldra-ui="timeStatCard" className={styles.timeStatCard}>
           
 
           <div>
-            <span className={styles.timeStatLabel}>
+            <span data-steldra-ui="timeStatLabel" className={styles.timeStatLabel}>
               Séries
             </span>
 
-            <strong className={styles.timeStatValue}>
+            <strong data-steldra-ui="timeStatValue" className={styles.timeStatValue}>
               {formatDuration(stats.seriesMinutes)}
             </strong>
 
-            <small className={styles.timeStatDetail}>
+            <small data-steldra-ui="timeStatDetail" className={styles.timeStatDetail}>
               {stats.watchedSeriesEpisodes}{' '}
               épisode
               {stats.watchedSeriesEpisodes > 1
@@ -118,19 +124,19 @@ export default function TimeStats({
           </div>
         </article>
 
-        <article className={styles.timeStatCard}>
+        <article data-steldra-ui="timeStatCard" className={styles.timeStatCard}>
          
 
           <div>
-            <span className={styles.timeStatLabel}>
+            <span data-steldra-ui="timeStatLabel" className={styles.timeStatLabel}>
               Animés
             </span>
 
-            <strong className={styles.timeStatValue}>
+            <strong data-steldra-ui="timeStatValue" className={styles.timeStatValue}>
               {formatDuration(stats.animeMinutes)}
             </strong>
 
-            <small className={styles.timeStatDetail}>
+            <small data-steldra-ui="timeStatDetail" className={styles.timeStatDetail}>
               {stats.watchedAnimeEpisodes}{' '}
               épisode
               {stats.watchedAnimeEpisodes > 1
@@ -140,19 +146,19 @@ export default function TimeStats({
           </div>
         </article>
 
-        <article className={styles.timeStatCard}>
+        <article data-steldra-ui="timeStatCard" className={styles.timeStatCard}>
         
 
           <div>
-            <span className={styles.timeStatLabel}>
+            <span data-steldra-ui="timeStatLabel" className={styles.timeStatLabel}>
               Dramas
             </span>
 
-            <strong className={styles.timeStatValue}>
+            <strong data-steldra-ui="timeStatValue" className={styles.timeStatValue}>
               {formatDuration(stats.dramaMinutes)}
             </strong>
 
-            <small className={styles.timeStatDetail}>
+            <small data-steldra-ui="timeStatDetail" className={styles.timeStatDetail}>
               {stats.watchedDramaEpisodes}{' '}
               épisode
               {stats.watchedDramaEpisodes > 1
@@ -164,7 +170,7 @@ export default function TimeStats({
       </div>
 
       {stats.missingDurations > 0 && (
-        <p className={styles.timeStatsNotice}>
+        <p data-steldra-ui="timeStatsNotice" className={styles.timeStatsNotice}>
           Certaines durées ne sont pas encore
           disponibles. Le total affiché correspond
           uniquement aux médias dont la durée est

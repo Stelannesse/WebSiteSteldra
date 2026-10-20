@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Compatibilité avec l'ancienne fenêtre média : redirige son contenu vers le composant de fiche actuel.
+ */
+
 'use client';
 
 import { useEffect } from 'react';
@@ -17,6 +21,7 @@ type LegacyMediaModalProps = {
  * cette modal, on redirige vers la nouvelle fiche au lieu
  * d'afficher l'ancien design.
  */
+/** Composant principal de cette page ou zone d'interface. */
 export default function MediaModal({ selectedMedia }: LegacyMediaModalProps) {
   const router = useRouter();
 

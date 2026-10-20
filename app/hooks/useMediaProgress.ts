@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Hook de progression : lit et met à jour l'avancement d'un film, d'une série ou d'un épisode.
+ */
+
 import type {
   MediaItem,
   MyListItem,
@@ -5,6 +9,7 @@ import type {
 } from '../types/media';
 
 
+/** Signale aux autres composants qu'une progression vient d'être modifiée. */
 const notifyProgressUpdated = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('steldra:progress-updated'));
@@ -39,6 +44,7 @@ type UseMediaProgressProps = {
   getMediaKey: (media: MediaItem) => string;
 };
 
+/** Expose la progression du média et les actions permettant de la modifier. */
 export default function useMediaProgress({
   supabase,
   myList,

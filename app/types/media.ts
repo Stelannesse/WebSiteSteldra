@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Types partagés représentant les films, séries, genres, crédits et données détaillées d'un média.
+ */
+
 export type MediaType =
   | 'movie'
   | 'tv'

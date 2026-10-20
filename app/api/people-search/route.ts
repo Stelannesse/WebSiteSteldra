@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : API Personnalités : recherche acteurs, réalisateurs et comédiens de doublage, puis rassemble leurs crédits.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -21,14 +25,17 @@ type CreditLike = {
   origin_country?: string[];
 };
 
+/** Interroge TMDB et lève une erreur explicite si la réponse échoue. */
 const fetchTmdb = async (url: string) => {
   const response = await fetch(url, { next: { revalidate: 3600 } });
   if (!response.ok) return null;
   return response.json();
 };
 
+/** Détermine si un crédit correspond à un film ou à une série. */
 const classifyType = (item: CreditLike): MediaType => item.media_type === 'movie' ? 'movie' : 'tv';
 
+/** Détecte si le libellé d'un crédit correspond probablement à du doublage. */
 const looksLikeVoiceRole = (credit: CreditLike) => {
   const values = [credit?.character, credit?.job]
     .map((value) => String(value || '').toLocaleLowerCase('fr'));
@@ -40,8 +47,10 @@ const looksLikeVoiceRole = (credit: CreditLike) => {
   );
 };
 
+/** Indique si le crédit appartient au genre animation. */
 const isAnimationCredit = (credit: CreditLike) => Array.isArray(credit.genre_ids) && credit.genre_ids.includes(16);
 
+/** Construit l'URL complète d'une affiche TMDB. */
 const resolvePoster = (poster?: string) => {
   const value = String(poster || '').trim();
   if (!value) return '';
@@ -49,6 +58,7 @@ const resolvePoster = (poster?: string) => {
   return `${IMAGE_BASE}${value.startsWith('/') ? value : `/${value}`}`;
 };
 
+/** Convertit un crédit brut en œuvre affichable sur la page d'une personnalité. */
 const formatCredit = (item: CreditLike, type: MediaType, role: string, creditKind: 'acting' | 'directing' | 'voice') => {
   const title = type === 'movie' ? item.title || item.original_title : item.name || item.original_name;
   if (!item?.id || !title) return null;
@@ -66,6 +76,7 @@ const formatCredit = (item: CreditLike, type: MediaType, role: string, creditKin
   };
 };
 
+/** Traduit le département TMDB d'une personnalité en catégorie métier. */
 const mapDepartment = (department?: string) => {
   if (department === 'Directing') return 'Réalisateur / réalisatrice';
   if (department === 'Acting') return 'Acteur / actrice';
@@ -73,6 +84,7 @@ const mapDepartment = (department?: string) => {
   return department || 'Talent';
 };
 
+/** Convertit une personnalité TMDB dans le format interne de l'application. */
 const mapPerson = (person: any) => ({
   id: person.id,
   name: person.name,
@@ -83,6 +95,7 @@ const mapPerson = (person: any) => ({
   known_for: (person.known_for || []).map((item: any) => item.title || item.name).filter(Boolean).slice(0, 3),
 });
 
+/** Fusionne les crédits français et anglais en évitant les doublons. */
 const mergeCredits = (frCredits: any, enCredits: any, personName: string) => {
   const items: any[] = [];
   const castFr = frCredits?.cast || [];
@@ -132,6 +145,7 @@ const mergeCredits = (frCredits: any, enCredits: any, personName: string) => {
   return Array.from(unique.values());
 };
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q')?.trim();

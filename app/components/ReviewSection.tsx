@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Bloc Avis : charge, ajoute, modifie et supprime les notes et commentaires de l'utilisateur.
+ */
+
 import type { MediaItem } from '../types/media';
 
 type ReviewRating = 'like' | 'dislike';
@@ -32,6 +36,7 @@ type ReviewSectionProps = {
   ) => void;
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function ReviewSection({
   media,
   reviews,

@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Explorer : propose des contenus à découvrir et permet de les ajouter à la collection.
+ */
+
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -20,6 +24,7 @@ type SelectedPerson = { id: number; name: string; profile_path: string; departme
 type MediaFilter = 'all' | 'movie' | 'tv' | 'drama' | 'anime';
 type SortMode = 'popular' | 'rating' | 'recent';
 
+/** Construit la clé unique d'un média à partir de son type et de son identifiant. */
 const keyOf = (m: MediaItem) => `${m.type}_${m.id}`;
 
 const GENRE_CHOICES = [
@@ -37,6 +42,7 @@ const GENRE_ICONS: Record<string, string> = {
   'Arts martiaux': '✥', Espace: '☾', 'Voyage dans le temps': '◷',
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function ExplorePage() {
   const [supabase] = useState(() => createClient());
   const [myList, setMyList] = useState<Record<string, MyListItem>>({});
@@ -138,8 +144,8 @@ export default function ExplorePage() {
       if (!user) { window.location.href = '/login'; return; }
 
       const [{ data: progress }, { data: likes }, feedResponse] = await Promise.all([
-        fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)),
-        supabase.from('media_reviews').select('media_id,media_type').eq('user_id', user.id).eq('rating', 'like').order('created_at', { ascending: false }).limit(8),
+        fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').in('media_type', ['movie', 'tv', 'drama', 'anime']).eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)),
+        supabase.from('media_reviews').select('media_id,media_type').in('media_type', ['movie', 'tv', 'drama', 'anime']).eq('user_id', user.id).eq('rating', 'like').order('created_at', { ascending: false }).limit(8),
         fetch('/api/discover-feed').catch(() => null),
       ]);
       if (cancelled) return;
@@ -306,9 +312,9 @@ export default function ExplorePage() {
   }, [trending, newReleases]);
 
   const renderMediaRail = (items: ExploreItem[], emptyText = 'Aucun titre disponible avec ces filtres.') => (
-    items.length > 0 ? <div className={styles.discover2026Rail}>
+    items.length > 0 ? <div data-steldra-ui="discover2026Rail" className={styles.discover2026Rail}>
       {items.map((media) => (
-        <article key={keyOf(media)} className={styles.discover2026Card}>
+        <article key={keyOf(media)} data-steldra-ui="discover2026Card" className={styles.discover2026Card}>
           <MediaCard
             item={media}
             currentItem={myList[keyOf(media)]}
@@ -318,25 +324,25 @@ export default function ExplorePage() {
             onRemove={(item) => void remove(item)}
             rememberCollectionPosition={false}
           />
-          <div className={styles.discover2026CardMeta}>
+          <div data-steldra-ui="discover2026CardMeta" className={styles.discover2026CardMeta}>
             <strong>{media.title}</strong>
             <span>{media.year || '—'} · {media.type === 'movie' ? 'Film' : media.type === 'anime' ? 'Animé' : media.type === 'drama' ? 'Drama' : 'Série'}</span>
           </div>
         </article>
       ))}
-    </div> : <div className={styles.discover2026Empty}>{emptyText}</div>
+    </div> : <div data-steldra-ui="discover2026Empty" className={styles.discover2026Empty}>{emptyText}</div>
   );
 
   return <>
     <MainNav />
-    <main className={styles.discover2026Page}>
-      <section className={styles.discover2026Hero}>
-        <div className={styles.discover2026HeroCopy}>
+    <main data-steldra-ui="discover2026Page" className={styles.discover2026Page}>
+      <section data-steldra-ui="discover2026Hero" className={styles.discover2026Hero}>
+        <div data-steldra-ui="discover2026HeroCopy" className={styles.discover2026HeroCopy}>
           <span>À EXPLORER</span>
           <h1>Découvrir</h1>
           <p>Explorez et trouvez votre prochaine histoire.</p>
         </div>
-        <div className={styles.discover2026TypeTabs} aria-label="Filtrer par type de média">
+        <div data-steldra-ui="discover2026TypeTabs" className={styles.discover2026TypeTabs} aria-label="Filtrer par type de média">
           {([
             ['all', 'Tout'], ['movie', 'Films'], ['tv', 'Séries'], ['drama', 'Dramas'], ['anime', 'Animés'],
           ] as [MediaFilter, string][]).map(([value, label]) => (
@@ -345,12 +351,12 @@ export default function ExplorePage() {
         </div>
       </section>
 
-      <section className={styles.discover2026Section + ' ' + styles.discover2026GenresFirst}>
-        <div className={styles.discover2026SectionHead}>
+      <section data-steldra-ui="discover2026Section discover2026GenresFirst" className={styles.discover2026Section + ' ' + styles.discover2026GenresFirst}>
+        <div data-steldra-ui="discover2026SectionHead" className={styles.discover2026SectionHead}>
           <div><h2>Explorer par genre</h2><span>Choisissez une ambiance et laissez STELDRA chercher pour vous.</span></div>
           <span>{GENRE_CHOICES.length} univers</span>
         </div>
-        <div className={styles.discover2026GenreTiles}>
+        <div data-steldra-ui="discover2026GenreTiles" className={styles.discover2026GenreTiles}>
           {GENRE_CHOICES.map((genre) => (
             <button
               key={genre}
@@ -365,44 +371,44 @@ export default function ExplorePage() {
             </button>
           ))}
         </div>
-        <div className={styles.discover2026GenreSelectionBar}>
+        <div data-steldra-ui="discover2026GenreSelectionBar" className={styles.discover2026GenreSelectionBar}>
           <span>{selectedGenres.length === 0 ? 'Choisissez un ou plusieurs genres' : `${selectedGenres.length} genre${selectedGenres.length > 1 ? 's' : ''} sélectionné${selectedGenres.length > 1 ? 's' : ''}`}</span>
           {selectedGenres.length > 0 && <button type="button" onClick={() => setSelectedGenres([])}>Effacer la sélection</button>}
         </div>
       </section>
 
-      {selectedGenres.length > 0 && <section id="discover-genre-results" className={styles.discover2026GenreResultArea}>
-        <div className={styles.discover2026SectionHead}>
+      {selectedGenres.length > 0 && <section id="discover-genre-results" data-steldra-ui="discover2026GenreResultArea" className={styles.discover2026GenreResultArea}>
+        <div data-steldra-ui="discover2026SectionHead" className={styles.discover2026SectionHead}>
           <div><h2>{selectedGenres.join(' + ')}</h2><span>Des titres correspondant à {selectedGenres.length > 1 ? 'ces univers combinés' : 'cet univers'}.</span></div>
-          <div className={styles.discover2026GenreActions}>
+          <div data-steldra-ui="discover2026GenreActions" className={styles.discover2026GenreActions}>
             <button type="button" className={genreScope === 'discover' ? styles.discover2026ScopeActive : ''} onClick={() => setGenreScope('discover')}>À découvrir</button>
             <button type="button" className={genreScope === 'collection' ? styles.discover2026ScopeActive : ''} onClick={() => setGenreScope('collection')}>Dans ma collection</button>
             {genreScope === 'discover' && <button type="button" onClick={() => void loadGenre(selectedGenres, genrePage + 1)} disabled={genreLoading}>Nouvelles propositions</button>}
           </div>
         </div>
-        {genreLoading && genreScope === 'discover' ? <div className={styles.discover2026Empty}>STELDRA cherche des titres…</div> : renderMediaRail(visibleGenre.slice(0, 20), genreScope === 'collection' ? 'Aucun titre de votre collection ne correspond à ce genre.' : 'Aucune proposition pour ce genre.')}
+        {genreLoading && genreScope === 'discover' ? <div data-steldra-ui="discover2026Empty" className={styles.discover2026Empty}>STELDRA cherche des titres…</div> : renderMediaRail(visibleGenre.slice(0, 20), genreScope === 'collection' ? 'Aucun titre de votre collection ne correspond à ce genre.' : 'Aucune proposition pour ce genre.')}
       </section>}
 
-      <section className={styles.discover2026Filters}>
+      <section data-steldra-ui="discover2026Filters" className={styles.discover2026Filters}>
         <label><span>Trier par</span><select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}><option value="popular">Popularité</option><option value="rating">Note</option><option value="recent">Plus récents</option></select></label>
         <label><span>Année</span><select value={yearFilter} onChange={(event) => setYearFilter(event.target.value)}><option value="all">Toutes les années</option>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
         <label><span>Note minimum</span><select value={minimumRating} onChange={(event) => setMinimumRating(Number(event.target.value))}><option value={0}>Toutes</option><option value={6}>6+</option><option value={7}>7+</option><option value={8}>8+</option></select></label>
-        <Link className={styles.discover2026AdvancedButton} href="/talents"><span aria-hidden="true">◎</span> Talents du cinéma</Link>
+        <Link data-steldra-ui="discover2026AdvancedButton" className={styles.discover2026AdvancedButton} href="/talents"><span aria-hidden="true">◎</span> Talents du cinéma</Link>
       </section>
 
-      <section className={styles.discoverTalentGateway}>
+      <section data-steldra-ui="discoverTalentGateway" className={styles.discoverTalentGateway}>
         <div><span>TALENTS</span><h2>Les visages derrière vos histoires</h2><p>Retrouvez acteurs, réalisateurs et doubleurs, explorez leurs filmographies et ajoutez vos préférés en favoris.</p></div>
         <Link href="/talents">Explorer les talents →</Link>
       </section>
 
-      <section className={styles.discover2026Section}>
-        <div className={styles.discover2026SectionHead}><div><h2>À l’affiche</h2><span>Tendances et nouveautés du moment</span></div><span>Populaire cette semaine</span></div>
-        {loading ? <div className={styles.discover2026Empty}>Chargement des tendances…</div> : renderMediaRail(visibleTrending.slice(0, 18))}
+      <section data-steldra-ui="discover2026Section" className={styles.discover2026Section}>
+        <div data-steldra-ui="discover2026SectionHead" className={styles.discover2026SectionHead}><div><h2>À l’affiche</h2><span>Tendances et nouveautés du moment</span></div><span>Populaire cette semaine</span></div>
+        {loading ? <div data-steldra-ui="discover2026Empty" className={styles.discover2026Empty}>Chargement des tendances…</div> : renderMediaRail(visibleTrending.slice(0, 18))}
       </section>
 
-      <section className={styles.discover2026Section}>
-        <div className={styles.discover2026SectionHead}><div><h2>Recommandé pour vous</h2><span>Basé sur vos goûts</span></div><span>{recommendations.length > 0 ? 'Personnalisé' : 'Sélection STELDRA'}</span></div>
-        {loading ? <div className={styles.discover2026Empty}>Préparation de vos recommandations…</div> : renderMediaRail(visibleRecommendations.slice(0, 18))}
+      <section data-steldra-ui="discover2026Section" className={styles.discover2026Section}>
+        <div data-steldra-ui="discover2026SectionHead" className={styles.discover2026SectionHead}><div><h2>Recommandé pour vous</h2><span>Basé sur vos goûts</span></div><span>{recommendations.length > 0 ? 'Personnalisé' : 'Sélection STELDRA'}</span></div>
+        {loading ? <div data-steldra-ui="discover2026Empty" className={styles.discover2026Empty}>Préparation de vos recommandations…</div> : renderMediaRail(visibleRecommendations.slice(0, 18))}
       </section>
 
     </main>

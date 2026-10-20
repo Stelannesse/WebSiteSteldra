@@ -1,7 +1,12 @@
+/**
+ * Rôle du fichier : API Avis TMDB : récupère les critiques publiques associées à un film ou une série.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');

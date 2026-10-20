@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Bouton réutilisable permettant d'afficher ou de masquer un mot de passe.
+ */
+
 'use client'
 
 type Props = {
@@ -6,6 +10,7 @@ type Props = {
   className?: string
 }
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function PasswordVisibilityButton({ visible, onToggle, className }: Props) {
   return (
     <button

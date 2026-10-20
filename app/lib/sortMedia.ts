@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Utilitaire de tri alphabétique commun aux listes de médias.
+ */
+
 import type { MediaItem } from "../types/media";
 
 const titleCollator = new Intl.Collator("fr", {
@@ -6,6 +10,7 @@ const titleCollator = new Intl.Collator("fr", {
   ignorePunctuation: true,
 });
 
+/** Trie les médias par titre sans modifier le tableau reçu. */
 export function sortMediaAlphabetically(
   media: MediaItem[]
 ): MediaItem[] {

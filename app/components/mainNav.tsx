@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Navigation principale : construit les liens de l'application et indique la rubrique active.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -17,6 +21,7 @@ const links: { href: string; label: string; icon: IconName }[] = [
   { href: '/settings', label: 'Paramètres', icon: 'settings' },
 ];
 
+/** Retourne l'icône correspondant à une entrée de navigation. */
 function NavIcon({ name }: { name: IconName }) {
   const common = { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
   const icons = {
@@ -32,21 +37,28 @@ function NavIcon({ name }: { name: IconName }) {
   return <svg {...common}>{icons[name]}</svg>;
 }
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function MainNav() {
   const pathname = usePathname();
   return (
-    <nav className={styles.nav} aria-label="Navigation principale">
-      <div className={styles.inner}>
+    <nav data-steldra-nav="true" data-steldra-ui="nav" className={styles.nav} aria-label="Navigation principale">
+      <Link href="/" hidden data-steldra-brand="true" aria-label="STELDRA, accueil">
+        <span data-steldra-brand-mark="true" aria-hidden="true">✦</span>
+        <span><strong>STELDRA</strong><small>VOTRE UNIVERS CINÉMA</small></span>
+      </Link>
+      <span hidden data-steldra-nav-heading="true">EXPLORER</span>
+      <div data-steldra-ui="inner" className={styles.inner}>
         {links.map((link) => {
           const isActive = link.href === '/' ? pathname === '/' : pathname.startsWith(link.href);
           return (
-            <Link key={link.href} href={link.href} className={`${styles.link} ${isActive ? styles.active : ''}`} aria-current={isActive ? 'page' : undefined}>
-              <span className={styles.icon}><NavIcon name={link.icon} /></span>
-              <span className={styles.label}>{link.label}</span>
+            <Link key={link.href} href={link.href} data-steldra-ui="link active" className={`${styles.link} ${isActive ? styles.active : ''}`} aria-current={isActive ? 'page' : undefined}>
+              <span data-steldra-ui="icon" className={styles.icon}><NavIcon name={link.icon} /></span>
+              <span data-steldra-ui="label" className={styles.label}>{link.label}</span>
             </Link>
           );
         })}
       </div>
+      <div hidden data-steldra-nav-footer="true"><span>VOS HISTOIRES, VOTRE RYTHME.</span><p>Un endroit pour tous<br/>vos univers cinéma.</p><Link href="/statistiques">Mes statistiques <span aria-hidden="true">↗</span></Link></div>
     </nav>
   );
 }

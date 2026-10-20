@@ -1,12 +1,20 @@
+/**
+ * Rôle du fichier : API Détail média : centralise les informations TMDB d'un film ou d'une série (crédits, vidéos et données associées).
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   const id = searchParams.get('id');
   const type = searchParams.get('type');
+  if (!['movie', 'tv', 'drama', 'anime'].includes(type || '')) {
+    return NextResponse.json({ error: 'Ce contenu appartient au site de lecture.' }, { status: 400 });
+  }
 
   if (!id || !type) {
     return NextResponse.json(
@@ -123,80 +131,6 @@ export async function GET(request: Request) {
         actors: [],
 
         seasons_count: 1,
-
-        runtime: null,
-
-        episode_runtime: null,
-        genres: [],
-      });
-    }
-  }
-
-  // =====================================================
-  // CAS B : MANGAS ET MANHWAS MANGADEX
-  // =====================================================
-
-  if (type === 'manga' || type === 'manhwa') {
-    try {
-      const res = await fetch(
-        `https://api.mangadex.org/manga/${id}?includes[]=cover_art`
-      );
-
-      if (!res.ok) {
-        throw new Error(
-          'Impossible de charger les données MangaDex'
-        );
-      }
-
-      const dexData = await res.json();
-
-      const descriptions =
-        dexData.data?.attributes?.description || {};
-
-      const synopsis =
-        descriptions.fr ||
-        descriptions.en ||
-        'Aucun résumé disponible pour ce manga.';
-
-      const mangaTags = (dexData.data?.attributes?.tags || [])
-        .map((tag: any) => tag.attributes?.name?.fr || tag.attributes?.name?.en)
-        .filter(Boolean);
-
-      const coverRelationship = (dexData.data?.relationships || []).find(
-        (relationship: any) => relationship.type === 'cover_art'
-      );
-      const coverFileName = coverRelationship?.attributes?.fileName || '';
-      const posterPath = coverFileName
-        ? `https://uploads.mangadex.org/covers/${id}/${coverFileName}`
-        : null;
-
-      return NextResponse.json({
-        synopsis,
-
-        actors: [],
-
-        seasons_count: 0,
-
-        runtime: null,
-
-        episode_runtime: null,
-
-        genres: mangaTags,
-
-        year:
-          Number(dexData.data?.attributes?.year) ||
-          null,
-
-        poster_path: posterPath,
-      });
-    } catch {
-      return NextResponse.json({
-        synopsis:
-          'Erreur lors du chargement depuis MangaDex.',
-
-        actors: [],
-
-        seasons_count: 0,
 
         runtime: null,
 

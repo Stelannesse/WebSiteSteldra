@@ -1,5 +1,10 @@
+/**
+ * Rôle du fichier : Manifeste PWA : décrit le nom, les icônes, les couleurs et le mode d'affichage de l'application installable.
+ */
+
 import type { MetadataRoute } from 'next';
 
+/** Retourne la configuration utilisée lorsque l'application est installée comme PWA. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'STELDRA',

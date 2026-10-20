@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : API Recherche : interroge TMDB et transforme les résultats dans le format commun de l'application.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY
@@ -31,11 +35,13 @@ const TMDB_GENRES: Record<number, string> = {
   10768: 'Guerre & Politique',
 };
 
+/** Convertit les identifiants de genres TMDB en libellés français. */
 const genreNamesFromIds = (ids: unknown): string[] =>
   Array.isArray(ids)
     ? ids.map((id) => TMDB_GENRES[Number(id)]).filter(Boolean)
     : [];
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q');
@@ -44,7 +50,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ results: [] });
   }
 
-  const encodedQuery = encodeURIComponent(query);
+  const encodedQuery = encodeURIComponent(query.trim().slice(0, 200));
   const formattedResults: any[] = [];
 
   // --- 1. TMDB (FILMS, SÉRIES, DRAMAS, ANIMES) ---
@@ -55,7 +61,7 @@ export async function GET(request: Request) {
     const tmdbPages = await Promise.all(
       [1, 2, 3].map(async (page) => {
         const tmdbUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodedQuery}&page=${page}&include_adult=false`;
-        const response = await fetch(tmdbUrl);
+        const response = await fetch(tmdbUrl, { signal: AbortSignal.timeout(8000) });
         return response.ok ? response.json() : { results: [] };
       })
     );
@@ -216,42 +222,6 @@ export async function GET(request: Request) {
     }
   } catch {
     // Échec silencieux si Jikan rame ou est bloqué
-  }
-
-  // --- 3. MANGADEX (MANGAS vs MANHWAS) ---
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
-
-    const mangadexUrl = `https://api.mangadex.org/manga?title=${encodedQuery}&limit=6&includes[]=cover_art`;
-    const mangadexRes = await fetch(mangadexUrl, { signal: controller.signal }).then(res => res.json());
-    clearTimeout(timeoutId);
-
-    if (mangadexRes.data) {
-      mangadexRes.data.forEach((manga: any) => {
-        const coverRel = manga.relationships?.find((rel: any) => rel.type === 'cover_art');
-        const fileName = coverRel?.attributes?.fileName || '';
-        const coverUrl = fileName ? `https://uploads.mangadex.org/covers/${manga.id}/${fileName}` : '';
-        const title = manga.attributes?.title?.en || Object.values(manga.attributes?.title || {})[0] || 'Titre inconnu';
-        
-        const lang = manga.attributes?.originalLanguage;
-        const finalMangaType = lang === 'ko' ? 'manhwa' : 'manga';
-
-        formattedResults.push({
-          id: manga.id,
-          title: title,
-          poster_path: coverUrl, 
-          type: finalMangaType,
-          chapters: manga.attributes?.lastChapter || 0,
-          airing_status: manga.attributes?.status === 'ongoing' ? 'en_cours' : 'termine',
-          genres: (manga.attributes?.tags || [])
-            .map((tag: any) => tag.attributes?.name?.en || tag.attributes?.name?.fr)
-            .filter(Boolean)
-        });
-      });
-    }
-  } catch {
-    // Échec silencieux pour MangaDex
   }
 
   return NextResponse.json({ results: formattedResults });

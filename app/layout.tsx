@@ -1,5 +1,10 @@
+/**
+ * Rôle du fichier : Structure commune de l'application : définit les métadonnées et enveloppe toutes les pages avec l'en-tête principal.
+ */
+
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./desktop.css";
 import { Inter, Poppins } from "next/font/google";
 
 const inter = Inter({
@@ -29,6 +34,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/** Applique la structure HTML commune à toutes les pages. */
 export default function RootLayout({
   children,
 }: Readonly<{

@@ -1,6 +1,11 @@
+/**
+ * Rôle du fichier : Page Tier Lists : permet de créer, réordonner, sauvegarder et partager des classements visuels.
+ */
+
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { isCinemaType } from '../lib/cinemaScope';
 import { useRouter } from 'next/navigation';
 import MainNav from '../components/mainNav';
 import { createClient } from '../lib/supabase';
@@ -92,6 +97,7 @@ const mediaLabels: Record<MediaType | 'tous', string> = {
   manhwa: 'Manhwas',
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function TierListsPage() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
@@ -163,7 +169,7 @@ export default function TierListsPage() {
         [key: string]: MyListItem;
       } = JSON.parse(savedCollection);
 
-      const collectionMedia = Object.values(parsedCollection).map(
+      const collectionMedia = Object.values(parsedCollection).filter((entry) => isCinemaType(entry?.media?.type)).map(
         (entry) => entry.media
       );
 
@@ -274,7 +280,7 @@ export default function TierListsPage() {
         const listIds = lists.map((list) => list.id);
         const { data: itemData, error: itemError } = await supabase
           .from('custom_list_items')
-          .select('*')
+          .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
           .in('list_id', listIds)
           .order('position', { ascending: true });
 
@@ -323,7 +329,7 @@ export default function TierListsPage() {
         allMedia
           .filter(
             (media) =>
-              (media.type === 'manga' || media.type === 'manhwa') &&
+              isCinemaType(media.type) &&
               !media.poster_path
           )
           .map((media) => [`${media.type}_${media.id}`, media])
@@ -388,7 +394,7 @@ export default function TierListsPage() {
         ? unranked
         : sourceLists.find((list) => list.id === activeSourceId)?.media || [];
 
-    return sourceMedia.filter((media) => {
+    return sourceMedia.filter((media) => isCinemaType(media.type)).filter((media) => {
       const mediaKey = `${media.type}_${media.id}`;
       const matchesType = filter === 'tous' || media.type === filter;
       const matchesSearch = media.title
@@ -576,6 +582,7 @@ export default function TierListsPage() {
   );
 };
 
+/** Ajoute un nouveau rang disponible à la tier list. */
 const addRow = () => {
   const usedLabels = rows.map((row) =>
     row.label.toUpperCase()
@@ -615,6 +622,7 @@ const addRow = () => {
   ]);
 };
 
+/** Supprime un rang après confirmation et replace ses médias parmi les éléments non classés. */
 const deleteRow = (rowId: string) => {
   const rowToDelete = rows.find(
     (row) => row.id === rowId
@@ -830,7 +838,7 @@ const deleteRow = (rowId: string) => {
     const columns = 19;
     const contentStartX = 116;
     const rowHeights = rows.map((row) => {
-      const lines = Math.max(1, Math.ceil(row.media.length / columns));
+      const lines = Math.max(1, Math.ceil(row.media.filter((media) => isCinemaType(media.type)).length / columns));
       return 38 + lines * (posterHeight + posterGap) + 12;
     });
     const height = 104 + rowHeights.reduce((total, rowHeight) => total + rowHeight, 0) + 38;
@@ -848,7 +856,7 @@ const deleteRow = (rowId: string) => {
     context.fillText(title || 'Ma Tier List', 28, 52);
     context.fillStyle = '#77a0b1';
     context.font = '600 16px system-ui, sans-serif';
-    context.fillText(`${rows.reduce((total, row) => total + row.media.length, 0)} médias classés`, 30, 78);
+    context.fillText(`${rows.reduce((total, row) => total + row.media.filter((media) => isCinemaType(media.type)).length, 0)} médias classés`, 30, 78);
 
     const loadPoster = (source: string) => new Promise<HTMLImageElement | null>((resolve) => {
       const image = new Image();
@@ -889,11 +897,11 @@ const deleteRow = (rowId: string) => {
       context.fillText(row.title || `Rang ${row.label}`, contentStartX, y + 24);
       context.fillStyle = '#8ba5b0';
       context.font = '700 14px system-ui, sans-serif';
-      context.fillText(`${row.media.length} média${row.media.length > 1 ? 's' : ''}`, width - 118, y + 23);
+      context.fillText(`${row.media.filter((media) => isCinemaType(media.type)).length} média${row.media.filter((media) => isCinemaType(media.type)).length > 1 ? 's' : ''}`, width - 118, y + 23);
 
       const loadingBatchSize = 16;
-      for (let mediaStart = 0; mediaStart < row.media.length; mediaStart += loadingBatchSize) {
-        const mediaBatch = row.media.slice(mediaStart, mediaStart + loadingBatchSize);
+      for (let mediaStart = 0; mediaStart < row.media.filter((media) => isCinemaType(media.type)).length; mediaStart += loadingBatchSize) {
+        const mediaBatch = row.media.filter((media) => isCinemaType(media.type)).slice(mediaStart, mediaStart + loadingBatchSize);
         const loadedPosters = await Promise.all(
           mediaBatch.map((media) => loadPoster(getPosterUrl(media)))
         );
@@ -1118,9 +1126,9 @@ const deleteRow = (rowId: string) => {
     }, 120);
   };
 
-  const rankedMediaCount = rows.reduce((total, row) => total + row.media.length, 0);
+  const rankedMediaCount = rows.reduce((total, row) => total + row.media.filter((media) => isCinemaType(media.type)).length, 0);
   const activeSourceMediaCount = activeSourceId === 'collection'
-    ? unranked.length + rows.flatMap((row) => row.media).filter((media) =>
+    ? unranked.filter((media) => isCinemaType(media.type)).length + rows.flatMap((row) => row.media).filter((media) =>
         unranked.some((item) => item.type === media.type && String(item.id) === String(media.id))
       ).length
     : sourceLists.find((list) => list.id === activeSourceId)?.media.length || 0;
@@ -1177,18 +1185,18 @@ const deleteRow = (rowId: string) => {
     <>
       <MainNav />
 
-      <main className={`${styles.page} ${touchDragging ? styles.touchDragging : ''}`}>
-        <section className={styles.heroPanel}>
-          <div className={styles.tierHero}>
-            <div className={styles.tierHeroGlow} aria-hidden="true" />
-            <div className={styles.pageHeader}>
+      <main data-steldra-ui="page touchDragging" className={`${styles.page} ${touchDragging ? styles.touchDragging : ''}`}>
+        <section data-steldra-ui="heroPanel" className={styles.heroPanel}>
+          <div data-steldra-ui="tierHero" className={styles.tierHero}>
+            <div data-steldra-ui="tierHeroGlow" className={styles.tierHeroGlow} aria-hidden="true" />
+            <div data-steldra-ui="pageHeader" className={styles.pageHeader}>
               <div>
-                <span className={styles.heroEyebrow}>VOTRE CLASSEMENT</span>
+                <span data-steldra-ui="heroEyebrow" className={styles.heroEyebrow}>VOTRE CLASSEMENT</span>
                 <h1>Tier Lists</h1>
-                <p className={styles.heroTagline}>Classez et sauvegardez tous vos favoris.</p>
+                <p data-steldra-ui="heroTagline" className={styles.heroTagline}>Classez et sauvegardez tous vos favoris.</p>
               </div>
 
-              <div className={styles.heroStats}>
+              <div data-steldra-ui="heroStats" className={styles.heroStats}>
                 <div><strong>{rankedMediaCount}</strong><span>classés</span></div>
                 <div><strong>{rows.length}</strong><span>rangs</span></div>
                 <div><strong>{savedTierLists.length}</strong><span>sauvegardes</span></div>
@@ -1196,30 +1204,30 @@ const deleteRow = (rowId: string) => {
             </div>
           </div>
 
-          <div className={styles.libraryDeck}>
-            <div className={styles.libraryDeckHeader}>
+          <div data-steldra-ui="libraryDeck" className={styles.libraryDeck}>
+            <div data-steldra-ui="libraryDeckHeader" className={styles.libraryDeckHeader}>
               <div>
-                <span className={styles.deckEyebrow}>RÉSERVE</span>
+                <span data-steldra-ui="deckEyebrow" className={styles.deckEyebrow}>RÉSERVE</span>
                 <h2>Choisissez les médias à classer</h2>
               </div>
               <span>{filteredUnranked.length} disponible{filteredUnranked.length > 1 ? 's' : ''}</span>
             </div>
 
-            <div className={styles.filters}>
+            <div data-steldra-ui="filters" className={styles.filters}>
               <input
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="⌕  Rechercher un média..."
-                className={styles.searchInput}
+                data-steldra-ui="searchInput" className={styles.searchInput}
               />
 
-              <div className={styles.typeFilters}>
-                {(Object.keys(mediaLabels) as Array<MediaType | 'tous'>).map((type) => (
+              <div data-steldra-ui="typeFilters" className={styles.typeFilters}>
+                {(Object.keys(mediaLabels) as Array<MediaType | 'tous'>).filter((type) => type === 'tous' || isCinemaType(type)).map((type) => (
                   <button
                     key={type}
                     type="button"
-                    className={`${styles.filterButton} ${filter === type ? styles.filterButtonActive : ''}`}
+                    data-steldra-ui="filterButton filterButtonActive" className={`${styles.filterButton} ${filter === type ? styles.filterButtonActive : ''}`}
                     onClick={() => setFilter(type)}
                   >
                     {type === 'tous' ? 'Tous' : mediaLabels[type]}
@@ -1228,10 +1236,10 @@ const deleteRow = (rowId: string) => {
               </div>
             </div>
 
-            <div className={styles.sourcePicker}>
+            <div data-steldra-ui="sourcePicker" className={styles.sourcePicker}>
               <button
                 type="button"
-                className={`${styles.sourceButton} ${activeSourceId === 'collection' ? styles.sourceButtonActive : ''}`}
+                data-steldra-ui="sourceButton sourceButtonActive" className={`${styles.sourceButton} ${activeSourceId === 'collection' ? styles.sourceButtonActive : ''}`}
                 onClick={() => setActiveSourceId('collection')}
               >
                 Ma collection
@@ -1241,7 +1249,7 @@ const deleteRow = (rowId: string) => {
                 <button
                   key={list.id}
                   type="button"
-                  className={`${styles.sourceButton} ${activeSourceId === list.id ? styles.sourceButtonActive : ''}`}
+                  data-steldra-ui="sourceButton sourceButtonActive" className={`${styles.sourceButton} ${activeSourceId === list.id ? styles.sourceButtonActive : ''}`}
                   onClick={() => setActiveSourceId(list.id)}
                 >
                   {list.name}
@@ -1252,13 +1260,13 @@ const deleteRow = (rowId: string) => {
 
             <div
               data-tier-unranked
-              className={`${styles.unrankedGrid} ${dragOverRank === 'unranked' ? styles.unrankedDragOver : ''}`}
+              data-steldra-ui="unrankedGrid unrankedDragOver" className={`${styles.unrankedGrid} ${dragOverRank === 'unranked' ? styles.unrankedDragOver : ''}`}
             >
               {filteredUnranked.map((media) => (
                 <button
                   key={`${media.type}_${media.id}`}
                   type="button"
-                  className={styles.libraryPoster}
+                  data-steldra-ui="libraryPoster" className={styles.libraryPoster}
                   onPointerDown={(event) => handlePointerDown(event, media)}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
@@ -1285,60 +1293,60 @@ const deleteRow = (rowId: string) => {
               ))}
 
               {filteredUnranked.length === 0 && (
-                <p className={styles.emptyLibrary}>Aucune œuvre ne correspond à cette recherche.</p>
+                <p data-steldra-ui="emptyLibrary" className={styles.emptyLibrary}>Aucune œuvre ne correspond à cette recherche.</p>
               )}
             </div>
           </div>
         </section>
 
-        {savedMessage && <p className={styles.savedMessage}>{savedMessage}</p>}
+        {savedMessage && <p data-steldra-ui="savedMessage" className={styles.savedMessage}>{savedMessage}</p>}
 
-        <section ref={tierListRef} className={styles.tierListExport}>
-          <div className={styles.tierHeader}>
-            <div className={styles.tierTitleWrap}>
-              <span className={styles.tierTitleIcon}>✎</span>
+        <section ref={tierListRef} data-steldra-ui="tierListExport" className={styles.tierListExport}>
+          <div data-steldra-ui="tierHeader" className={styles.tierHeader}>
+            <div data-steldra-ui="tierTitleWrap" className={styles.tierTitleWrap}>
+              <span data-steldra-ui="tierTitleIcon" className={styles.tierTitleIcon}>✎</span>
               <input
-                className={styles.titleInput}
+                data-steldra-ui="titleInput" className={styles.titleInput}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 aria-label="Titre de la tier list"
               />
             </div>
 
-            <div className={styles.headerActions} data-html2canvas-ignore="true">
-              <button type="button" className={styles.secondaryButton} onClick={resetTierList}>
+            <div data-steldra-ui="headerActions" className={styles.headerActions} data-html2canvas-ignore="true">
+              <button type="button" data-steldra-ui="secondaryButton" className={styles.secondaryButton} onClick={resetTierList}>
                 ↻ Réinitialiser
               </button>
-              <button type="button" className={styles.primaryButton} onClick={saveTierList}>
+              <button type="button" data-steldra-ui="primaryButton" className={styles.primaryButton} onClick={saveTierList}>
                 ▣ Enregistrer
               </button>
-              <button type="button" className={styles.primaryButton} onClick={downloadTierList}>
+              <button type="button" data-steldra-ui="primaryButton" className={styles.primaryButton} onClick={downloadTierList}>
                 ↓ Télécharger
               </button>
             </div>
           </div>
 
-          <nav className={styles.mobileTierNav} aria-label="Accès rapide aux rangs" data-html2canvas-ignore="true">
+          <nav data-steldra-ui="mobileTierNav" className={styles.mobileTierNav} aria-label="Accès rapide aux rangs" data-html2canvas-ignore="true">
             {rows.map((row) => (
               <button key={row.id} type="button" onClick={() => scrollToRow(row.id)}>
                 {row.title || row.label}
-                <span>{row.media.length}</span>
+                <span>{row.media.filter((media) => isCinemaType(media.type)).length}</span>
               </button>
             ))}
           </nav>
 
-          <div className={styles.rows}>
+          <div data-steldra-ui="rows" className={styles.rows}>
             {rows.map((row, rowIndex) => (
               <div
                 key={row.id}
                 id={`tier-row-${row.id}`}
                 data-tier-row-id={row.id}
-                className={`${styles.tierRow} ${dragOverRank === row.id ? styles.tierRowDragOver : ''} ${
+                data-steldra-ui="tierRow tierRowDragOver tierRowMobileOpen tierRowMobileClosed" className={`${styles.tierRow} ${dragOverRank === row.id ? styles.tierRowDragOver : ''} ${
                   mobileOpenRowIds.has(row.id) ? styles.tierRowMobileOpen : styles.tierRowMobileClosed
                 }`}
               >
                 <div
-                  className={styles.rankLabel}
+                  data-steldra-ui="rankLabel" className={styles.rankLabel}
                   style={{
                     backgroundColor: [
                       '#ff5565', '#ff9a4d', '#ffd84a', '#52d66f', '#4ca9f5', '#a54be7', '#f472b6', '#22d3ee',
@@ -1346,7 +1354,7 @@ const deleteRow = (rowId: string) => {
                   }}
                 >
                   <input
-                    className={styles.rankInput}
+                    data-steldra-ui="rankInput" className={styles.rankInput}
                     value={row.label}
                     maxLength={3}
                     onChange={(event) => updateRowLabel(row.id, event.target.value)}
@@ -1354,10 +1362,10 @@ const deleteRow = (rowId: string) => {
                   />
                 </div>
 
-                <div className={styles.rowContent}>
-                  <div className={styles.mobileRowHeader} data-html2canvas-ignore="true">
+                <div data-steldra-ui="rowContent" className={styles.rowContent}>
+                  <div data-steldra-ui="mobileRowHeader" className={styles.mobileRowHeader} data-html2canvas-ignore="true">
                     <input
-                      className={styles.mobileRowTitleInput}
+                      data-steldra-ui="mobileRowTitleInput" className={styles.mobileRowTitleInput}
                       value={row.title}
                       onChange={(event) => updateRowTitle(row.id, event.target.value)}
                       placeholder={`Nom du rang ${row.label}`}
@@ -1365,28 +1373,28 @@ const deleteRow = (rowId: string) => {
                     />
                     <button
                       type="button"
-                      className={styles.mobileRowToggle}
+                      data-steldra-ui="mobileRowToggle" className={styles.mobileRowToggle}
                       onClick={() => toggleMobileRow(row.id)}
                       aria-expanded={mobileOpenRowIds.has(row.id)}
                       aria-controls={`tier-row-media-${row.id}`}
                     >
-                      <span className={styles.mobileRowCount}>{row.media.length}</span>
-                      <span className={styles.mobileRowChevron} aria-hidden="true">
+                      <span data-steldra-ui="mobileRowCount" className={styles.mobileRowCount}>{row.media.filter((media) => isCinemaType(media.type)).length}</span>
+                      <span data-steldra-ui="mobileRowChevron" className={styles.mobileRowChevron} aria-hidden="true">
                         {mobileOpenRowIds.has(row.id) ? '⌃' : '⌄'}
                       </span>
                     </button>
                   </div>
 
-                  <div id={`tier-row-media-${row.id}`} className={styles.rowMedia}>
-                    {row.media.length === 0 && (
-                      <span className={styles.emptyRowText}>Glissez vos médias ici</span>
+                  <div id={`tier-row-media-${row.id}`} data-steldra-ui="rowMedia" className={styles.rowMedia}>
+                    {row.media.filter((media) => isCinemaType(media.type)).length === 0 && (
+                      <span data-steldra-ui="emptyRowText" className={styles.emptyRowText}>Glissez vos médias ici</span>
                     )}
 
-                    {row.media.map((media, mediaIndex) => (
+                    {row.media.filter((media) => isCinemaType(media.type)).map((media, mediaIndex) => (
                       <button
                         key={`${media.type}_${media.id}`}
                         type="button"
-                        className={`${styles.posterButton} ${
+                        data-steldra-ui="posterButton posterBeyondMobilePreview" className={`${styles.posterButton} ${
                           mediaIndex >= 15 && !mobileExpandedRowIds.has(row.id)
                             ? styles.posterBeyondMobilePreview
                             : ''
@@ -1407,7 +1415,7 @@ const deleteRow = (rowId: string) => {
                         <img
                           src={getPosterUrl(media)}
                           alt={media.title}
-                          className={styles.poster}
+                          data-steldra-ui="poster" className={styles.poster}
                           onError={(event) => {
                             event.currentTarget.onerror = null;
                             event.currentTarget.src = '/steldra-poster-placeholder.svg';
@@ -1417,23 +1425,23 @@ const deleteRow = (rowId: string) => {
                     ))}
                   </div>
 
-                  {mobileOpenRowIds.has(row.id) && row.media.length > 15 && (
+                  {mobileOpenRowIds.has(row.id) && row.media.filter((media) => isCinemaType(media.type)).length > 15 && (
                     <button
                       type="button"
-                      className={styles.mobileShowMoreButton}
+                      data-steldra-ui="mobileShowMoreButton" className={styles.mobileShowMoreButton}
                       onClick={() => toggleMobileRowExpansion(row.id)}
                       data-html2canvas-ignore="true"
                     >
                       {mobileExpandedRowIds.has(row.id)
                         ? 'Réduire'
-                        : `Voir les ${row.media.length - 15} autres`}
+                        : `Voir les ${row.media.filter((media) => isCinemaType(media.type)).length - 15} autres`}
                       <span aria-hidden="true">{mobileExpandedRowIds.has(row.id) ? ' ↑' : ' ↓'}</span>
                     </button>
                   )}
 
-                  <div className={styles.rowEditControls}>
+                  <div data-steldra-ui="rowEditControls" className={styles.rowEditControls}>
                     <input
-                      className={styles.rowTitleInput}
+                      data-steldra-ui="rowTitleInput" className={styles.rowTitleInput}
                       value={row.title}
                       onChange={(event) => updateRowTitle(row.id, event.target.value)}
                       placeholder="Nom du rang"
@@ -1441,7 +1449,7 @@ const deleteRow = (rowId: string) => {
                     />
                     <button
                       type="button"
-                      className={styles.deleteRowButton}
+                      data-steldra-ui="deleteRowButton" className={styles.deleteRowButton}
                       onClick={() => deleteRow(row.id)}
                       data-html2canvas-ignore="true"
                       aria-label={`Supprimer le rang ${row.label}`}
@@ -1455,16 +1463,16 @@ const deleteRow = (rowId: string) => {
             ))}
           </div>
 
-          <button type="button" className={styles.addRowButton} onClick={addRow} data-html2canvas-ignore="true">
+          <button type="button" data-steldra-ui="addRowButton" className={styles.addRowButton} onClick={addRow} data-html2canvas-ignore="true">
             + Ajouter un rang
           </button>
 
-          <p className={styles.signature}>Créé avec Steldra</p>
+          <p data-steldra-ui="signature" className={styles.signature}>Créé avec Steldra</p>
         </section>
 
         <button
           type="button"
-          className={styles.mobileBackToTop}
+          data-steldra-ui="mobileBackToTop" className={styles.mobileBackToTop}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="Revenir en haut de la page"
           title="Revenir en haut"
@@ -1472,26 +1480,26 @@ const deleteRow = (rowId: string) => {
           ↑
         </button>
 
-        <section className={styles.savedTierListsSection}>
-          <div className={styles.savedHeader}>
-            <div className={styles.savedTitleWrap}>
-              <span className={styles.savedTitleIcon}>▯</span>
+        <section data-steldra-ui="savedTierListsSection" className={styles.savedTierListsSection}>
+          <div data-steldra-ui="savedHeader" className={styles.savedHeader}>
+            <div data-steldra-ui="savedTitleWrap" className={styles.savedTitleWrap}>
+              <span data-steldra-ui="savedTitleIcon" className={styles.savedTitleIcon}>▯</span>
               <h2>Mes Tier Lists sauvegardées</h2>
             </div>
-            <span className={styles.mediaCount}>
+            <span data-steldra-ui="mediaCount" className={styles.mediaCount}>
               {savedTierLists.length} sauvegarde{savedTierLists.length > 1 ? 's' : ''}
             </span>
           </div>
 
           {savedTierLists.length === 0 ? (
-            <p className={styles.emptySavedTierLists}>
+            <p data-steldra-ui="emptySavedTierLists" className={styles.emptySavedTierLists}>
               Tes Tier Lists enregistrées ou téléchargées apparaîtront ici.
             </p>
           ) : (
-            <div className={styles.savedTierListsGrid}>
+            <div data-steldra-ui="savedTierListsGrid" className={styles.savedTierListsGrid}>
               {savedTierLists.map((saved) => {
-                const rankedCount = saved.rows.reduce((total, row) => total + row.media.length, 0);
-                const previewMedia = saved.rows.flatMap((row) => row.media).slice(0, 7);
+                const rankedCount = saved.rows.reduce((total, row) => total + row.media.filter((media) => isCinemaType(media.type)).length, 0);
+                const previewMedia = saved.rows.flatMap((row) => row.media).filter((media) => isCinemaType(media.type)).slice(0, 7);
                 const date = new Intl.DateTimeFormat('fr-FR', {
                   day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
                 }).format(new Date(saved.updatedAt));
@@ -1499,27 +1507,27 @@ const deleteRow = (rowId: string) => {
                 return (
                   <article
                     key={saved.id}
-                    className={`${styles.savedTierListCard} ${activeSavedId === saved.id ? styles.savedTierListCardActive : ''}`}
+                    data-steldra-ui="savedTierListCard savedTierListCardActive" className={`${styles.savedTierListCard} ${activeSavedId === saved.id ? styles.savedTierListCardActive : ''}`}
                   >
-                    <div className={styles.savedPreview}>
+                    <div data-steldra-ui="savedPreview" className={styles.savedPreview}>
                       {previewMedia.length > 0 ? previewMedia.map((media) => (
                         <img key={`${media.type}_${media.id}`} src={getPosterUrl(media)} alt="" />
                       )) : <span>TL</span>}
                     </div>
 
-                    <div className={styles.savedInfo}>
+                    <div data-steldra-ui="savedInfo" className={styles.savedInfo}>
                       <h3>{saved.title || 'Tier list sans titre'}</h3>
                       <p>Modifiée le {date} · {rankedCount} média{rankedCount > 1 ? 's' : ''}</p>
                     </div>
 
-                    <div className={styles.savedTierListActions}>
-                      <button type="button" className={styles.primaryButton} onClick={() => editSavedTierList(saved)}>
+                    <div data-steldra-ui="savedTierListActions" className={styles.savedTierListActions}>
+                      <button type="button" data-steldra-ui="primaryButton" className={styles.primaryButton} onClick={() => editSavedTierList(saved)}>
                         ✎ Modifier
                       </button>
-                      <button type="button" className={styles.secondaryButton} onClick={() => downloadSavedTierList(saved)}>
+                      <button type="button" data-steldra-ui="secondaryButton" className={styles.secondaryButton} onClick={() => downloadSavedTierList(saved)}>
                         ↓ Télécharger
                       </button>
-                      <button type="button" className={styles.dangerButton} onClick={() => deleteSavedTierList(saved)} aria-label="Supprimer">
+                      <button type="button" data-steldra-ui="dangerButton" className={styles.dangerButton} onClick={() => deleteSavedTierList(saved)} aria-label="Supprimer">
                         ♙
                       </button>
                     </div>
@@ -1529,7 +1537,7 @@ const deleteRow = (rowId: string) => {
             </div>
           )}
 
-          <p className={`${styles.storageNote} ${styles.cloudSyncNote}`}>
+          <p data-steldra-ui="storageNote cloudSyncNote" className={`${styles.storageNote} ${styles.cloudSyncNote}`}>
             {cloudSyncStatus === 'ready' && '☁ Tier lists synchronisées sur tous vos appareils.'}
             {cloudSyncStatus === 'loading' && '☁ Synchronisation en cours…'}
             {cloudSyncStatus === 'offline' && 'ⓘ Sauvegarde locale active. Connectez-vous pour synchroniser vos appareils.'}

@@ -1,9 +1,14 @@
+/**
+ * Rôle du fichier : API Découverte : assemble plusieurs sélections TMDB puis supprime les doublons.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 type TmdbType = 'movie' | 'tv';
 
+/** Convertit un résultat externe dans le format attendu par l'application. */
 function format(item: any, type: TmdbType) {
   const title = type === 'movie' ? item.title || item.original_title : item.name || item.original_name;
   if (!item?.id || !title) return null;
@@ -38,6 +43,7 @@ async function tmdb(path: string) {
   return payload.results || [];
 }
 
+/** Supprime les médias présents plusieurs fois dans les résultats. */
 function unique(items: any[]) {
   const map = new Map<string, any>();
   for (const item of items.filter(Boolean)) {
@@ -47,6 +53,7 @@ function unique(items: any[]) {
   return [...map.values()];
 }
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET() {
   if (!TMDB_API_KEY) return NextResponse.json({ trending: [], newReleases: [] });
 

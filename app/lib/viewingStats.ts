@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Calcul des statistiques de visionnage à partir des durées et progressions enregistrées.
+ */
+
 import type { MyListItem } from '../types/media';
 
 const CINEMA_TYPES = new Set(['movie', 'tv', 'drama', 'anime']);
@@ -21,6 +25,7 @@ export type ViewingStats = {
   completion: number;
 };
 
+/** Sécurise une durée enregistrée avant son utilisation dans les calculs. */
 export const normalizeStoredMinutes = (
   value: unknown,
   kind: 'movie' | 'episode'
@@ -46,6 +51,7 @@ export const normalizeStoredMinutes = (
  * - les films comptent leur durée une fois (les relectures sont gérées par l'historique) ;
  * - compte vide = tous les compteurs à 0.
  */
+/** Calcule les totaux et répartitions de temps de visionnage. */
 export function calculateViewingStats(
   myList: Record<string, MyListItem>,
   watchedEpisodes: Record<string, boolean>

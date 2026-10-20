@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : En-tête principal : affiche l'identité visuelle, la navigation et les commandes liées à la session.
+ */
+
 'use client';
 
 import styles from '../page.module.css';
@@ -42,10 +46,9 @@ const typeFilters: Array<{
   { value: 'tv', label: 'Séries' },
   { value: 'drama', label: 'Dramas' },
   { value: 'anime', label: 'Animés' },
-  { value: 'manga', label: 'Mangas' },
-  { value: 'manhwa', label: 'Manhwas' },
 ];
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function Header({
   query,
   typeFilter,
@@ -98,11 +101,11 @@ export default function Header({
   };
 
   return (
-    <header className={styles.appHeader}>
-      <div className={styles.headerShell}>
-        <div className={styles.modernSearch}>
+    <header data-steldra-ui="appHeader" className={styles.appHeader}>
+      <div data-steldra-ui="headerShell" className={styles.headerShell}>
+        <div data-steldra-ui="modernSearch" className={styles.modernSearch}>
           <span
-            className={styles.modernSearchIcon}
+            data-steldra-ui="modernSearchIcon" className={styles.modernSearchIcon}
             aria-hidden="true"
           >
             ⌕
@@ -110,18 +113,18 @@ export default function Header({
 
           <input
             type="search"
-            className={styles.modernSearchInput}
+            data-steldra-ui="modernSearchInput" className={styles.modernSearchInput}
             value={query}
             onChange={(event) =>
               onSearchChange(event.target.value)
             }
-            placeholder="Rechercher un film, une série, un manga..."
+            placeholder="Rechercher un film, une série, un animé..."
             aria-label="Rechercher un média"
           />
 
           {isSearching && (
             <span
-              className={styles.modernSearchLoader}
+              data-steldra-ui="modernSearchLoader" className={styles.modernSearchLoader}
               aria-label="Recherche en cours"
             />
           )}
@@ -129,7 +132,7 @@ export default function Header({
           {query && !isSearching && (
             <button
               type="button"
-              className={styles.modernSearchClear}
+              data-steldra-ui="modernSearchClear" className={styles.modernSearchClear}
               onClick={handleClearSearch}
               aria-label="Effacer la recherche"
             >
@@ -139,7 +142,7 @@ export default function Header({
         </div>
 
         <nav
-          className={styles.mediaTabs}
+          data-steldra-ui="mediaTabs" className={styles.mediaTabs}
           aria-label="Types de médias"
         >
           {typeFilters.map((filter) => {
@@ -150,7 +153,7 @@ export default function Header({
               <button
                 key={filter.value}
                 type="button"
-                className={`${styles.mediaTab} ${
+                data-steldra-ui="mediaTab mediaTabActive" className={`${styles.mediaTab} ${
                   isActive
                     ? styles.mediaTabActive
                     : ''
@@ -166,7 +169,7 @@ export default function Header({
         </nav>
 
         <nav
-          className={styles.statusSegment}
+          data-steldra-ui="statusSegment" className={styles.statusSegment}
           aria-label="Statut des médias"
         >
           {statusFilters.map((filter) => {
@@ -177,7 +180,7 @@ export default function Header({
               <button
                 key={filter.value}
                 type="button"
-                className={`${styles.statusSegmentButton} ${
+                data-steldra-ui="statusSegmentButton statusSegmentButtonActive" className={`${styles.statusSegmentButton} ${
                   isActive
                     ? styles.statusSegmentButtonActive
                     : ''
@@ -189,7 +192,7 @@ export default function Header({
                 <span>{filter.label}</span>
 
                 <span
-                  className={
+                  data-steldra-ui="statusSegmentCount" className={
                     styles.statusSegmentCount
                   }
                 >

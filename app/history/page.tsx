@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Historique : regroupe chronologiquement les ajouts et activités de visionnage.
+ */
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -19,8 +23,10 @@ type HistoryRow = {
 const INITIAL_VISIBLE = 80;
 const LOAD_MORE_STEP = 80;
 
+/** Construit une clé stable combinant le type et l'identifiant du média. */
 const mediaKey = (row: HistoryRow) => `${row.media_type}_${row.media_id}`;
 
+/** Traduit le type technique du média en libellé français. */
 const typeLabel = (type: string) => {
   const labels: Record<string, string> = {
     movie: 'Film',
@@ -39,11 +45,13 @@ const formatTime = (value: string) =>
     minute: '2-digit',
   }).format(new Date(value));
 
+/** Produit une clé de regroupement correspondant au jour d'une activité. */
 const dayKey = (value: string) => {
   const date = new Date(value);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
+/** Transforme une date en titre de groupe lisible dans l'historique. */
 const formatDayLabel = (value: string) => {
   const date = new Date(value);
   const today = new Date();
@@ -66,6 +74,7 @@ const formatDayLabel = (value: string) => {
   }).format(date);
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function HistoryPage() {
   const [supabase] = useState(() => createClient());
   const [rows, setRows] = useState<HistoryRow[]>([]);
@@ -88,7 +97,7 @@ export default function HistoryPage() {
       const { data, error: loadError } = await fetchAllPages<HistoryRow>((from, to) =>
         supabase
           .from('watch_history')
-          .select('id,media_id,media_type,media_data,watched_at')
+          .select('id,media_id,media_type,media_data,watched_at').in('media_type', ['movie', 'tv', 'drama', 'anime'])
           .eq('user_id', user.id)
           .order('watched_at', { ascending: false })
           .order('id', { ascending: false })
@@ -165,41 +174,39 @@ export default function HistoryPage() {
   return (
     <>
       <MainNav />
-      <main className={styles.page}>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>VOS VISIONNAGES</span>
+      <main data-steldra-ui="page" className={styles.page}>
+        <section data-steldra-ui="hero" className={styles.hero}>
+          <div data-steldra-ui="heroCopy" className={styles.heroCopy}>
+            <span data-steldra-ui="eyebrow" className={styles.eyebrow}>VOS VISIONNAGES</span>
             <h1>Historique</h1>
             <p>Vos visionnages, réunis au même endroit.</p>
           </div>
-          <div className={styles.heroStats} aria-label="Résumé de l’historique">
+          <div data-steldra-ui="heroStats" className={styles.heroStats} aria-label="Résumé de l’historique">
             <div><strong>{stats.views}</strong><span>visionnage{stats.views > 1 ? 's' : ''}</span></div>
             <div><strong>{stats.unique}</strong><span>titres uniques</span></div>
             <div><strong>{stats.rewatches}</strong><span>revisionnage{stats.rewatches > 1 ? 's' : ''}</span></div>
           </div>
         </section>
 
-        <section className={styles.controlDeck} aria-label="Filtres de l’historique">
-          <label className={styles.searchWrap}>
+        <section data-steldra-ui="controlDeck" className={styles.controlDeck} aria-label="Filtres de l’historique">
+          <label data-steldra-ui="searchWrap" className={styles.searchWrap}>
             <span>⌕</span>
             <input
-              className={styles.search}
+              data-steldra-ui="search" className={styles.search}
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Rechercher un titre dans votre historique…"
             />
           </label>
-          <select className={styles.select} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Filtrer par type">
+          <select data-steldra-ui="select" className={styles.select} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} aria-label="Filtrer par type">
             <option value="all">Tous les types</option>
             <option value="movie">Films</option>
             <option value="tv">Séries</option>
             <option value="drama">Dramas</option>
             <option value="anime">Animés</option>
-            <option value="manga">Mangas</option>
-            <option value="manhwa">Manhwas</option>
           </select>
-          <select className={styles.select} value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value)} aria-label="Filtrer par période">
+          <select data-steldra-ui="select" className={styles.select} value={periodFilter} onChange={(event) => setPeriodFilter(event.target.value)} aria-label="Filtrer par période">
             <option value="all">Toute la période</option>
             <option value="7">7 derniers jours</option>
             <option value="30">30 derniers jours</option>
@@ -207,55 +214,55 @@ export default function HistoryPage() {
           </select>
         </section>
 
-        {error && <p className={styles.error}>{error}</p>}
+        {error && <p data-steldra-ui="error" className={styles.error}>{error}</p>}
 
         {loading ? (
-          <div className={styles.loading}>Chargement de votre historique…</div>
+          <div data-steldra-ui="loading" className={styles.loading}>Chargement de votre historique…</div>
         ) : filtered.length === 0 ? (
-          <section className={styles.empty}>
+          <section data-steldra-ui="empty" className={styles.empty}>
             <span>✦</span>
             <h2>Aucun visionnage trouvé</h2>
             <p>Votre historique apparaîtra ici au fil de vos visionnages.</p>
           </section>
         ) : (
-          <section className={styles.timeline}>
-            <div className={styles.timelineHead}>
+          <section data-steldra-ui="timeline" className={styles.timeline}>
+            <div data-steldra-ui="timelineHead" className={styles.timelineHead}>
               <div>
-                <span className={styles.eyebrow}>CHRONOLOGIE</span>
+                <span data-steldra-ui="eyebrow" className={styles.eyebrow}>CHRONOLOGIE</span>
                 <h2>Vos derniers visionnages</h2>
               </div>
               <strong>{filtered.length} résultat{filtered.length > 1 ? 's' : ''}</strong>
             </div>
 
             {groupedRows.map(([groupKey, group]) => (
-              <section className={styles.dayGroup} key={groupKey}>
-                <header className={styles.dayHeader}>
-                  <span className={styles.timelineDot} />
+              <section data-steldra-ui="dayGroup" className={styles.dayGroup} key={groupKey}>
+                <header data-steldra-ui="dayHeader" className={styles.dayHeader}>
+                  <span data-steldra-ui="timelineDot" className={styles.timelineDot} />
                   <h3>{formatDayLabel(group[0].watched_at)}</h3>
                   <span>{group.length} visionnage{group.length > 1 ? 's' : ''}</span>
                 </header>
 
-                <div className={styles.dayRows}>
+                <div data-steldra-ui="dayRows" className={styles.dayRows}>
                   {group.map((row) => {
                     const media = row.media_data;
                     if (!media) return null;
                     return (
-                      <article className={styles.item} key={row.id}>
-                        <a href={`/media/${row.media_type}/${row.media_id}`} className={styles.mediaLink}>
+                      <article data-steldra-ui="item" className={styles.item} key={row.id}>
+                        <a href={`/media/${row.media_type}/${row.media_id}`} data-steldra-ui="mediaLink" className={styles.mediaLink}>
                           <img src={getPosterUrl(media, 'w154')} alt="" onError={(event) => usePosterFallback(event.currentTarget)} />
-                          <div className={styles.mediaInfo}>
-                            <div className={styles.metaLine}>
-                              <span className={styles.typePill}>{typeLabel(row.media_type)}</span>
-                              <span className={styles.time}>{formatTime(row.watched_at)}</span>
+                          <div data-steldra-ui="mediaInfo" className={styles.mediaInfo}>
+                            <div data-steldra-ui="metaLine" className={styles.metaLine}>
+                              <span data-steldra-ui="typePill" className={styles.typePill}>{typeLabel(row.media_type)}</span>
+                              <span data-steldra-ui="time" className={styles.time}>{formatTime(row.watched_at)}</span>
                             </div>
                             <strong>{media.title}</strong>
                             <small>Voir la fiche complète</small>
                           </div>
-                          <span className={styles.openArrow}>›</span>
+                          <span data-steldra-ui="openArrow" className={styles.openArrow}>›</span>
                         </a>
                         <button
                           type="button"
-                          className={styles.deleteButton}
+                          data-steldra-ui="deleteButton" className={styles.deleteButton}
                           onClick={() => void deleteHistoryRow(row.id)}
                           aria-label={`Supprimer ${media.title} de l’historique`}
                           title="Supprimer ce visionnage"
@@ -270,7 +277,7 @@ export default function HistoryPage() {
             ))}
 
             {visibleCount < filtered.length && (
-              <button className={styles.loadMore} type="button" onClick={() => setVisibleCount((count) => count + LOAD_MORE_STEP)}>
+              <button data-steldra-ui="loadMore" className={styles.loadMore} type="button" onClick={() => setVisibleCount((count) => count + LOAD_MORE_STEP)}>
                 Afficher plus de visionnages <span>{Math.min(LOAD_MORE_STEP, filtered.length - visibleCount)} de plus</span>
               </button>
             )}

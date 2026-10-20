@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Réinitialisation : permet de choisir un nouveau mot de passe après ouverture du lien reçu par e-mail.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -7,6 +11,7 @@ import styles from '../login/login.module.css';
 import PasswordVisibilityButton from '../components/PasswordVisibilityButton';
 import { getAuthErrorMessage } from '../lib/authErrorMessage';
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function ResetPasswordPage() {
   const [supabase] = useState(() => createClient());
   const [loading, setLoading] = useState(false);
@@ -37,18 +42,18 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className={styles.authPage}>
-      <section className={styles.authShell}>
-        <div className={styles.authSky}><Link className={styles.backLink} href="/login">← Retour à la connexion</Link><span className={styles.spark} aria-hidden="true" /><h1 className={styles.brand}>STELDRA</h1><p className={styles.tagline}>Votre univers, vos histoires.</p></div>
-        <form onSubmit={submit} className={`${styles.card} ${styles.centered}`}>
-          <div className={styles.iconCircle} aria-hidden="true">♙</div>
+    <main data-steldra-ui="authPage" className={styles.authPage}>
+      <section data-steldra-ui="authShell" className={styles.authShell}>
+        <div data-steldra-ui="authSky" className={styles.authSky}><Link data-steldra-ui="backLink" className={styles.backLink} href="/login">← Retour à la connexion</Link><span data-steldra-ui="spark" className={styles.spark} aria-hidden="true" /><h1 data-steldra-ui="brand" className={styles.brand}>STELDRA</h1><p data-steldra-ui="tagline" className={styles.tagline}>Votre univers, vos histoires.</p></div>
+        <form onSubmit={submit} data-steldra-ui="card centered" className={`${styles.card} ${styles.centered}`}>
+          <div data-steldra-ui="iconCircle" className={styles.iconCircle} aria-hidden="true">♙</div>
           <h2>Nouveau mot de passe</h2>
-          <p className={styles.help}>Choisissez un nouveau mot de passe sécurisé pour votre compte.</p>
-          <div className={styles.field} style={{textAlign:'left'}}><label htmlFor="password">Nouveau mot de passe</label><div className={styles.passwordWrapper}><input id="password" name="password" className={styles.input} type={showPassword ? 'text' : 'password'} value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" minLength={8} required /><PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword(v=>!v)} className={styles.eyeButton} /></div><div className={styles.strength} data-level={strength}><div className={styles.strengthBars}><i/><i/><i/><i/></div><small>{strengthLabel}</small></div></div>
-          <div className={styles.field} style={{textAlign:'left'}}><label htmlFor="confirm">Confirmer le mot de passe</label><div className={styles.passwordWrapper}><input id="confirm" className={styles.input} type={showConfirm ? 'text' : 'password'} value={confirm} onChange={(e)=>setConfirm(e.target.value)} placeholder="••••••••" autoComplete="new-password" required /><PasswordVisibilityButton visible={showConfirm} onToggle={() => setShowConfirm(v=>!v)} className={styles.eyeButton} /></div></div>
-          {message && <p className={styles.message}>{message}</p>}
-          <button type="submit" className={styles.button} disabled={loading}>{loading ? 'Enregistrement…' : 'Réinitialiser le mot de passe'}</button>
-          <p className={styles.securityNote}>⌾ Si votre lien n’est plus valide, <Link className={styles.inlineLink} href="/forgot-password">demandez-en un nouveau</Link>.</p>
+          <p data-steldra-ui="help" className={styles.help}>Choisissez un nouveau mot de passe sécurisé pour votre compte.</p>
+          <div data-steldra-ui="field" className={styles.field} style={{textAlign:'left'}}><label htmlFor="password">Nouveau mot de passe</label><div data-steldra-ui="passwordWrapper" className={styles.passwordWrapper}><input id="password" name="password" data-steldra-ui="input" className={styles.input} type={showPassword ? 'text' : 'password'} value={password} onChange={(e)=>setPassword(e.target.value)} placeholder="••••••••" autoComplete="new-password" minLength={8} required /><PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword(v=>!v)} className={styles.eyeButton} /></div><div data-steldra-ui="strength" className={styles.strength} data-level={strength}><div data-steldra-ui="strengthBars" className={styles.strengthBars}><i/><i/><i/><i/></div><small>{strengthLabel}</small></div></div>
+          <div data-steldra-ui="field" className={styles.field} style={{textAlign:'left'}}><label htmlFor="confirm">Confirmer le mot de passe</label><div data-steldra-ui="passwordWrapper" className={styles.passwordWrapper}><input id="confirm" data-steldra-ui="input" className={styles.input} type={showConfirm ? 'text' : 'password'} value={confirm} onChange={(e)=>setConfirm(e.target.value)} placeholder="••••••••" autoComplete="new-password" required /><PasswordVisibilityButton visible={showConfirm} onToggle={() => setShowConfirm(v=>!v)} className={styles.eyeButton} /></div></div>
+          {message && <p data-steldra-ui="message" className={styles.message}>{message}</p>}
+          <button type="submit" data-steldra-ui="button" className={styles.button} disabled={loading}>{loading ? 'Enregistrement…' : 'Réinitialiser le mot de passe'}</button>
+          <p data-steldra-ui="securityNote" className={styles.securityNote}>⌾ Si votre lien n’est plus valide, <Link data-steldra-ui="inlineLink" className={styles.inlineLink} href="/forgot-password">demandez-en un nouveau</Link>.</p>
         </form>
       </section>
     </main>

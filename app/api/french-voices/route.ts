@@ -1,13 +1,19 @@
+/**
+ * Rôle du fichier : API Voix françaises : recherche les informations de doublage d'une personnalité à partir de sources publiques.
+ */
+
 import { NextResponse } from 'next/server';
 
 const WIKI_API = 'https://fr.wikipedia.org/w/api.php';
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const IMAGE_BASE = 'https://image.tmdb.org/t/p/w185';
 
+/** Retire les variations d'accents, de casse et d'espaces pour faciliter les comparaisons. */
 const normalize = (value = '') => value
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .toLocaleLowerCase('fr').replace(/[^a-z0-9]+/g, ' ').trim();
 
+/** Nettoie un texte récupéré depuis une source externe. */
 const cleanText = (value = '') => value
   .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, '')
   .replace(/<ref[^/>]*\/>/gi, '')
@@ -17,6 +23,7 @@ const cleanText = (value = '') => value
   .replace(/\[\[([^\]]+)\]\]/g, '$1')
   .replace(/\s+/g, ' ').trim();
 
+/** Télécharge une ressource distante et retourne son contenu JSON. */
 const fetchJson = async (url: string) => {
   const response = await fetch(url, {
     headers: { 'User-Agent': 'STELDRA/1.0 (French voice enrichment)' },
@@ -26,6 +33,7 @@ const fetchJson = async (url: string) => {
   return response.json();
 };
 
+/** Recherche la page Wikipédia la plus pertinente pour un nom. */
 const findWikipediaPage = async (name: string) => {
   const search = await fetchJson(`${WIKI_API}?action=query&list=search&srsearch=${encodeURIComponent(`intitle:"${name}"`)}&srlimit=6&format=json&origin=*`);
   const results = search?.query?.search || [];
@@ -34,6 +42,7 @@ const findWikipediaPage = async (name: string) => {
   return (exact || results[0])?.title || null;
 };
 
+/** Recherche une personnalité sur TMDB. */
 const tmdbPerson = async (name: string) => {
   if (!TMDB_API_KEY) return null;
   const data = await fetchJson(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&language=fr-FR&include_adult=false&query=${encodeURIComponent(name)}`);
@@ -44,6 +53,7 @@ const tmdbPerson = async (name: string) => {
   return { tmdb_id: exact.id, profile_path: exact.profile_path ? `${IMAGE_BASE}${exact.profile_path}` : '' };
 };
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const name = searchParams.get('name')?.trim();

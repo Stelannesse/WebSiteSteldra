@@ -1,0 +1,34 @@
+STELDRA — INTERFACE ORDINATEUR SÉPARÉE
+
+1. Arrêter le serveur STELDRA avec Ctrl + C.
+2. Faire une copie du dossier app actuel.
+3. Décompresser ce ZIP dans un autre dossier.
+4. Copier le dossier app complet du ZIP dans D:\WebSiteSteldra.
+   Accepter le remplacement en gardant tous les sous-dossiers.
+5. Conserver votre .env, package.json, configuration Next.js et dossier public.
+6. Relancer depuis D:\WebSiteSteldra :
+
+   npm run dev -- --webpack
+
+Le bon chemin est D:\WebSiteSteldra\app\page.tsx.
+Ne pas créer de dossier app\app et ne pas réunir les différents page.tsx.
+
+SÉPARATION DES INTERFACES
+
+- À partir de 1024 pixels : la nouvelle interface ordinateur.
+- En dessous de 1024 pixels : les styles téléphone/tablette actuels.
+- app/desktop.css contient la nouvelle présentation PC.
+- Ce fichier n'a aucune règle qui s'applique sous 1024 pixels.
+- Les feuilles CSS historiques ne sont pas modifiées.
+- L'appareil est reconnu par la largeur disponible, sans redirection ni
+  JavaScript de détection : le redimensionnement reste immédiat.
+
+Les deux présentations partagent les données, boutons et actions existants.
+Leurs styles peuvent évoluer séparément. Il n'est pas nécessaire d'avoir
+un deuxième site, une seconde base Supabase ou une nouvelle URL.
+
+POUR REVENIR À LA PRÉSENTATION PC PRÉCÉDENTE
+
+Retirer uniquement la ligne import "./desktop.css" dans app/layout.tsx,
+puis relancer. Les éléments ajoutés pour la navigation PC restent masqués
+sans cette feuille. Le reste du site continue à utiliser les styles initiaux.

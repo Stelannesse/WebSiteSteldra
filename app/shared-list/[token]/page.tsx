@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page publique d'une liste partagée : charge son contenu à partir du jeton présent dans l'URL.
+ */
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -10,6 +14,7 @@ import { getPosterUrl, usePosterFallback } from '../../lib/poster';
 import type { CustomList, CustomListItem } from '../../types/media';
 import styles from '../../lists/[id]/listDetails.module.css';
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function SharedListPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
@@ -42,7 +47,7 @@ export default function SharedListPage() {
       const { data: itemData, error: itemError } = await fetchAllPages<CustomListItem>((from, to) =>
         supabase
           .from('custom_list_items')
-          .select('*')
+          .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
           .eq('list_id', listData.id)
           .order('position', { ascending: true })
           .range(from, to)
@@ -110,36 +115,36 @@ export default function SharedListPage() {
   return (
     <>
       <MainNav />
-      <main className={styles.page}>
-        <Link href="/lists" className={styles.backLink}>← Mes listes</Link>
-        {loading ? <p>Chargement…</p> : error && !list ? <p className={styles.error}>{error}</p> : list ? (
+      <main data-steldra-ui="page" className={styles.page}>
+        <Link href="/lists" data-steldra-ui="backLink" className={styles.backLink}>← Mes listes</Link>
+        {loading ? <p>Chargement…</p> : error && !list ? <p data-steldra-ui="error" className={styles.error}>{error}</p> : list ? (
           <>
-            <header className={styles.header}>
-              <div className={styles.headerTop}>
-                <div className={styles.headerContent}>
-                  <p className={styles.eyebrow}>Liste partagée</p>
-                  <div className={styles.titleRow}>
+            <header data-steldra-ui="header" className={styles.header}>
+              <div data-steldra-ui="headerTop" className={styles.headerTop}>
+                <div data-steldra-ui="headerContent" className={styles.headerContent}>
+                  <p data-steldra-ui="eyebrow" className={styles.eyebrow}>Liste partagée</p>
+                  <div data-steldra-ui="titleRow" className={styles.titleRow}>
                     <h1>{list.name}</h1>
-                    <span className={styles.countInline}>{items.length} média{items.length > 1 ? 's' : ''}</span>
+                    <span data-steldra-ui="countInline" className={styles.countInline}>{items.length} média{items.length > 1 ? 's' : ''}</span>
                   </div>
-                  <p className={styles.description}>{list.description || 'Liste partagée sur STELDRA.'}</p>
+                  <p data-steldra-ui="description" className={styles.description}>{list.description || 'Liste partagée sur STELDRA.'}</p>
                 </div>
-                <div className={styles.listActions}>
-                  <button type="button" className={styles.addMediaButton} disabled={importing} onClick={() => void importList()}>
+                <div data-steldra-ui="listActions" className={styles.listActions}>
+                  <button type="button" data-steldra-ui="addMediaButton" className={styles.addMediaButton} disabled={importing} onClick={() => void importList()}>
                     {importing ? 'Ajout…' : '＋ Ajouter à mes listes'}
                   </button>
                 </div>
               </div>
             </header>
-            {error && <p className={styles.error}>{error}</p>}
-            <section className={styles.items}>
+            {error && <p data-steldra-ui="error" className={styles.error}>{error}</p>}
+            <section data-steldra-ui="items" className={styles.items}>
               {items.map((item, index) => (
-                <article key={item.id} className={styles.item}>
-                  <div className={styles.posterWrapper}>
-                    <img src={getPosterUrl(item.media_data, 'w342')} alt={item.media_data.title} className={styles.poster} onError={(event) => usePosterFallback(event.currentTarget)} />
-                    <span className={styles.position}>{index + 1}</span>
+                <article key={item.id} data-steldra-ui="item" className={styles.item}>
+                  <div data-steldra-ui="posterWrapper" className={styles.posterWrapper}>
+                    <img src={getPosterUrl(item.media_data, 'w342')} alt={item.media_data.title} data-steldra-ui="poster" className={styles.poster} onError={(event) => usePosterFallback(event.currentTarget)} />
+                    <span data-steldra-ui="position" className={styles.position}>{index + 1}</span>
                   </div>
-                  <div className={styles.itemContent}>
+                  <div data-steldra-ui="itemContent" className={styles.itemContent}>
                     <strong>{item.media_data.title}</strong>
                     <p>{item.media_type}</p>
                   </div>

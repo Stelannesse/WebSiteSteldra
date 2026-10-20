@@ -1,0 +1,87 @@
+STELDRA + LIRDRA — SÉPARATION CINÉMA / LECTURE
+18 octobre 2026
+
+CONTENU DE L'ARCHIVE
+
+STELDRA/app : le dossier app du site cinéma existant, modifié.
+LIRDRA : le projet de lecture, avec package.json et package-lock.json.
+CORRECTIONS.txt : le bloc-notes détaillant les changements et les vérifications.
+
+1. METTRE À JOUR LE SITE CINÉMA STELDRA
+
+- Arrêter son serveur dans VS Code avec Ctrl + C.
+- Faire une copie de sauvegarde de votre projet actuel.
+- Décompresser cette archive dans un dossier séparé du projet.
+- Copier STELDRA/app dans D:\WebSiteSteldra et accepter le remplacement
+  des fichiers de votre dossier app actuel.
+- Le résultat doit être D:\WebSiteSteldra\app\page.tsx,
+  et surtout pas D:\WebSiteSteldra\app\app\page.tsx.
+- Garder vos fichiers actuels package.json, package-lock.json, .env,
+  configuration Next.js, middleware/proxy et dossier public.
+- Ne pas copier le package.json de LIRDRA dans STELDRA.
+- Depuis D:\WebSiteSteldra, lancer :
+
+  npm run dev -- --webpack
+
+- Ouvrir http://localhost:3000 et se connecter comme d'habitude.
+- Le lien d'export des anciennes lectures se trouve dans Collection.
+  Adresse directe : http://localhost:3000/export-lectures
+
+2. LANCER LE SITE DE LECTURE LIRDRA
+
+- Copier le dossier LIRDRA dans un emplacement indépendant,
+  par exemple D:\LIRDRA.
+- Ouvrir ce dossier dans une nouvelle fenêtre VS Code.
+- Utiliser Node.js 20.9 minimum (ou une version LTS plus récente).
+- Dans le terminal de CE dossier, lancer :
+
+  npm ci
+  npm run dev -- --port 3001
+
+- Ouvrir http://localhost:3001.
+- Cette version fonctionne sans compte Supabase et sans fichier .env.
+- Les livres ne sont plus des exemples : la bibliothèque démarre vide.
+- Ajouter des romans, mangas, manhwas, webtoons, BD ou comics dans
+  Bibliothèque, ou rechercher un titre dans Découvrir.
+- La fiche d'une lecture permet de modifier le statut, les pages/chapitres,
+  le total, les notes, les favoris, le lien de lecture et ses listes.
+- LIRDRA suit les lectures ; il ne contient pas les fichiers des livres
+  ni les planches et ne fournit pas un lecteur de scans ou d'EPUB.
+  Le bouton externe ouvre la plateforme choisie dans la fiche.
+
+3. RÉCUPÉRER VOS ANCIENNES LECTURES
+
+- Dans STELDRA, se connecter au compte qui contient les lectures.
+- Ouvrir Collection > Exporter mes anciennes lectures vers LIRDRA.
+- Télécharger steldra-lectures.json.
+- Ouvrir LIRDRA > Bibliothèque > Importer un JSON.
+- Choisir le fichier téléchargé.
+- Vérifier les titres, statuts, chapitres, favoris et listes récupérés.
+- La fusion garde les entrées déjà présentes dans LIRDRA si l'identifiant
+  existe déjà : un second import ne remet pas la progression à zéro.
+- L'export ne supprime aucune ligne de votre Supabase cinéma.
+- Les anciens types de lecture sont masqués côté cinéma, pas effacés.
+- Les romans ajoutés ensuite dans LIRDRA se gèrent au même endroit.
+
+4. SAUVEGARDER LIRDRA
+
+- Paramètres > Exporter ma bibliothèque produit un JSON réimportable.
+- Les données sont actuellement dans le navigateur, pour l'adresse utilisée.
+  Garder la même adresse (par exemple localhost:3001) pour retrouver le suivi.
+- Un autre navigateur, un autre ordinateur, une nouvelle adresse Vercel
+  ou l'effacement des données du navigateur ne récupère pas automatiquement
+  la bibliothèque. Utiliser l'export/import pour la déplacer.
+- Exporter régulièrement et avant de changer d'adresse.
+
+5. SUPABASE ET VERCEL
+
+- Aucune connexion Supabase de LIRDRA n'est simulée.
+- Aucun compte Supabase ou projet Vercel n'a été créé/modifié à distance.
+- Pour héberger le code LIRDRA sur Vercel, utiliser le dossier LIRDRA comme
+  racine du projet Next.js, installer avec npm ci et construire avec
+  npm run build. Le code est préparé, mais aucun déploiement n'est effectué.
+- Après un premier hébergement, importer la sauvegarde locale sur la nouvelle
+  adresse. La synchronisation entre appareils exige encore une vraie étape
+  de connexion/authentification et un schéma Supabase dédié à la lecture.
+- Ne pas pointer LIRDRA vers la base cinéma en supposant que les tables
+  et les politiques de sécurité sont interchangeables.

@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Listes : crée, affiche et gère les listes personnalisées de l'utilisateur.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -15,6 +19,7 @@ type ListWithPreview = CustomList & {
 
 type SortMode = 'recent' | 'name' | 'count';
 
+/** Retourne l'URL d'affiche adaptée au contexte d'affichage. */
 const posterUrl = (item?: CustomListItem) => {
   const path = item?.media_data?.poster_path;
   if (!path) return '';
@@ -22,6 +27,7 @@ const posterUrl = (item?: CustomListItem) => {
   return `https://image.tmdb.org/t/p/w300${path}`;
 };
 
+/** Transforme une date technique en libellé lisible. */
 const formatDate = (value?: string | null) => {
   if (!value) return '';
   const date = new Date(value);
@@ -29,6 +35,7 @@ const formatDate = (value?: string | null) => {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(date);
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function ListsPage() {
   const [supabase] = useState(() => createClient());
   const [lists, setLists] = useState<ListWithPreview[]>([]);
@@ -76,7 +83,7 @@ export default function ListsPage() {
       const { data: itemData, error: itemError } = await fetchAllPages<CustomListItem>((from, to) =>
         supabase
           .from('custom_list_items')
-          .select('*')
+          .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
           .in('list_id', ids)
           .order('position', { ascending: true })
           .range(from, to)
@@ -179,10 +186,10 @@ export default function ListsPage() {
         Array.from({ length: compact ? 3 : 4 }).map((_, index) => {
           const item = list.previewItems[index % list.previewItems.length];
           const src = posterUrl(item);
-          return src ? <img key={`${item?.id}-${index}`} src={src} alt="" /> : <div key={index} className={styles.coverFallback} />;
+          return src ? <img key={`${item?.id}-${index}`} src={src} alt="" /> : <div key={index} data-steldra-ui="coverFallback" className={styles.coverFallback} />;
         })
       ) : (
-        <div className={styles.emptyPreview}>{list.name.charAt(0).toUpperCase()}</div>
+        <div data-steldra-ui="emptyPreview" className={styles.emptyPreview}>{list.name.charAt(0).toUpperCase()}</div>
       )}
     </div>
   );
@@ -190,22 +197,22 @@ export default function ListsPage() {
   return (
     <>
       <MainNav />
-      <main className={styles.page}>
-        <section className={styles.hero}>
-          <div className={styles.heroShade} />
-          <div className={styles.heroContent}>
+      <main data-steldra-ui="page" className={styles.page}>
+        <section data-steldra-ui="hero" className={styles.hero}>
+          <div data-steldra-ui="heroShade" className={styles.heroShade} />
+          <div data-steldra-ui="heroContent" className={styles.heroContent}>
             <span>VOTRE UNIVERS</span>
             <h1>Mes listes</h1>
-            <p className={styles.heroTagline}>Créez et organisez vos listes facilement.</p>
+            <p data-steldra-ui="heroTagline" className={styles.heroTagline}>Créez et organisez vos listes facilement.</p>
           </div>
         </section>
 
-        <section className={styles.controlBar}>
-          <label className={styles.searchBox}>
+        <section data-steldra-ui="controlBar" className={styles.controlBar}>
+          <label data-steldra-ui="searchBox" className={styles.searchBox}>
             <span>⌕</span>
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher dans mes listes…" />
           </label>
-          <label className={styles.sortBox}>
+          <label data-steldra-ui="sortBox" className={styles.sortBox}>
             <span>Trier par</span>
             <select value={sortMode} onChange={(event) => setSortMode(event.target.value as SortMode)}>
               <option value="recent">Dernière activité</option>
@@ -213,16 +220,16 @@ export default function ListsPage() {
               <option value="count">Nombre de médias</option>
             </select>
           </label>
-          <button type="button" className={styles.createButton} onClick={() => setShowForm((current) => !current)}>
+          <button type="button" data-steldra-ui="createButton" className={styles.createButton} onClick={() => setShowForm((current) => !current)}>
             {showForm ? 'Annuler' : '+ Créer une liste'}
           </button>
         </section>
 
         {showForm && (
-          <form className={styles.form} onSubmit={createList}>
-            <div className={styles.formHeading}>
+          <form data-steldra-ui="form" className={styles.form} onSubmit={createList}>
+            <div data-steldra-ui="formHeading" className={styles.formHeading}>
               <div><span>NOUVELLE LISTE</span><h2>Créez votre prochain univers</h2></div>
-              <button type="button" className={styles.formClose} onClick={() => setShowForm(false)}>×</button>
+              <button type="button" data-steldra-ui="formClose" className={styles.formClose} onClick={() => setShowForm(false)}>×</button>
             </div>
             <label>Nom de la liste
               <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex. Marvel / MCU" maxLength={80} />
@@ -234,26 +241,26 @@ export default function ListsPage() {
           </form>
         )}
 
-        {errorMessage && <p className={styles.error}>{errorMessage}</p>}
+        {errorMessage && <p data-steldra-ui="error" className={styles.error}>{errorMessage}</p>}
 
         {loading ? (
-          <p className={styles.message}>Chargement des listes…</p>
+          <p data-steldra-ui="message" className={styles.message}>Chargement des listes…</p>
         ) : lists.length === 0 ? (
-          <section className={styles.empty}>
+          <section data-steldra-ui="empty" className={styles.empty}>
             <span>◇</span><h2>Aucune liste pour le moment</h2>
             <p>Créez votre première liste pour organiser vos médias dans l’ordre de votre choix.</p>
             <button type="button" onClick={() => setShowForm(true)}>Créer ma première liste</button>
           </section>
         ) : (
           <>
-            <section className={styles.dashboardRow}>
-              <aside className={styles.summaryCard}>
-                <div className={styles.summaryStats}>
+            <section data-steldra-ui="dashboardRow" className={styles.dashboardRow}>
+              <aside data-steldra-ui="summaryCard" className={styles.summaryCard}>
+                <div data-steldra-ui="summaryStats" className={styles.summaryStats}>
                   <div><span>▱</span><strong>{lists.length}</strong><small>Listes créées</small></div>
                   <div><span>▦</span><strong>{totalTitles}</strong><small>Titres au total</small></div>
                   <div><span>⌁</span><strong>{sharedLists}</strong><small>Listes partagées</small></div>
                 </div>
-                <div className={styles.recentActivity}>
+                <div data-steldra-ui="recentActivity" className={styles.recentActivity}>
                   <h3>Activité récente</h3>
                   {recentLists.map((list) => (
                     <Link key={list.id} href={`/lists/${list.id}`}>
@@ -265,41 +272,41 @@ export default function ListsPage() {
                 </div>
               </aside>
 
-              <div className={styles.featuredArea}>
-                <div className={styles.sectionTitle}><div><span>SÉLECTION</span><h2>Vos listes à la une ✦</h2></div></div>
-                <div className={styles.featuredRail}>
+              <div data-steldra-ui="featuredArea" className={styles.featuredArea}>
+                <div data-steldra-ui="sectionTitle" className={styles.sectionTitle}><div><span>SÉLECTION</span><h2>Vos listes à la une ✦</h2></div></div>
+                <div data-steldra-ui="featuredRail" className={styles.featuredRail}>
                   {featuredLists.map((list) => (
-                    <Link href={`/lists/${list.id}`} className={styles.featuredCard} key={list.id}>
+                    <Link href={`/lists/${list.id}`} data-steldra-ui="featuredCard" className={styles.featuredCard} key={list.id}>
                       {renderPreview(list, true)}
-                      <div className={styles.featuredShade} />
-                      <div className={styles.featuredText}><strong>{list.name}</strong><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span></div>
+                      <div data-steldra-ui="featuredShade" className={styles.featuredShade} />
+                      <div data-steldra-ui="featuredText" className={styles.featuredText}><strong>{list.name}</strong><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span></div>
                     </Link>
                   ))}
                 </div>
               </div>
             </section>
 
-            <section className={styles.allListsSection}>
-              <div className={styles.sectionTitle}>
+            <section data-steldra-ui="allListsSection" className={styles.allListsSection}>
+              <div data-steldra-ui="sectionTitle" className={styles.sectionTitle}>
                 <div><span>COLLECTIONS</span><h2>Toutes mes listes</h2></div>
                 <strong>{filteredLists.length} liste{filteredLists.length > 1 ? 's' : ''}</strong>
               </div>
 
               {filteredLists.length === 0 ? (
-                <div className={styles.noResults}>Aucune liste ne correspond à votre recherche.</div>
+                <div data-steldra-ui="noResults" className={styles.noResults}>Aucune liste ne correspond à votre recherche.</div>
               ) : (
-                <div className={styles.grid}>
+                <div data-steldra-ui="grid" className={styles.grid}>
                   {filteredLists.map((list) => (
-                    <Link href={`/lists/${list.id}`} className={styles.card} key={list.id}>
-                      <div className={styles.cover}>
+                    <Link href={`/lists/${list.id}`} data-steldra-ui="card" className={styles.card} key={list.id}>
+                      <div data-steldra-ui="cover" className={styles.cover}>
                         {renderPreview(list)}
-                        <div className={styles.coverShade} />
+                        <div data-steldra-ui="coverShade" className={styles.coverShade} />
                       </div>
-                      <div className={styles.cardBody}>
-                        <div className={styles.cardTitleRow}><h2>{list.name}</h2>{list.is_shared && <span title="Liste partagée">⌁</span>}</div>
+                      <div data-steldra-ui="cardBody" className={styles.cardBody}>
+                        <div data-steldra-ui="cardTitleRow" className={styles.cardTitleRow}><h2>{list.name}</h2>{list.is_shared && <span title="Liste partagée">⌁</span>}</div>
                         <p>{list.description || 'Liste personnalisée ordonnée'}</p>
-                        <div className={styles.cardMeta}><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span><time>{formatDate(list.updated_at || list.created_at)}</time></div>
-                        <div className={styles.cardAction}>Ouvrir <span>→</span></div>
+                        <div data-steldra-ui="cardMeta" className={styles.cardMeta}><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span><time>{formatDate(list.updated_at || list.created_at)}</time></div>
+                        <div data-steldra-ui="cardAction" className={styles.cardAction}>Ouvrir <span>→</span></div>
                       </div>
                     </Link>
                   ))}

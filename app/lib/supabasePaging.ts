@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Utilitaire de pagination : récupère toutes les lignes Supabase par lots successifs.
+ */
+
 export async function fetchAllPages<T>(
   fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>,
   pageSize = 500

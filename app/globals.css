@@ -96,3 +96,66 @@ main { animation: steldraPageIn 180ms ease-out both; }
 a, button { -webkit-tap-highlight-color: transparent; }
 button, a { transition-property: color, background-color, border-color, box-shadow, transform, opacity; transition-duration: 180ms; transition-timing-function: ease; }
 @media (prefers-reduced-motion: reduce) { main { animation:none; } }
+
+
+/* Styles globaux déplacés depuis page.module.css. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #222831;
+}
+
+:root {
+  --font-body: var(--font-inter), Arial, sans-serif;
+  --font-title: var(--font-poppins), Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-title);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(0, 173, 181, 0.55);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

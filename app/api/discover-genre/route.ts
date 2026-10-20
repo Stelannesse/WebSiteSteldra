@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : API Genres : recherche des films ou séries TMDB selon les filtres reçus dans l'URL.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
@@ -50,6 +54,7 @@ const MAL_GENRES: Record<string, number> = {
   Thriller: 41,
 };
 
+/** Convertit un résultat externe dans le format attendu par l'application. */
 function format(item: any, type: 'movie' | 'tv') {
   const title = type === 'movie' ? item.title || item.original_title : item.name || item.original_name;
   if (!item?.id || !title) return null;
@@ -84,6 +89,7 @@ async function tmdb(path: string) {
   return data.results || [];
 }
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const rawGenres = searchParams.get('genres') || searchParams.get('genre') || 'Action';

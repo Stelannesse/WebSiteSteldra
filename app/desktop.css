@@ -1,0 +1,312 @@
+/*
+ * STELDRA — interface ordinateur.
+ * Toutes les règles sont réservées aux largeurs >= 1024 px.
+ * Les feuilles historiques restent la référence pour téléphone et tablette.
+ * Les attributs data-steldra-ui servent de repères stables entre les CSS Modules.
+ */
+@media (min-width: 1024px) {
+  html body:has([data-steldra-nav]) {
+    --desktop-rail: 228px;
+    --desktop-gap: 24px;
+    --desktop-border: rgba(150, 190, 207, .13);
+    --desktop-surface: #0c1a25;
+    padding-left: var(--desktop-rail);
+    background: #07111a;
+    color: #eaf2f6;
+  }
+
+  /* Navigation PC. La navigation mobile existante n'est pas modifiée. */
+  html body:has([data-steldra-nav]) [data-steldra-nav] {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    width: var(--desktop-rail);
+    height: 100dvh;
+    padding: 32px 16px 22px;
+    overflow-y: auto;
+    border: 0;
+    border-right: 1px solid var(--desktop-border);
+    background: #09151f;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-brand][hidden] {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 0 10px 50px;
+    color: #f1f9fc;
+    text-decoration: none;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-brand-mark] {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 43px;
+    border: 1px solid rgba(74, 226, 224, .35);
+    border-radius: 12px;
+    background: linear-gradient(135deg, #164c54, #0b2634);
+    color: #61e6df;
+    font-size: 27px;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-brand] strong { display: block; font-size: 19px; font-weight: 800; letter-spacing: .08em; }
+  html body:has([data-steldra-nav]) [data-steldra-brand] small { display: block; margin-top: 5px; color: #6e8899; font-size: 7px; letter-spacing: .16em; }
+  html body:has([data-steldra-nav]) [data-steldra-nav-heading][hidden] { display: block; margin: 0 16px 15px; color: #5d7789; font-size: 9px; font-weight: 700; letter-spacing: .2em; }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [data-steldra-ui~="inner"] {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 7px;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [data-steldra-ui~="link"] {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 13px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #9cb0bd;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    background: transparent;
+    box-shadow: none;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [data-steldra-ui~="link"]:hover { color: #e9ffff; background: #102733; }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [aria-current="page"] {
+    color: #76e8e0;
+    border-color: rgba(75, 206, 198, .17);
+    background: linear-gradient(90deg, #12343e, #0e2531);
+    font-weight: 700;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [aria-current="page"]::before { content: ''; position: absolute; left: -17px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: #65e5dc; }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [aria-current="page"]::after { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-nav] [data-steldra-ui~="icon"] { width: 20px; height: 20px; color: inherit; }
+  html body:has([data-steldra-nav]) [data-steldra-nav-footer][hidden] { display: block; margin: auto 10px 0; padding-top: 48px; }
+  html body:has([data-steldra-nav]) [data-steldra-nav-footer] > span { display: block; color: #526e80; font-size: 8px; letter-spacing: .1em; font-weight: 700; }
+  html body:has([data-steldra-nav]) [data-steldra-nav-footer] p { margin: 12px 0 18px; color: #8ba2b0; font-size: 12px; line-height: 1.7; }
+  html body:has([data-steldra-nav]) [data-steldra-nav-footer] a { display: flex; justify-content: space-between; padding-top: 17px; border-top: 1px solid var(--desktop-border); color: #71dbd6; text-decoration: none; font-size: 11px; }
+
+  /* Espace de travail commun, indépendant du cadre téléphone. */
+  html body:has([data-steldra-nav]) main {
+    min-width: 0;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: 1640px;
+    margin: 0 auto;
+    padding: 32px clamp(24px, 2.5vw, 48px) 56px !important;
+    color: #eaf2f6;
+    background: transparent !important;
+  }
+  html body:has([data-steldra-nav]) main > [data-steldra-ui~="shell"] { width: 100%; max-width: none; margin: 0; padding: 0; }
+  html body:has([data-steldra-nav]) main::before { display: none; }
+  html body:has([data-steldra-nav]) main h1 { font-family: var(--font-title); font-weight: 600; letter-spacing: -.045em; text-shadow: none !important; }
+  html body:has([data-steldra-nav]) main h2 { font-family: var(--font-title); font-weight: 600; letter-spacing: -.025em; }
+  html body:has([data-steldra-nav]) :is(a, button, input, select):focus-visible { outline: 2px solid #79e9e0; outline-offset: 4px; }
+
+  /* Accueil : tableau de bord de cinéma sur grand écran. */
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaTopbar"] { min-height: 38px; margin: 0 0 24px; padding: 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaLogo"] { gap: 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaLogo"] > span:first-child { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaLogo"] strong { color: #c6d5de; font-size: 12px; font-weight: 500; letter-spacing: .02em; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaLogo"] small { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="profileButton"] { width: auto; min-height: 36px; padding: 5px 8px; border: 1px solid var(--desktop-border); border-radius: 10px; background: #0e1d28; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="profileInitials"] { width: 28px; height: 28px; border-radius: 8px; background: #23434c; color: #b4efeb; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHero"] {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 242px !important;
+    margin: 0 0 26px;
+    border: 1px solid rgba(90, 169, 184, .18) !important;
+    border-radius: 20px !important;
+    background: radial-gradient(ellipse at 88% 100%, #1a5761 0%, transparent 48%), linear-gradient(110deg, #102d3b 0%, #0d202e 57%, #102b39 100%) !important;
+    box-shadow: none !important;
+    overflow: hidden;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHero"]::before { content: ''; position: absolute; inset: -140px -75px auto auto; width: 520px; height: 520px; border: 1px solid rgba(149, 227, 225, .13); border-radius: 50%; background: none; box-shadow: 0 0 0 64px rgba(148, 220, 221, .025), 0 0 0 128px rgba(148, 220, 221, .025); opacity: 1; transform: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHero"]::after { content: '✦'; position: absolute; inset: auto 68px 38px auto; color: #96e8e1; font-size: 92px; line-height: 1; background: none; opacity: .32; width: auto; height: auto; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHeroGlow"] { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHeroContent"] { position: relative; z-index: 2; width: 78%; max-width: 800px; padding: 34px 38px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHeroContent"] h1 { margin: 14px 0 12px !important; font-size: clamp(28px, 2.5vw, 43px) !important; line-height: 1.2 !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaHeroContent"] p { color: #9fb7c5 !important; font-size: 13px !important; line-height: 1.7; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaEyebrow"] { color: #7fd9d5 !important; font-family: var(--font-body) !important; font-size: 9px !important; font-weight: 700 !important; letter-spacing: .2em !important; text-transform: uppercase; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="heroLine"] { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaDashboardGrid"] { display: grid; grid-template-columns: minmax(0, 1fr) 282px; gap: 24px; align-items: start; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaMainColumn"], html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSidebar"] { min-width: 0; gap: 22px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSearch"] { min-height: 50px; margin: 0; padding: 6px 7px 6px 18px; border: 1px solid var(--desktop-border); border-radius: 12px; background: #0d1c27; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSearch"] input { min-height: 36px; font-size: 12px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSearch"] button { min-height: 36px; padding: 0 18px; border-radius: 8px; background: #65dcd3; color: #09242c; font-size: 11px; font-weight: 700; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="typeChips"] { gap: 7px; margin: -10px 0 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="typeChips"] a { padding: 7px 12px; border: 1px solid var(--desktop-border); border-radius: 7px; color: #91aab9; background: transparent; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaPanel"] { padding: 21px !important; border: 1px solid var(--desktop-border) !important; border-radius: 15px !important; background: var(--desktop-surface) !important; box-shadow: none !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="panelTitleRow"] { gap: 12px; margin-bottom: 18px; align-items: center; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="panelTitleRow"] h2 { margin: 0; color: #e2edf3; font-size: 15px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="panelTitleRow"] a { color: #72cfcd; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="genreCloud"] { gap: 7px; max-height: 98px; overflow-y: auto; padding-right: 5px; scrollbar-width: thin; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="genrePill"] { padding: 7px 11px; border: 1px solid #263e4a; background: #0e222e; color: #acc3ce; border-radius: 7px; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSplitRow"] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="featuredContinueCard"] { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 19px; min-height: 130px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="featuredContinueCard"] > img { width: 84px; height: 126px; border-radius: 8px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="featuredContinueCard"] strong { font-size: 16px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="featuredContinueCard"] span, html body:has([data-steldra-nav]) [data-steldra-ui~="featuredContinueCard"] small { font-size: 11px; color: #91adbe; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="featuredContinueCard"] b { padding: 8px 18px; width: max-content; border-radius: 7px; background: #58ccc5; color: #08232a; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="miniPosterRail"] { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-flow: unset; gap: 12px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="posterShowcase"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); grid-auto-flow: unset; gap: 16px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="dashboardPosterCard"] { width: auto; min-width: 0; text-decoration: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="dashboardPosterCard"] img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border: 1px solid #28404b; border-radius: 9px; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="dashboardPosterCard"] strong { margin-top: 9px; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="dashboardPosterCard"] > span { color: #7995a6; font-size: 9px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="statGrid"] { gap: 10px; margin-top: 16px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="statGrid"] > div { min-height: 78px; padding: 13px 11px; border: 1px solid #21333f; border-radius: 10px; background: #10212c; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="statGrid"] strong { color: #d7f0f2; font-size: 23px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="statGrid"] span { margin-top: 7px; color: #7e9aab; font-size: 9px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="sidebarListRows"] a { min-height: 47px; padding: 9px 0; border-bottom: 1px solid var(--desktop-border); background: transparent; border-radius: 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="sidebarListRows"] strong { font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="lastAddedList"] a { padding: 10px 0; border-bottom: 1px solid var(--desktop-border); background: transparent; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="lastAddedList"] img { width: 35px; height: 51px; border-radius: 5px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="lastAddedList"] strong { font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="lastAddedList"] span { font-size: 9px; color: #7b97a8; }
+
+  /* Collection : des filtres confortables et une vraie grille d'affiches. */
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHero"] { display: block !important; height: auto; min-height: 235px !important; margin: 0 0 24px; padding: 0; border-radius: 18px !important; border: 1px solid #29444d !important; background: radial-gradient(ellipse at 100% 0, #204d52, transparent 62%), linear-gradient(110deg, #102f39, #0c1d29) !important; box-shadow: none !important; overflow: hidden; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHero"]::before { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroCopy"] { min-height: 0; padding: 28px 30px 125px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroCopy"] > span { color: #76ddd4 !important; font-size: 9px !important; font-weight: 700; letter-spacing: .18em; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroCopy"] h1 { font-size: 34px !important; margin: 10px 0 !important; line-height: 1.2 !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroCopy"] > p { color: #9fb9c5 !important; font-size: 12px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroScene"] { display: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroControls"] { position: absolute !important; left: 28px !important; right: 28px !important; bottom: 22px !important; width: auto !important; margin: 0 !important; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionSearchPremium"] { flex: 1 1 290px; width: auto; min-height: 46px; margin: 0; padding: 0 14px; background: #0a1b26; border: 1px solid #2a4752; border-radius: 10px; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionSearchPremium"] input { font-size: 12px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionTypeTabs"] { display: flex; gap: 5px; padding: 5px; border: 1px solid #2b444c; border-radius: 10px; background: #0d232c; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionTypeTabs"] button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 6px; font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroControls"] > a { order: 3; flex-basis: 100%; color: #87a8b8; font-size: 9px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionDashboard"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0 0 26px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionPanel"] { min-height: 142px; padding: 18px !important; border: 1px solid var(--desktop-border); border-radius: 13px; background: #0c1c26; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionPanel"] > header { margin-bottom: 14px; color: #c6d9e1; font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionChips"] > span { padding: 7px 9px; font-size: 10px; border-radius: 6px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionQuickLists"] a { padding: 7px 0; font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionShortcuts"] { gap: 12px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionShortcuts"] small { font-size: 9px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionTools"] { display: grid; grid-template-columns: 1fr 1fr; align-content: start; gap: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionTools"] > header { grid-column: 1/-1; margin-bottom: 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionTools"] label { font-size: 9px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionTools"] select { min-height: 34px; margin-top: 5px; font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionViewButtons"] { grid-column: 1/-1; margin-top: 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionSectionHeading"] { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin: 0 0 18px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionSectionHeading"] h2 { margin: 0; color: #e0edf1; font-size: 18px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionSectionHeading"] > div > span { margin-top: 4px; font-size: 10px; color: #89a4b4; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionStatusBar"] { gap: 6px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionStatusBar"] button { min-height: 33px; padding: 0 12px; font-size: 10px; border-radius: 7px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinue"] { margin: 0 0 28px; padding: 21px; border: 1px solid var(--desktop-border); border-radius: 14px; background: #0c1a25; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinueRail"] { grid-auto-columns: minmax(245px, 1fr); gap: 14px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinueCard"] { grid-template-columns: 65px 1fr; gap: 14px; min-height: 112px; padding: 10px; background: #10232e; border-radius: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinueCard"] img { width: 65px; border-radius: 6px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinueCard"] strong { font-size: 12px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinueCard"] small, html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionContinueCard"] span { font-size: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionLibrary"] { padding: 24px 0; border: 0; background: transparent; }
+  html body:has([data-steldra-nav]) [data-steldra-grid="posters"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important; gap: 24px 18px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="card"] { border: 1px solid #263744; border-radius: 11px; background: #0d1b26; box-shadow: none; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="card"]:hover { border-color: #6ebbb9; transform: translateY(-3px); box-shadow: 0 15px 30px #0003; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="poster"] { border-radius: 10px 10px 0 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="meta"] { min-height: 60px; padding: 11px; background: #0d1b26; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="meta"] strong { font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="meta"] span { font-size: 10px; color: #8ea7b7; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="action"] { top: 8px; min-height: 28px; padding: 3px 6px; border-radius: 6px; font-size: 9px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="roundAction"] { width: 28px; height: 28px; font-size: 14px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionListRow"] { min-height: 98px; padding: 12px 18px; border-radius: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionListOpen"] strong { font-size: 14px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionListActions"] button { min-height: 35px; padding: 0 12px; font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionFooter"] { margin-top: 28px; padding: 22px; border: 1px solid var(--desktop-border); border-radius: 12px; background: #0b1a25; }
+
+  /* Découverte, statistiques et pages secondaires. */
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026Hero"] { min-height: 250px !important; border: 1px solid #25444d !important; border-radius: 18px !important; background: radial-gradient(ellipse at 90% 100%, #1b4a55, transparent 60%), linear-gradient(110deg, #112c3c, #0c202d) !important; box-shadow: none !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026HeroCopy"] { min-height: 0; max-width: 780px; padding: 35px 34px 88px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026HeroCopy"] h1 { font-size: 34px !important; line-height: 1.2 !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026HeroCopy"] p { font-size: 13px; color: #9bb5c5 !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026HeroCopy"] > span { color: #75ddd6 !important; font-size: 9px !important; letter-spacing: .18em; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026TypeTabs"] { position: absolute !important; left: 34px !important; bottom: 24px !important; margin: 0 !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026TypeTabs"] button { min-width: 85px; padding: 9px 16px; border-radius: 8px; font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026Section"] { margin-top: 28px; padding: 23px; border: 1px solid var(--desktop-border); border-radius: 14px; background: #0c1b26; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026SectionHead"] { margin-bottom: 20px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026SectionHead"] h2 { font-size: 19px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026SectionHead"] span { font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026GenreTiles"] { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026GenreTiles"] button { min-height: 77px; padding: 14px; border: 1px solid #263e4c; border-radius: 10px; background: linear-gradient(130deg, #14313f, #0d202d); font-size: 12px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026GenreSelectionBar"] { margin-top: 18px; font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026Rail"] { grid-auto-columns: 155px; gap: 18px; scrollbar-width: thin; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026Card"] { width: 155px; border-radius: 10px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026CardMeta"] strong { font-size: 11px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026Filters"] { margin-top: 24px; padding: 18px; border-radius: 12px; background: #0e1d28; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discoverTalentGateway"] { margin-top: 20px; padding: 22px; border-radius: 13px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="stats2026Hero"],
+  html body:has([data-steldra-nav]) main > [data-steldra-ui~="hero"],
+  html body:has([data-steldra-nav]) main > [data-steldra-ui~="shell"] > [data-steldra-ui~="hero"] {
+    min-height: 210px;
+    padding: 30px 32px;
+    margin-bottom: 24px;
+    border: 1px solid #29434e;
+    border-radius: 18px;
+    background: radial-gradient(ellipse at 95% 60%, #17434f, transparent 65%), linear-gradient(110deg, #102a38, #0c1c28);
+    box-shadow: none;
+  }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="stats2026HeroCopy"] h1,
+  html body:has([data-steldra-nav]) main > [data-steldra-ui~="hero"] h1,
+  html body:has([data-steldra-nav]) main > [data-steldra-ui~="shell"] > [data-steldra-ui~="hero"] h1 { font-size: 34px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="stats2026KpiGrid"] { gap: 18px; margin: 24px 0; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="stats2026KpiCard"] { padding: 24px; border-radius: 14px; border: 1px solid var(--desktop-border); background: #0d1e29; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="controlDeck"], html body:has([data-steldra-nav]) [data-steldra-ui~="toolbar"] { padding: 18px; gap: 14px; border: 1px solid var(--desktop-border); border-radius: 12px; background: #0d1e29; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="peopleGrid"] { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="section"], html body:has([data-steldra-nav]) [data-steldra-ui~="timeline"], html body:has([data-steldra-nav]) [data-steldra-ui~="settingsCard"] { border-radius: 15px; border-color: var(--desktop-border); background-color: #0c1b26; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="roleGrid"] { gap: 16px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="roleCard"] { min-height: 125px; padding: 22px; border-radius: 13px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="heroPanel"] { border-radius: 16px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="libraryDeck"] { padding: 22px; border: 1px solid var(--desktop-border); border-radius: 14px; background: #0e1e29; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="tierListExport"] { margin-top: 26px; padding: 24px; border-radius: 16px; border: 1px solid var(--desktop-border); background: #0b1a25; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="rowMedia"] { gap: 12px; padding: 16px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="savedTierListsGrid"] { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+  /* Fiches cinéma : le rail de navigation ne doit pas comprimer les détails. */
+  html body:has([data-steldra-nav]) [data-steldra-ui~="heroContent"] { grid-template-columns: 180px minmax(0, 1fr); gap: 26px; padding: 30px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="heroContent"] > aside { grid-column: 1/-1; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="posterWrap"] { width: 180px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="contentGrid"] { grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; }
+}
+
+/* Ajustements exclusivement PC : pas de règle hors de ces plages. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaDashboardGrid"] { grid-template-columns: minmax(0, 1fr); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSidebar"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="lastAddedPanel"] { grid-column: 1/-1; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026GenreTiles"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHeroCopy"] { padding-bottom: 155px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionHero"] { min-height: 285px !important; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionTypeTabs"] { flex: 1 1 auto; justify-content: flex-start; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="contentGrid"] { grid-template-columns: 1fr; }
+}
+@media (min-width: 1360px) {
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionDashboard"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (min-width: 1600px) {
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaDashboardGrid"] { grid-template-columns: minmax(0, 1fr) 310px; gap: 28px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="cinemaSplitRow"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="miniPosterRail"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="collectionOptionDashboard"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="discover2026GenreTiles"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="heroContent"] { grid-template-columns: 210px minmax(0, 1fr) 260px; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="heroContent"] > aside { grid-column: auto; }
+  html body:has([data-steldra-nav]) [data-steldra-ui~="posterWrap"] { width: 210px; }
+}

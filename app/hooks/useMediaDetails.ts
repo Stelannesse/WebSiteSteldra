@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Hook de fiche média : charge les détails et gère l'état de chargement, les erreurs et la mise en cache locale.
+ */
+
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -58,6 +62,7 @@ type UseMediaDetailsOptions = {
   initialMedia: MediaItem | null;
 };
 
+/** Expose les données et états nécessaires à l'affichage d'une fiche média. */
 export default function useMediaDetails({
   initialMedia,
 }: UseMediaDetailsOptions) {

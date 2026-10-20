@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Page Talent : présente une personnalité, ses œuvres et son statut de favori.
+ */
+
 'use client';
 
 import Link from 'next/link';
@@ -17,13 +21,15 @@ type VoxFilter = 'Tout'|VoxCategory;
 const roleLabels: Record<TalentRole,string> = { actor:'Acteur favori', director:'Réalisateur favori', voice:'Doubleur favori' };
 const voxCategories: VoxFilter[] = ['Tout','Film',"Film d'animation",'Série',"Série d'animation",'Jeu vidéo'];
 
+/** Affiche une image avec l'affiche de secours en cas d'erreur. */
 function SteldraPoster({ src, alt }: { src?: string; alt: string }) {
   const [failed, setFailed] = useState(!src);
   useEffect(() => setFailed(!src), [src]);
-  if (failed) return <div className={styles.posterFallback} aria-label={`Affiche indisponible pour ${alt}`}><span>S</span></div>;
+  if (failed) return <div data-steldra-ui="posterFallback" className={styles.posterFallback} aria-label={`Affiche indisponible pour ${alt}`}><span>S</span></div>;
   return <img src={src} alt={alt} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
 }
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function TalentDetailPage() {
   const params = useParams<{id:string}>();
   const id = params?.id;
@@ -171,73 +177,73 @@ export default function TalentDetailPage() {
 
   return <>
     <MainNav/>
-    <main className={styles.page}><div className={styles.shell}>
-      <nav className={styles.breadcrumbs}><Link href="/">Accueil</Link><span>›</span><Link href="/talents">Talents</Link>{person && <><span>›</span><span>{person.name}</span></>}</nav>
-      {loading ? <div className={styles.empty}>Chargement du profil…</div> : !person ? <div className={styles.empty}>Talent introuvable.</div> : <>
-        <section className={styles.profile}>
-          <div className={styles.portrait}>{person.profile_path ? <img src={person.profile_path} alt={person.name}/> : <div className={styles.portraitFallback}>S</div>}</div>
-          <div className={styles.profileMain}>
-            <p className={styles.eyebrow}>PORTRAIT STELDRA</p>
+    <main data-steldra-ui="page" className={styles.page}><div data-steldra-ui="shell" className={styles.shell}>
+      <nav data-steldra-ui="breadcrumbs" className={styles.breadcrumbs}><Link href="/">Accueil</Link><span>›</span><Link href="/talents">Talents</Link>{person && <><span>›</span><span>{person.name}</span></>}</nav>
+      {loading ? <div data-steldra-ui="empty" className={styles.empty}>Chargement du profil…</div> : !person ? <div data-steldra-ui="empty" className={styles.empty}>Talent introuvable.</div> : <>
+        <section data-steldra-ui="profile" className={styles.profile}>
+          <div data-steldra-ui="portrait" className={styles.portrait}>{person.profile_path ? <img src={person.profile_path} alt={person.name}/> : <div data-steldra-ui="portraitFallback" className={styles.portraitFallback}>S</div>}</div>
+          <div data-steldra-ui="profileMain" className={styles.profileMain}>
+            <p data-steldra-ui="eyebrow" className={styles.eyebrow}>PORTRAIT STELDRA</p>
             <h1>{person.name}</h1>
-            <p className={styles.meta}>{person.department || 'Talent'}{person.birthday ? ` · ${person.birthday}` : ''}{person.place_of_birth ? ` · ${person.place_of_birth}` : ''}</p>
-            <div className={styles.favoriteBar}>{(['actor','director','voice'] as TalentRole[]).map((role)=><button key={role} type="button" className={`${styles.favoriteButton} ${isFavorite(role)?styles.favoriteActive:''}`} onClick={()=>toggle(role)}>{isFavorite(role)?'♥':'♡'} {roleLabels[role]}</button>)}</div>
-            <div className={styles.stats}><span>{person.acting_count||0} à l’écran</span><span>{person.directing_count||0} réalisations</span>{voxLoaded && <span>{voxography.length} doublages VF</span>}</div>
+            <p data-steldra-ui="meta" className={styles.meta}>{person.department || 'Talent'}{person.birthday ? ` · ${person.birthday}` : ''}{person.place_of_birth ? ` · ${person.place_of_birth}` : ''}</p>
+            <div data-steldra-ui="favoriteBar" className={styles.favoriteBar}>{(['actor','director','voice'] as TalentRole[]).map((role)=><button key={role} type="button" data-steldra-ui="favoriteButton favoriteActive" className={`${styles.favoriteButton} ${isFavorite(role)?styles.favoriteActive:''}`} onClick={()=>toggle(role)}>{isFavorite(role)?'♥':'♡'} {roleLabels[role]}</button>)}</div>
+            <div data-steldra-ui="stats" className={styles.stats}><span>{person.acting_count||0} à l’écran</span><span>{person.directing_count||0} réalisations</span>{voxLoaded && <span>{voxography.length} doublages VF</span>}</div>
           </div>
-          {person.biography && <p className={styles.bio}>{person.biography}</p>}
+          {person.biography && <p data-steldra-ui="bio" className={styles.bio}>{person.biography}</p>}
         </section>
 
-        <section className={styles.section}>
-          <div className={styles.primaryTabs}>
-            <button className={`${styles.primaryTab} ${view==='filmography'?styles.activePrimaryTab:''}`} onClick={()=>changeView('filmography')}><b>Filmographie</b><small>Rôles à l’écran</small></button>
-            <button className={`${styles.primaryTab} ${view==='dubbing'?styles.activePrimaryTab:''}`} onClick={()=>changeView('dubbing')}><b>Doublage VF</b><small>Films, séries, animation & jeux</small></button>
-            <button className={`${styles.primaryTab} ${view==='directing'?styles.activePrimaryTab:''}`} onClick={()=>changeView('directing')}><b>Réalisation</b><small>Crédits de réalisateur</small></button>
+        <section data-steldra-ui="section" className={styles.section}>
+          <div data-steldra-ui="primaryTabs" className={styles.primaryTabs}>
+            <button data-steldra-ui="primaryTab activePrimaryTab" className={`${styles.primaryTab} ${view==='filmography'?styles.activePrimaryTab:''}`} onClick={()=>changeView('filmography')}><b>Filmographie</b><small>Rôles à l’écran</small></button>
+            <button data-steldra-ui="primaryTab activePrimaryTab" className={`${styles.primaryTab} ${view==='dubbing'?styles.activePrimaryTab:''}`} onClick={()=>changeView('dubbing')}><b>Doublage VF</b><small>Films, séries, animation & jeux</small></button>
+            <button data-steldra-ui="primaryTab activePrimaryTab" className={`${styles.primaryTab} ${view==='directing'?styles.activePrimaryTab:''}`} onClick={()=>changeView('directing')}><b>Réalisation</b><small>Crédits de réalisateur</small></button>
           </div>
 
           {view === 'dubbing' ? (
-            voxLoading ? <div className={styles.empty}>Chargement du doublage VF…</div> : !voxLoaded ? <div className={styles.empty}>Ouvrez l’onglet Doublage VF pour charger la voxographie.</div> : voxography.length ? <>
-              <div className={styles.voxHeader}>
+            voxLoading ? <div data-steldra-ui="empty" className={styles.empty}>Chargement du doublage VF…</div> : !voxLoaded ? <div data-steldra-ui="empty" className={styles.empty}>Ouvrez l’onglet Doublage VF pour charger la voxographie.</div> : voxography.length ? <>
+              <div data-steldra-ui="voxHeader" className={styles.voxHeader}>
                 <div><strong>Doublage VF</strong><span>Une liste séparée de la filmographie, sans affiches noires ni faux crédits TMDB.</span></div>
                 {voxSource && <a href={voxSource} target="_blank" rel="noreferrer">Source {voxProvider || 'VF'} ↗</a>}
               </div>
 
-              {recurringActors.length > 0 && <div className={styles.recurringBlock}><span className={styles.miniLabel}>ACTEURS DOUBLÉS RÉGULIÈREMENT</span><div className={styles.recurringChips}>{recurringActors.map((actor)=><button key={actor.name} onClick={()=>setVoxQuery(actor.name)}>{actor.name}<em>{actor.count}</em></button>)}</div></div>}
+              {recurringActors.length > 0 && <div data-steldra-ui="recurringBlock" className={styles.recurringBlock}><span data-steldra-ui="miniLabel" className={styles.miniLabel}>ACTEURS DOUBLÉS RÉGULIÈREMENT</span><div data-steldra-ui="recurringChips" className={styles.recurringChips}>{recurringActors.map((actor)=><button key={actor.name} onClick={()=>setVoxQuery(actor.name)}>{actor.name}<em>{actor.count}</em></button>)}</div></div>}
 
-              <div className={styles.voxControls}>
+              <div data-steldra-ui="voxControls" className={styles.voxControls}>
                 <input value={voxQuery} onChange={(event)=>setVoxQuery(event.target.value)} placeholder="Rechercher Andrew Garfield, Spider-Man, Natsu…" />
                 {voxQuery && <button onClick={()=>setVoxQuery('')}>Effacer</button>}
               </div>
-              <div className={styles.voxFilters}>{voxCategories.map((category)=>{
+              <div data-steldra-ui="voxFilters" className={styles.voxFilters}>{voxCategories.map((category)=>{
                 const count = category === 'Tout' ? voxography.length : voxography.filter((item)=>item.category===category).length;
                 if (category !== 'Tout' && count === 0) return null;
                 return <button key={category} className={voxFilter===category?styles.activeVoxFilter:''} onClick={()=>setVoxFilter(category)}>{category}<span>{count}</span></button>;
               })}</div>
 
-              <div className={styles.voxGrid}>{pagedVoxography.map((credit,index)=>{
+              <div data-steldra-ui="voxGrid" className={styles.voxGrid}>{pagedVoxography.map((credit,index)=>{
                 const body = <>
-                  <div className={styles.voxPoster}><SteldraPoster src={credit.media?.poster_path || undefined} alt={credit.title}/>{!credit.mediaResolved && <span className={styles.posterLoading}>…</span>}</div>
-                  <div className={styles.voxCardBody}>
-                    <div className={styles.voxBadge}>{credit.category}</div>
-                    <strong className={styles.voxCardTitle}>{credit.title}</strong>
-                    <span className={styles.voxYear}>{credit.year || 'Année inconnue'}</span>
-                    <div className={styles.voxCardMeta}><span>Personnage</span><b>{credit.role || '—'}</b></div>
-                    {credit.dubbedActor && <div className={styles.voxCardMeta}><span>Interprète original</span><b>{credit.dubbedActor}</b></div>}
+                  <div data-steldra-ui="voxPoster" className={styles.voxPoster}><SteldraPoster src={credit.media?.poster_path || undefined} alt={credit.title}/>{!credit.mediaResolved && <span data-steldra-ui="posterLoading" className={styles.posterLoading}>…</span>}</div>
+                  <div data-steldra-ui="voxCardBody" className={styles.voxCardBody}>
+                    <div data-steldra-ui="voxBadge" className={styles.voxBadge}>{credit.category}</div>
+                    <strong data-steldra-ui="voxCardTitle" className={styles.voxCardTitle}>{credit.title}</strong>
+                    <span data-steldra-ui="voxYear" className={styles.voxYear}>{credit.year || 'Année inconnue'}</span>
+                    <div data-steldra-ui="voxCardMeta" className={styles.voxCardMeta}><span>Personnage</span><b>{credit.role || '—'}</b></div>
+                    {credit.dubbedActor && <div data-steldra-ui="voxCardMeta" className={styles.voxCardMeta}><span>Interprète original</span><b>{credit.dubbedActor}</b></div>}
                   </div>
                 </>;
                 return credit.media
-                  ? <Link className={`${styles.voxCard} ${styles.voxCardClickable}`} href={`/media/${credit.media.type}/${credit.media.id}`} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}<span className={styles.openHint}>Voir la fiche ↗</span></Link>
-                  : <article className={styles.voxCard} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}{credit.mediaResolved && <span className={styles.noMatchHint}>Fiche média introuvable</span>}</article>;
+                  ? <Link data-steldra-ui="voxCard voxCardClickable" className={`${styles.voxCard} ${styles.voxCardClickable}`} href={`/media/${credit.media.type}/${credit.media.id}`} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}<span data-steldra-ui="openHint" className={styles.openHint}>Voir la fiche ↗</span></Link>
+                  : <article data-steldra-ui="voxCard" className={styles.voxCard} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}{credit.mediaResolved && <span data-steldra-ui="noMatchHint" className={styles.noMatchHint}>Fiche média introuvable</span>}</article>;
               })}</div>
-              {visibleVoxography.length > pagedVoxography.length && <div className={styles.loadMoreWrap}><button className={styles.loadMoreButton} onClick={()=>setVoxVisibleCount((count)=>count+20)}>Voir plus ({visibleVoxography.length-pagedVoxography.length} restants)</button></div>}
-              {voxMediaResolving && <div className={styles.enrichingNote}>STELDRA complète seulement les affiches visibles…</div>}
-              {!visibleVoxography.length && <div className={styles.empty}>Aucun doublage pour ce filtre.</div>}
-            </> : <div className={styles.empty}>Aucune voxographie VF structurée trouvée pour ce talent.</div>
+              {visibleVoxography.length > pagedVoxography.length && <div data-steldra-ui="loadMoreWrap" className={styles.loadMoreWrap}><button data-steldra-ui="loadMoreButton" className={styles.loadMoreButton} onClick={()=>setVoxVisibleCount((count)=>count+20)}>Voir plus ({visibleVoxography.length-pagedVoxography.length} restants)</button></div>}
+              {voxMediaResolving && <div data-steldra-ui="enrichingNote" className={styles.enrichingNote}>STELDRA complète seulement les affiches visibles…</div>}
+              {!visibleVoxography.length && <div data-steldra-ui="empty" className={styles.empty}>Aucun doublage pour ce filtre.</div>}
+            </> : <div data-steldra-ui="empty" className={styles.empty}>Aucune voxographie VF structurée trouvée pour ce talent.</div>
           ) : (
-            <div className={styles.mediaArea}>
-              <div className={styles.sectionTitle}><strong>{view==='filmography'?'Filmographie':'Réalisation'}</strong><span>{view==='filmography'?'Uniquement les apparitions à l’écran — les doublages sont dans leur onglet.':'Crédits de réalisation.'}</span></div>
-              {creditsLoading ? <div className={styles.empty}>Chargement…</div> : (view==='filmography'?screenCredits:directingCredits).length ? <div className={styles.grid}>{(view==='filmography'?screenCredits:directingCredits).map((credit)=><Link className={styles.media} href={`/media/${credit.type}/${credit.id}`} key={`${credit.type}-${credit.id}-${credit.recommendation_reason}`}>
-                <div className={styles.poster}><SteldraPoster src={credit.poster_path} alt={credit.title}/></div>
+            <div data-steldra-ui="mediaArea" className={styles.mediaArea}>
+              <div data-steldra-ui="sectionTitle" className={styles.sectionTitle}><strong>{view==='filmography'?'Filmographie':'Réalisation'}</strong><span>{view==='filmography'?'Uniquement les apparitions à l’écran — les doublages sont dans leur onglet.':'Crédits de réalisation.'}</span></div>
+              {creditsLoading ? <div data-steldra-ui="empty" className={styles.empty}>Chargement…</div> : (view==='filmography'?screenCredits:directingCredits).length ? <div data-steldra-ui="grid" className={styles.grid}>{(view==='filmography'?screenCredits:directingCredits).map((credit)=><Link data-steldra-ui="media" className={styles.media} href={`/media/${credit.type}/${credit.id}`} key={`${credit.type}-${credit.id}-${credit.recommendation_reason}`}>
+                <div data-steldra-ui="poster" className={styles.poster}><SteldraPoster src={credit.poster_path} alt={credit.title}/></div>
                 <strong>{credit.title}</strong><span>{credit.year||'—'}{credit.recommendation_label?` · ${credit.recommendation_label}`:''}</span>
-              </Link>)}</div> : <div className={styles.empty}>Aucun crédit dans cette rubrique.</div>}
+              </Link>)}</div> : <div data-steldra-ui="empty" className={styles.empty}>Aucun crédit dans cette rubrique.</div>}
             </div>
           )}
         </section>

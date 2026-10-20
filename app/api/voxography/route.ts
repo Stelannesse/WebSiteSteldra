@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : API Voxographie : extrait et consolide les rôles de doublage français depuis plusieurs sources.
+ */
+
 import { NextResponse } from 'next/server';
 
 const WIKI_API = 'https://fr.wikipedia.org/w/api.php';
@@ -12,6 +16,7 @@ type VoxographyItem = {
   sourceUrl: string;
 };
 
+/** Retire les variations d'accents, de casse et d'espaces pour faciliter les comparaisons. */
 const normalize = (value = '') => value
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -20,6 +25,7 @@ const normalize = (value = '') => value
   .replace(/\s+/g, ' ')
   .trim();
 
+/** Transforme les entités HTML en caractères ordinaires. */
 const decodeHtml = (value = '') => value
   .replace(/&nbsp;|&#160;/gi, ' ')
   .replace(/&amp;/gi, '&')
@@ -30,6 +36,7 @@ const decodeHtml = (value = '') => value
   .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
   .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)));
 
+/** Supprime les balises HTML et nettoie le texte restant. */
 const stripHtml = (value = '') => decodeHtml(value)
   .replace(/<script[\s\S]*?<\/script>/gi, ' ')
   .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -38,11 +45,13 @@ const stripHtml = (value = '') => decodeHtml(value)
   .replace(/\s+/g, ' ')
   .trim();
 
+/** Transforme un nom en fragment d'URL normalisé. */
 const slugify = (name: string) => normalize(name)
   .replace(/['’]/g, '')
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '');
 
+/** Déduit le type de média à partir d'un intitulé libre. */
 const categoryFromText = (value = ''): MediaKind => {
   const n = normalize(value);
   if (n.includes('jeu video')) return 'Jeu vidéo';
@@ -53,6 +62,7 @@ const categoryFromText = (value = ''): MediaKind => {
   return 'Autre';
 };
 
+/** Détecte les rôles trop vagues pour être utiles dans une voxographie. */
 const noisyRole = (value = '') => {
   const n = normalize(value);
   if (!n) return true;
@@ -63,6 +73,7 @@ const noisyRole = (value = '') => {
   ].some((term) => n.includes(term));
 };
 
+/** Fusionne les entrées de voxographie identiques. */
 const dedupe = (items: VoxographyItem[]) => {
   const map = new Map<string, VoxographyItem>();
   for (const item of items) {
@@ -78,6 +89,7 @@ const dedupe = (items: VoxographyItem[]) => {
   });
 };
 
+/** Extrait les rôles de doublage contenus dans une page La Voix des comédiens français. */
 const parseLavf = (html: string, sourceUrl: string): VoxographyItem[] => {
   // laVF contient une table structurée "Oeuvre / Personnage / Acteur / Info / Type / Année".
   // On lit uniquement cette table : pas de scan de centaines de pages, pas d'heuristique sur des paragraphes.
@@ -126,6 +138,7 @@ const parseLavf = (html: string, sourceUrl: string): VoxographyItem[] => {
   return dedupe(items);
 };
 
+/** Recherche puis télécharge la page de voxographie correspondant à la personnalité. */
 const fetchLavf = async (name: string) => {
   const sourceUrl = `https://lavf.fr/comedien/${slugify(name)}`;
   const response = await fetch(sourceUrl, {
@@ -140,6 +153,7 @@ const fetchLavf = async (name: string) => {
   return { items: parseLavf(html, sourceUrl), sourceUrl };
 };
 
+/** Nettoie le balisage provenant de Wikipédia. */
 const cleanWiki = (value = '') => stripHtml(value)
   .replace(/\{\{[^{}]*\}\}/g, ' ')
   .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g, '$1')
@@ -147,6 +161,7 @@ const cleanWiki = (value = '') => stripHtml(value)
   .replace(/\s+/g, ' ')
   .trim();
 
+/** Extrait les rôles de doublage depuis le wikicode d'une page personnelle. */
 const parseWikiPersonal = (wikitext: string, sourceUrl: string): VoxographyItem[] => {
   const items: VoxographyItem[] = [];
   let category: MediaKind = 'Autre';
@@ -181,6 +196,7 @@ const parseWikiPersonal = (wikitext: string, sourceUrl: string): VoxographyItem[
   return dedupe(items);
 };
 
+/** Utilise Wikipédia comme source de secours lorsque la source principale ne répond pas. */
 const fetchWikipediaFallback = async (name: string) => {
   const search = await fetch(`${WIKI_API}?action=query&list=search&srsearch=${encodeURIComponent(`intitle:"${name}"`)}&srlimit=5&format=json&origin=*`, { next: { revalidate: 21600 } });
   if (!search.ok) return { items: [] as VoxographyItem[], sourceUrl: '' };
@@ -204,6 +220,7 @@ const fetchWikipediaFallback = async (name: string) => {
   return { items: parseWikiPersonal(wiki?.parse?.wikitext?.['*'] || '', sourceUrl), sourceUrl };
 };
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const name = searchParams.get('name')?.trim();

@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Utilitaire d'authentification : convertit les erreurs techniques en messages français compréhensibles.
+ */
+
 export function getAuthErrorMessage(error: unknown, fallback = "Une erreur est survenue. Veuillez réessayer.") {
   if (!error || typeof error !== 'object') return fallback
 

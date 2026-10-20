@@ -1,3 +1,8 @@
+/**
+ * Rôle du fichier : Carte média réutilisable : présente une affiche et ouvre la fiche détaillée correspondante.
+ */
+
+import { isCinemaType } from '../lib/cinemaScope';
 import type {
   MediaItem,
   MyListItem,
@@ -20,6 +25,7 @@ type MediaCardProps = {
   showMeta?: boolean;
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function MediaCard({
   item,
   currentItem,
@@ -37,6 +43,7 @@ export default function MediaCard({
 
     const router = useRouter();
 
+/** Ouvre la page détaillée du média sélectionné. */
 const openDetails = () => {
   sessionStorage.setItem(
     'steldra_selected_media',
@@ -76,15 +83,17 @@ const openDetails = () => {
 
   const posterUrl = getPosterUrl(item, 'w342');
 
+  if (!isCinemaType(item.type)) return null;
+
   return (
-    <div onClick={openDetails} className={styles.card}>
+    <div onClick={openDetails} data-steldra-ui="card" className={styles.card}>
       <button
         type="button"
         onClick={(event) => {
           event.stopPropagation();
           onMarkWatched(item);
         }}
-        className={`${styles.action} ${styles.left} ${currentStatus === 'vu' ? styles.watched : ''}`}
+        data-steldra-ui="action left watched" className={`${styles.action} ${styles.left} ${currentStatus === 'vu' ? styles.watched : ''}`}
       >
         {watchedLabel}
       </button>
@@ -95,7 +104,7 @@ const openDetails = () => {
           event.stopPropagation();
           onToggleInProgress(item);
         }}
-        className={`${styles.action} ${styles.center} ${currentStatus === 'en_cours' ? styles.inProgress : ''}`}
+        data-steldra-ui="action center inProgress" className={`${styles.action} ${styles.center} ${currentStatus === 'en_cours' ? styles.inProgress : ''}`}
         aria-label={currentStatus === 'en_cours' ? 'Retirer des médias en cours' : 'Marquer comme en cours'}
         title={currentStatus === 'en_cours' ? 'Retirer des médias en cours' : 'Marquer comme en cours'}
       >
@@ -108,7 +117,7 @@ const openDetails = () => {
           event.stopPropagation();
           onMarkToWatch(item);
         }}
-        className={`${styles.action} ${styles.right} ${currentStatus === 'a_voir' ? styles.toWatch : ''}`}
+        data-steldra-ui="action right toWatch" className={`${styles.action} ${styles.right} ${currentStatus === 'a_voir' ? styles.toWatch : ''}`}
       >
         {isReadingType ? 'À lire' : 'À voir'}
       </button>
@@ -117,7 +126,7 @@ const openDetails = () => {
         src={posterUrl}
         alt={`Affiche de ${item.title}`}
         referrerPolicy="no-referrer"
-        className={styles.poster}
+        data-steldra-ui="poster" className={styles.poster}
         onError={(event) => usePosterFallback(event.currentTarget)}
       />
 
@@ -130,7 +139,7 @@ const openDetails = () => {
           }}
           aria-label={currentItem.favorite ? `Retirer ${item.title} des favoris` : `Ajouter ${item.title} aux favoris`}
           title={currentItem.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-          className={`${styles.roundAction} ${styles.favorite} ${currentItem.favorite ? styles.favoriteActive : ''}`}
+          data-steldra-ui="roundAction favorite favoriteActive" className={`${styles.roundAction} ${styles.favorite} ${currentItem.favorite ? styles.favoriteActive : ''}`}
         >
           {currentItem.favorite ? '★' : '☆'}
         </button>
@@ -146,18 +155,18 @@ const openDetails = () => {
           }}
           aria-label={`Supprimer ${item.title}`}
           title="Supprimer de ma collection"
-          className={`${styles.roundAction} ${styles.remove}`}
+          data-steldra-ui="roundAction remove" className={`${styles.roundAction} ${styles.remove}`}
         >
           ×
         </button>
       )}
 
       {showMeta && (
-        <div className={styles.meta}>
+        <div data-steldra-ui="meta" className={styles.meta}>
           <strong title={item.title}>{item.title}</strong>
-          <div className={styles.metaLine}>
+          <div data-steldra-ui="metaLine" className={styles.metaLine}>
             <span>{item.year || (item.release_date || item.first_air_date || '').slice(0, 4) || '—'}</span>
-            {Number(item.rating) > 0 && <span className={styles.rating}>★ {Number(item.rating).toFixed(1)}</span>}
+            {Number(item.rating) > 0 && <span data-steldra-ui="rating" className={styles.rating}>★ {Number(item.rating).toFixed(1)}</span>}
           </div>
         </div>
       )}

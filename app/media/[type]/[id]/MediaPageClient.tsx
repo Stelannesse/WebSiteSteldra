@@ -1,3 +1,7 @@
+/**
+ * Rôle du fichier : Contrôleur client d'une fiche média : coordonne les données, la progression, les favoris et les actions utilisateur.
+ */
+
 'use client';
 
 import {
@@ -31,6 +35,7 @@ type CustomListSummary = {
   name: string;
 };
 
+/** Composant principal de cette page ou zone d'interface. */
 export default function MediaPageClient({
   type,
   id,
@@ -226,7 +231,7 @@ export default function MediaPageClient({
             error,
           } = await supabase
             .from('media_progress')
-            .select('*')
+            .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
             .eq('user_id', user.id)
             .eq('media_id', id)
             .eq('media_type', type)
@@ -398,7 +403,7 @@ export default function MediaPageClient({
       const { data, error } = await fetchAllPages<any>((from, to) =>
         supabase
           .from('media_progress')
-          .select('*')
+          .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
           .eq('user_id', userId)
           .order('media_id', { ascending: true })
           .range(from, to)
@@ -597,7 +602,7 @@ export default function MediaPageClient({
         error: existingError,
       } = await supabase
         .from('custom_list_items')
-        .select('id')
+        .select('id').in('media_type', ['movie', 'tv', 'drama', 'anime'])
         .eq('list_id', listId)
         .eq('media_id', targetMedia.id.toString())
         .eq('media_type', targetMedia.type)
@@ -622,7 +627,7 @@ export default function MediaPageClient({
         error: positionError,
       } = await supabase
         .from('custom_list_items')
-        .select('position')
+        .select('position').in('media_type', ['movie', 'tv', 'drama', 'anime'])
         .eq('list_id', listId)
         .order('position', {
           ascending: false,

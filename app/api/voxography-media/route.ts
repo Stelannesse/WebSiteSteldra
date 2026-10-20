@@ -1,8 +1,13 @@
+/**
+ * Rôle du fichier : API Correspondance voxographie : rapproche un titre de doublage d'un média TMDB grâce à un score de similarité.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const IMG = 'https://image.tmdb.org/t/p/w500';
 
+/** Retire les variations d'accents, de casse et d'espaces pour faciliter les comparaisons. */
 const normalize = (value = '') => value
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -11,6 +16,7 @@ const normalize = (value = '') => value
   .replace(/\s+/g, ' ')
   .trim();
 
+/** Mesure la ressemblance entre deux titres normalisés. */
 const similarity = (a = '', b = '') => {
   const aa = normalize(a);
   const bb = normalize(b);
@@ -23,6 +29,7 @@ const similarity = (a = '', b = '') => {
   return shared / Math.max(aw.size, bw.size, 1);
 };
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get('title')?.trim() || '';

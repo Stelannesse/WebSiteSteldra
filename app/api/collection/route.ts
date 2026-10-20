@@ -1,13 +1,19 @@
+/**
+ * Rôle du fichier : API Collection : renvoie la collection de l'utilisateur connecté depuis Supabase.
+ */
+
 import { NextResponse } from 'next/server';
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
+/** Interroge TMDB et lève une erreur explicite si la réponse échoue. */
 async function fetchTmdb(url: string) {
   const response = await fetch(url, { next: { revalidate: 3600 } });
   if (!response.ok) return null;
   return response.json();
 }
 
+/** Traite la requête HTTP GET, valide ses paramètres puis renvoie une réponse JSON. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
