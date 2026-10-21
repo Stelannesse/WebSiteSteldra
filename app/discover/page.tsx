@@ -3,11 +3,13 @@
  */
 
 'use client';
+import { loadPublicCatalog } from '../lib/publicCatalog';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import MainNav from '../components/mainNav';
 import MediaCard from '../components/mediaCard';
+import { readUser, loadCollection } from '../lib/browserData';
 import { createClient } from '../lib/supabase';
 import { fetchAllPages } from '../lib/supabasePaging';
 import type { MediaItem, MyListItem, WatchStatus } from '../types/media';
@@ -140,13 +142,16 @@ export default function ExplorePage() {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await readUser(supabase);
       if (!user) { window.location.href = '/login'; return; }
 
       const [{ data: progress }, { data: likes }, feedResponse] = await Promise.all([
-        fetchAllPages<any>((from, to) => supabase.from('media_progress').select('*').in('media_type', ['movie', 'tv', 'drama', 'anime']).eq('user_id', user.id).order('media_id', { ascending: true }).range(from, to)),
+        loadCollection(supabase, user.id),
         supabase.from('media_reviews').select('media_id,media_type').in('media_type', ['movie', 'tv', 'drama', 'anime']).eq('user_id', user.id).eq('rating', 'like').order('created_at', { ascending: false }).limit(8),
-        fetch('/api/discover-feed').catch(() => null),
+        loadPublicCatalog('/api/discover-feed').then((feed) => {
+          if (!cancelled) { setTrending(feed.trending || []); setNewReleases(feed.newReleases || []); setLoading(false); }
+          return feed;
+        }).catch(() => null),
       ]);
       if (cancelled) return;
 
@@ -163,9 +168,10 @@ export default function ExplorePage() {
         };
       });
       setMyList(next);
+      setLoading(false);
 
-      if (feedResponse?.ok) {
-        const feed = await feedResponse.json();
+      if (feedResponse) {
+        const feed = feedResponse;
         setTrending(feed.trending || []);
         setNewReleases(feed.newReleases || []);
       }
@@ -181,8 +187,8 @@ export default function ExplorePage() {
       const seeds = [...seedMap.values()].slice(0, 6);
       const payloads = await Promise.all(seeds.map(async (seed: any) => {
         try {
-          const response = await fetch(`/api/recommendations?id=${encodeURIComponent(seed.media_id)}&type=${encodeURIComponent(seed.media_type)}`);
-          return response.ok ? (await response.json()).results || [] : [];
+          const payload = await loadPublicCatalog(`/api/recommendations?id=${encodeURIComponent(seed.media_id)}&type=${encodeURIComponent(seed.media_type)}`);
+          return payload.results || [];
         } catch { return []; }
       }));
       const unique = new Map<string, ExploreItem>();
@@ -190,6 +196,7 @@ export default function ExplorePage() {
         const key = keyOf(item);
         if (!next[key] && !unique.has(key)) unique.set(key, item);
       });
+      if (cancelled) return;
       setRecommendations([...unique.values()]);
       setLoading(false);
     };

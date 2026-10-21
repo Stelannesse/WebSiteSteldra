@@ -351,6 +351,30 @@ export default function MediaPageClient({
           }
         }
 
+        // Les liens de filmographie doivent aussi ouvrir les œuvres hors collection.
+        const response = await fetch(`/api/media-details?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}&mode=summary`);
+        const details = await response.json().catch(() => null);
+        if (!response.ok) {
+          if (!cancelled) setPageError(details?.error || `La fiche est temporairement indisponible (HTTP ${response.status}).`);
+          return;
+        }
+        if (cancelled) return;
+        if (details?.title) {
+          setInitialMedia({
+            id, type, title: details.title,
+            poster_path: details.poster_path || undefined,
+            synopsis: details.synopsis,
+            runtime: details.runtime,
+            episode_runtime: details.episode_runtime,
+            episodes: details.episodes,
+            seasons: details.seasons_count,
+            year: details.year,
+            genres: details.genres,
+            genre_ids: details.genre_ids,
+          });
+          return;
+        }
+
         setPageError(
           'Ce média est introuvable. Retourne dans ta collection et ouvre à nouveau sa fiche.'
         );

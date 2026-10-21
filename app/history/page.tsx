@@ -6,8 +6,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import MainNav from '../components/mainNav';
+import { readUser, loadCollection, loadHistory, invalidateBrowserData } from '../lib/browserData';
 import { createClient } from '../lib/supabase';
-import { fetchAllPages } from '../lib/supabasePaging';
 import { getPosterUrl, usePosterFallback } from '../lib/poster';
 import type { MediaItem } from '../types/media';
 import styles from './history.module.css';
@@ -18,10 +18,11 @@ type HistoryRow = {
   media_type: string;
   media_data: MediaItem | null;
   watched_at: string;
+  recovered?: boolean;
 };
 
-const INITIAL_VISIBLE = 80;
-const LOAD_MORE_STEP = 80;
+const INITIAL_VISIBLE = 24;
+const LOAD_MORE_STEP = 24;
 
 /** Construit une clé stable combinant le type et l'identifiant du média. */
 const mediaKey = (row: HistoryRow) => `${row.media_type}_${row.media_id}`;
@@ -83,31 +84,46 @@ export default function HistoryPage() {
   const [periodFilter, setPeriodFilter] = useState('all');
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await readUser(supabase);
       if (!user) {
         window.location.href = '/login';
         return;
       }
 
-      const { data, error: loadError } = await fetchAllPages<HistoryRow>((from, to) =>
-        supabase
-          .from('watch_history')
-          .select('id,media_id,media_type,media_data,watched_at').in('media_type', ['movie', 'tv', 'drama', 'anime'])
-          .eq('user_id', user.id)
-          .order('watched_at', { ascending: false })
-          .order('id', { ascending: false })
-          .range(from, to)
-      );
-
+      // Ces deux sources indépendantes sont chargées en parallèle.
+      const [historyResponse, progressResponse] = await Promise.all([
+        loadHistory(supabase, user.id, (partialRows, complete) => {
+          if (cancelled) return;
+          setRows(partialRows);
+          setLoading(false);
+          setLoadingMore(!complete);
+        }),
+        loadCollection(supabase, user.id),
+      ]);
+      const { data, error: loadError } = historyResponse;
+      const { data: progress } = progressResponse;
+      // Reconstitue uniquement la dernière progression connue, pas de fausses dates d'épisodes.
+      const known = new Set((data || []).map(mediaKey));
+      const recovered: HistoryRow[] = [];
+      (progress || []).forEach((entry) => {
+        const key = `${entry.media_type}_${entry.media_id}`;
+        const episodes = entry.watched_episode || entry.watched_episodes || {};
+        const watched = Object.entries(episodes).some(([episodeKey, value]) => episodeKey.startsWith(`${key}_S`) && value);
+        const date = entry.media_data?.steldra_last_interaction_at || entry.updated_at || entry.created_at;
+        if (known.has(key) || !entry.media_data || (!watched && entry.status !== 'vu') || !date || !Number.isFinite(Date.parse(date))) return;
+        recovered.push({ id: `progress:${key}`, media_id: entry.media_id, media_type: entry.media_type, media_data: entry.media_data, watched_at: date, recovered: true });
+      });
       if (cancelled) return;
       if (loadError) setError('Impossible de charger l’historique. Vérifiez que la migration SQL a été appliquée.');
-      else setRows(data);
+      else setRows([...data, ...recovered].sort((a,b) => Date.parse(b.watched_at) - Date.parse(a.watched_at)));
       setLoading(false);
+      setLoadingMore(false);
     };
     void load();
     return () => { cancelled = true; };
@@ -131,6 +147,7 @@ export default function HistoryPage() {
       return;
     }
 
+    invalidateBrowserData();
     setRows((current) => current.filter((row) => row.id !== rowId));
   };
 
@@ -188,6 +205,7 @@ export default function HistoryPage() {
           </div>
         </section>
 
+        {loadingMore && !loading && <p role="status">Les entrées plus anciennes et les totaux se complètent…</p>}
         <section data-steldra-ui="controlDeck" className={styles.controlDeck} aria-label="Filtres de l’historique">
           <label data-steldra-ui="searchWrap" className={styles.searchWrap}>
             <span>⌕</span>
@@ -249,18 +267,18 @@ export default function HistoryPage() {
                     return (
                       <article data-steldra-ui="item" className={styles.item} key={row.id}>
                         <a href={`/media/${row.media_type}/${row.media_id}`} data-steldra-ui="mediaLink" className={styles.mediaLink}>
-                          <img src={getPosterUrl(media, 'w154')} alt="" onError={(event) => usePosterFallback(event.currentTarget)} />
+                          <img loading="lazy" decoding="async" src={getPosterUrl(media, 'w154')} alt="" onError={(event) => usePosterFallback(event.currentTarget)} />
                           <div data-steldra-ui="mediaInfo" className={styles.mediaInfo}>
                             <div data-steldra-ui="metaLine" className={styles.metaLine}>
                               <span data-steldra-ui="typePill" className={styles.typePill}>{typeLabel(row.media_type)}</span>
                               <span data-steldra-ui="time" className={styles.time}>{formatTime(row.watched_at)}</span>
                             </div>
                             <strong>{media.title}</strong>
-                            <small>Voir la fiche complète</small>
+                            <small>{row.recovered ? 'Dernière progression enregistrée · date des épisodes non conservée' : media.steldra_history_episodes?.length ? media.steldra_history_episodes.join(', ') : 'Voir la fiche complète'}</small>
                           </div>
                           <span data-steldra-ui="openArrow" className={styles.openArrow}>›</span>
                         </a>
-                        <button
+                        {!row.recovered && <button
                           type="button"
                           data-steldra-ui="deleteButton" className={styles.deleteButton}
                           onClick={() => void deleteHistoryRow(row.id)}
@@ -268,7 +286,7 @@ export default function HistoryPage() {
                           title="Supprimer ce visionnage"
                         >
                           ×
-                        </button>
+                        </button>}
                       </article>
                     );
                   })}

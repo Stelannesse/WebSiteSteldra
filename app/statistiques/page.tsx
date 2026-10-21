@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import MainNav from '../components/mainNav';
 import TimeStats from '../components/timeStats';
+import { readUser, loadCollection } from '../lib/browserData';
 import { createClient } from '../lib/supabase';
 import { fetchAllPages } from '../lib/supabasePaging';
 import { calculateViewingStats } from '../lib/viewingStats';
@@ -55,18 +56,11 @@ export default function StatistiquesPage() {
       setError(null);
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await readUser(supabase);
         if (cancelled) return;
 
         if (user) {
-          const { data, error: supabaseError } = await fetchAllPages<any>((from, to) =>
-            supabase
-              .from('media_progress')
-              .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
-              .eq('user_id', user.id)
-              .order('media_id', { ascending: true })
-              .range(from, to)
-          );
+          const { data, error: supabaseError } = await loadCollection(supabase, user.id);
 
           if (supabaseError) throw supabaseError;
 

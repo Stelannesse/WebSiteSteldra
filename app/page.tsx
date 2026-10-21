@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import MainNav from './components/mainNav';
+import { readUser, loadCollection } from './lib/browserData';
 import { createClient } from './lib/supabase';
 import styles from './page.module.css';
 import type { MediaItem, WatchStatus } from './types/media';
@@ -64,7 +65,7 @@ const mediaKey = (media: { type: string; id: string | number }) =>
 const posterUrl = (media: MediaItem) => getPosterUrl(media, 'w342');
 
 const HOME_GENRES = [
-  'Action', 'Aventure', 'Animation', 'Comédie', 'Crime', 'Documentaire',
+  'Action', 'Aventure', 'Animation', 'Comédie', 'Crime',
   'Drame', 'Fantastique', 'Histoire', 'Horreur', 'Romance', 'Science-fiction',
   'Thriller', 'BL', 'GL', 'Super-héros', 'Vampires', 'Zombies', 'Noël',
   'Arts martiaux', 'Espace', 'Voyage dans le temps',
@@ -221,6 +222,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
+  const [dashboardComplete, setDashboardComplete] = useState(false);
   const [progressRows, setProgressRows] = useState<ProgressRow[]>([]);
   const [customLists, setCustomLists] = useState<CustomListRow[]>([]);
   const [customListItems, setCustomListItems] = useState<CustomListItemRow[]>([]);
@@ -230,7 +232,8 @@ export default function HomePage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0);
   const [visibleListsCount, setVisibleListsCount] = useState(6);
-  const [homeContinueType, setHomeContinueType] = useState<'series' | 'movies'>('series');
+  const [continueExpanded, setContinueExpanded] = useState(false);
+  const [continuePage, setContinuePage] = useState(0);
   const hasLoadedDashboard = useRef(false);
 
   useEffect(() => {
@@ -265,7 +268,7 @@ export default function HomePage() {
 
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await readUser(supabase);
 
       if (!user || cancelled) {
         setLoading(false);
@@ -280,14 +283,9 @@ export default function HomePage() {
 
       const [progressResponse, listsResponse, likesResponse] =
   await Promise.all([
-    fetchAllPages<ProgressRow>((from, to) =>
-      supabase
-        .from('media_progress')
-        .select('*').in('media_type', ['movie', 'tv', 'drama', 'anime'])
-        .eq('user_id', user.id)
-        .order('media_id', { ascending: true })
-        .range(from, to)
-    ),
+    loadCollection(supabase, user.id, (partialRows, complete) => {
+      if (!cancelled) { setProgressRows(partialRows); setDashboardComplete(complete); setLoading(false); }
+    }),
 
     supabase
       .from('custom_lists')
@@ -308,6 +306,12 @@ if (cancelled) return;
 
 const rows = (progressResponse.data || []) as ProgressRow[];
 const lists = (listsResponse.data || []) as CustomListRow[];
+
+// Affiche le tableau de bord sans attendre les listes détaillées ni les recommandations.
+setProgressRows(rows);
+setCustomLists(lists);
+setLoading(false);
+
 
 let items: CustomListItemRow[] = [];
 
@@ -417,8 +421,7 @@ if (!historyError && !cancelled) {
     () =>
       progressRows
         .filter((row) => row.status === 'en_cours' && row.media_data)
-        .sort((a, b) => dateValue(b, 'activity') - dateValue(a, 'activity'))
-        .slice(0, 8),
+        .sort((a, b) => dateValue(b, 'activity') - dateValue(a, 'activity')),
     [progressRows]
   );
 
@@ -562,10 +565,10 @@ if (!historyError && !cancelled) {
   const totalWatchedMinutes = viewingStats.totalMinutes;
 
   const cinemaContinueRows = continueRows.filter((row) => !['manga', 'manhwa'].includes(row.media_type));
-  const movieContinueRows = cinemaContinueRows.filter((row) => row.media_type === 'movie');
   const seriesContinueRows = cinemaContinueRows.filter((row) => ['tv', 'drama', 'anime'].includes(row.media_type));
-  const activeContinueRows = homeContinueType === 'movies' ? movieContinueRows : seriesContinueRows;
-  const featuredContinue = activeContinueRows[0];
+  const continuePageCount = Math.ceil(seriesContinueRows.length / 3);
+  const safeContinuePage = continueExpanded ? Math.min(continuePage, Math.max(0, continuePageCount - 1)) : 0;
+  const activeContinueRows = seriesContinueRows.slice(safeContinuePage * 3, safeContinuePage * 3 + 3);
   const favoriteMedia = uniqueProgressRows
     .filter((row) => row.media_data && Boolean((row.media_data as MediaItem & { favorite?: boolean }).favorite))
     .map((row) => row.media_data as MediaItem)
@@ -647,7 +650,6 @@ if (!historyError && !cancelled) {
                 <Link href="/collection">Séries</Link>
                 <Link href="/collection">Drama</Link>
                 <Link href="/collection">Animés</Link>
-                <Link href="/collection">Documentaires</Link>
                 <Link href="/talents">Talents</Link>
               </div>
 
@@ -669,32 +671,34 @@ if (!historyError && !cancelled) {
               <div data-steldra-ui="cinemaSplitRow" className={styles.cinemaSplitRow}>
                 <section data-steldra-ui="cinemaPanel continueSpotlight" className={`${styles.cinemaPanel} ${styles.continueSpotlight}`}>
                   <div data-steldra-ui="panelTitleRow" className={styles.panelTitleRow}>
-                    <h2>Continuer mon visionnage</h2>
-                    <div data-steldra-ui="continueTabs" className={styles.continueTabs} role="tablist" aria-label="Type de média à reprendre">
-                      <button type="button" className={homeContinueType === 'series' ? styles.continueTabActive : ''} onClick={() => setHomeContinueType('series')}>Séries</button>
-                      <button type="button" className={homeContinueType === 'movies' ? styles.continueTabActive : ''} onClick={() => setHomeContinueType('movies')}>Films</button>
-                    </div>
+                    <h2>Continuer le visionnage</h2>
+                    {seriesContinueRows.length > 3 && <button type="button" className={styles.continueBrowseButton} onClick={() => { setContinueExpanded(!continueExpanded); setContinuePage(0); }}>{continueExpanded ? 'Réduire' : 'Tout voir'}</button>}
                   </div>
-                  {featuredContinue?.media_data ? (() => {
-                    const row = featuredContinue;
+                  {!dashboardComplete && <p role="status">Mise à jour des visionnages récents…</p>}
+                  {activeContinueRows.length ? <div className={styles.continueTitleList}>{activeContinueRows.map((row) => {
                     const media = row.media_data as MediaItem;
                     const isMovie = media.type === 'movie';
                     const progress = getSeriesProgress(row);
                     const total = Number(media.episodes) || 0;
                     const percent = isMovie ? 0 : (total > 0 ? Math.min(100, Math.round((progress.watchedCount / total) * 100)) : 0);
                     return (
-                      <Link href={`/media/${media.type}/${media.id}`} data-steldra-ui="featuredContinueCard" className={styles.featuredContinueCard}>
+                      <Link key={`${row.media_type}_${row.media_id}`} href={`/media/${media.type}/${media.id}`} data-steldra-ui="featuredContinueCard" className={styles.featuredContinueCard}>
                         <img src={posterUrl(media)} alt={media.title} onError={(event) => usePosterFallback(event.currentTarget)} />
                         <div>
                           <strong>{media.title}</strong>
                           <span>{isMovie ? `Film${media.runtime ? ` · ${formatMinutes(normalizeStoredMinutes(media.runtime, 'movie'))}` : ''}` : `Saison ${progress.latestSeason} · épisode ${Math.max(1, progress.nextEpisode)}`}</span>
                           {!isMovie && <div data-steldra-ui="progressTrack" className={styles.progressTrack}><span style={{ width: `${percent}%` }} /></div>}
-                          <small>{isMovie ? 'Film en cours' : (percent > 0 ? `${percent}% terminé` : 'Reprendre')}</small>
+                          <small>{media.steldra_new_episode ? `Nouvel épisode · ${media.steldra_new_episode}` : isMovie ? 'Film en cours' : (percent > 0 ? `${percent}% terminé` : 'Reprendre')}</small>
                           <b>Regarder</b>
                         </div>
                       </Link>
                     );
-                  })() : <p data-steldra-ui="emptyDashboard" className={styles.emptyDashboard}>Aucun visionnage en cours.</p>}
+                  })}</div> : <p data-steldra-ui="emptyDashboard" className={styles.emptyDashboard}>Aucun visionnage en cours.</p>}
+                  {continueExpanded && continuePageCount > 1 && <div className={styles.continuePager} aria-label="Visionnages récents">
+                    <button type="button" disabled={safeContinuePage === 0} onClick={() => setContinuePage(safeContinuePage - 1)}>← Précédents</button>
+                    <span>{safeContinuePage * 3 + 1}–{Math.min((safeContinuePage + 1) * 3, seriesContinueRows.length)} / {seriesContinueRows.length}</span>
+                    <button type="button" disabled={safeContinuePage + 1 >= continuePageCount} onClick={() => setContinuePage(safeContinuePage + 1)}>Suivants →</button>
+                  </div>}
                 </section>
 
                 <section data-steldra-ui="cinemaPanel recentPanel" className={`${styles.cinemaPanel} ${styles.recentPanel}`}>

@@ -4,6 +4,7 @@
 
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import SeriesReleaseWatcher from "./components/seriesReleaseWatcher";
 import "./desktop.css";
 import { Inter, Poppins } from "next/font/google";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
     >
       <body className={`${inter.className} min-h-full flex flex-col`}>
         {children}
+        <SeriesReleaseWatcher />
 
         <footer className="mt-auto text-center py-2">
         </footer>

@@ -3,6 +3,7 @@
  */
 
 'use client';
+import { loadPublicCatalog } from '../lib/publicCatalog';
 
 import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -32,8 +33,7 @@ export default function TalentsPage() {
   const loadPopular = async (page: number) => {
     setRefreshingPopular(true);
     try {
-      const response = await fetch(`/api/people-search?mode=popular&page=${page}`);
-      const payload = response.ok ? await response.json() : { people: [] };
+      const payload = await loadPublicCatalog(`/api/people-search?mode=popular&page=${page}`);
       setPopular(payload.people || []);
       setPopularPage(page);
     } catch {

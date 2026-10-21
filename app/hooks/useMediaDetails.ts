@@ -49,6 +49,7 @@ export type LoadedMediaDetails = {
   first_air_date?: string | null;
   poster_path?: string | null;
   backdrop_path?: string | null;
+  creator_people?: Array<{ id: number; name: string }>;
   directors?: string[];
   creators?: string[];
   countries?: string[];
@@ -268,6 +269,7 @@ export default function useMediaDetails({
             null,
 
           backdrop_path: data?.backdrop_path ?? null,
+          creator_people: Array.isArray(data?.creator_people) ? data.creator_people : [],
           directors: Array.isArray(data?.directors) ? data.directors : [],
           creators: Array.isArray(data?.creators) ? data.creators : [],
           countries: Array.isArray(data?.countries) ? data.countries : [],

@@ -72,6 +72,8 @@ export default function useMediaProgress({
       steldra_added_at:
         currentItem?.addedAt || media.steldra_added_at || now,
       steldra_last_interaction_at: now,
+      steldra_completed_at: status === 'vu' ? now : media.steldra_completed_at,
+      steldra_new_episode: status === 'vu' ? undefined : media.steldra_new_episode,
     };
 
     const updatedList = {
@@ -249,6 +251,7 @@ export default function useMediaProgress({
       steldra_added_at:
         currentItem?.addedAt || selectedMedia.steldra_added_at || now,
       steldra_last_interaction_at: now,
+      steldra_new_episode: selectedMedia.steldra_new_episode && updatedEpisodes[`${mediaKey}_${selectedMedia.steldra_new_episode}`] ? undefined : selectedMedia.steldra_new_episode,
     };
 
     const updatedList = {
@@ -300,6 +303,20 @@ export default function useMediaProgress({
         }
       );
       return;
+    }
+
+    const newlyWatched = Object.entries(updatedEpisodes)
+      .filter(([key, watched]) => key.startsWith(`${mediaKey}_S`) && watched && !watchedEpisodes[key])
+      .map(([key]) => key.slice(mediaKey.length + 1));
+    if (newlyWatched.length) {
+      const { error: historyError } = await supabase.from('watch_history').insert({
+        user_id: user.id,
+        media_id: String(selectedMedia.id),
+        media_type: selectedMedia.type,
+        media_data: { ...enrichedMedia, steldra_history_episodes: newlyWatched },
+        watched_at: now,
+      });
+      if (historyError) console.error('Erreur historique des épisodes :', historyError);
     }
 
     notifyProgressUpdated();

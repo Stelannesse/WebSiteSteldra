@@ -21,6 +21,15 @@ type VoxFilter = 'Tout'|VoxCategory;
 const roleLabels: Record<TalentRole,string> = { actor:'Acteur favori', director:'Réalisateur favori', voice:'Doubleur favori' };
 const voxCategories: VoxFilter[] = ['Tout','Film',"Film d'animation",'Série',"Série d'animation",'Jeu vidéo'];
 
+// Transmet les données déjà disponibles avant de charger les détails supplémentaires.
+function rememberCredit(media: { id: number; type: 'movie' | 'tv'; title: string; poster_path?: string; year?: number | null }) {
+  try { sessionStorage.setItem('steldra_selected_media', JSON.stringify(media)); } catch { /* La navigation reste disponible si le stockage est bloqué. */ }
+}
+
+// Cache borné pour retrouver immédiatement une fiche récemment consultée.
+type TalentPayload = { person: Person | null; results?: Credit[] };
+const talentCache = new Map<string, { expires: number; payload: TalentPayload }>();
+
 /** Affiche une image avec l'affiche de secours en cas d'erreur. */
 function SteldraPoster({ src, alt }: { src?: string; alt: string }) {
   const [failed, setFailed] = useState(!src);
@@ -48,6 +57,7 @@ export default function TalentDetailPage() {
   const [favorites,setFavorites] = useState<TalentFavorite[]>([]);
   const [view,setView] = useState<View>('filmography');
   const [loading,setLoading] = useState(true);
+  const [creditVisibleCount, setCreditVisibleCount] = useState(24);
 
   useEffect(() => {
     setFavorites(readTalentFavorites());
@@ -62,26 +72,36 @@ export default function TalentDetailPage() {
     setVoxSource('');
     setView('filmography');
 
-    void fetch(`/api/people-search?id=${encodeURIComponent(id)}&mode=profile`)
-      .then((response)=>response.ok?response.json():{person:null})
-      .then((payload)=>{
-        if (cancelled) return;
-        setPerson(payload.person || null);
-        setLoading(false);
-        if (!payload.person) return;
-        setCreditsLoading(true);
-        void fetch(`/api/people-search?id=${encodeURIComponent(id)}&mode=credits`)
-          .then((response)=>response.ok?response.json():{results:[],counts:{}})
-          .then((creditsPayload)=>{
-            if (cancelled) return;
-            setCredits(creditsPayload.results || []);
-            setPerson((current)=>current ? { ...current, acting_count:Number(creditsPayload.counts?.acting)||0, directing_count:Number(creditsPayload.counts?.directing)||0 } : current);
-          })
-          .finally(()=>{ if (!cancelled) setCreditsLoading(false); });
-      })
-      .catch(()=>{ if (!cancelled) { setPerson(null); setLoading(false); } });
+    setCreditVisibleCount(24);
+    setPerson(null);
+    const controller = new AbortController();
+    const applyPayload = (payload: TalentPayload) => {
+      if (cancelled) return;
+      setPerson(payload.person || null);
+      setCredits(payload.results || []);
+      setLoading(false);
+      setCreditsLoading(false);
+    };
+    const cached = talentCache.get(id);
+    if (cached && cached.expires > Date.now()) {
+      applyPayload(cached.payload);
+    } else {
+      setCreditsLoading(true);
+      // Profil et crédits sont récupérés ensemble, en parallèle côté serveur.
+      void fetch(`/api/people-search?id=${encodeURIComponent(id)}`, { signal: controller.signal })
+        .then((response) => { if (!response.ok) throw new Error('Talent indisponible'); return response.json(); })
+        .then((payload: TalentPayload) => {
+          if (cancelled) return;
+          if (payload.person) {
+            if (talentCache.size >= 20) talentCache.delete(talentCache.keys().next().value as string);
+            talentCache.set(id, { expires: Date.now() + 5 * 60 * 1000, payload });
+          }
+          applyPayload(payload);
+        })
+        .catch(() => { if (!cancelled) applyPayload({ person: null }); });
+    }
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   },[id]);
 
   const loadVoxography = () => {
@@ -104,6 +124,7 @@ export default function TalentDetailPage() {
 
   const changeView = (next: View) => {
     setView(next);
+    setCreditVisibleCount(24);
     if (next === 'dubbing') loadVoxography();
   };
 
@@ -230,7 +251,7 @@ export default function TalentDetailPage() {
                   </div>
                 </>;
                 return credit.media
-                  ? <Link data-steldra-ui="voxCard voxCardClickable" className={`${styles.voxCard} ${styles.voxCardClickable}`} href={`/media/${credit.media.type}/${credit.media.id}`} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}<span data-steldra-ui="openHint" className={styles.openHint}>Voir la fiche ↗</span></Link>
+                  ? <Link data-steldra-ui="voxCard voxCardClickable" className={`${styles.voxCard} ${styles.voxCardClickable}`} href={`/media/${credit.media.type}/${credit.media.id}`} onClick={() => { if (credit.media) rememberCredit(credit.media); }} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}<span data-steldra-ui="openHint" className={styles.openHint}>Voir la fiche ↗</span></Link>
                   : <article data-steldra-ui="voxCard" className={styles.voxCard} key={`${credit.title}-${credit.role}-${credit.year}-${index}`}>{body}{credit.mediaResolved && <span data-steldra-ui="noMatchHint" className={styles.noMatchHint}>Fiche média introuvable</span>}</article>;
               })}</div>
               {visibleVoxography.length > pagedVoxography.length && <div data-steldra-ui="loadMoreWrap" className={styles.loadMoreWrap}><button data-steldra-ui="loadMoreButton" className={styles.loadMoreButton} onClick={()=>setVoxVisibleCount((count)=>count+20)}>Voir plus ({visibleVoxography.length-pagedVoxography.length} restants)</button></div>}
@@ -240,10 +261,11 @@ export default function TalentDetailPage() {
           ) : (
             <div data-steldra-ui="mediaArea" className={styles.mediaArea}>
               <div data-steldra-ui="sectionTitle" className={styles.sectionTitle}><strong>{view==='filmography'?'Filmographie':'Réalisation'}</strong><span>{view==='filmography'?'Uniquement les apparitions à l’écran — les doublages sont dans leur onglet.':'Crédits de réalisation.'}</span></div>
-              {creditsLoading ? <div data-steldra-ui="empty" className={styles.empty}>Chargement…</div> : (view==='filmography'?screenCredits:directingCredits).length ? <div data-steldra-ui="grid" className={styles.grid}>{(view==='filmography'?screenCredits:directingCredits).map((credit)=><Link data-steldra-ui="media" className={styles.media} href={`/media/${credit.type}/${credit.id}`} key={`${credit.type}-${credit.id}-${credit.recommendation_reason}`}>
+              {creditsLoading ? <div data-steldra-ui="empty" className={styles.empty}>Chargement…</div> : (view==='filmography'?screenCredits:directingCredits).length ? <div data-steldra-ui="grid" className={styles.grid}>{(view==='filmography'?screenCredits:directingCredits).slice(0, creditVisibleCount).map((credit)=><Link prefetch={false} data-steldra-ui="media" className={styles.media} href={`/media/${credit.type}/${credit.id}`} onClick={() => rememberCredit(credit)} key={`${credit.type}-${credit.id}-${credit.recommendation_reason}`}>
                 <div data-steldra-ui="poster" className={styles.poster}><SteldraPoster src={credit.poster_path} alt={credit.title}/></div>
                 <strong>{credit.title}</strong><span>{credit.year||'—'}{credit.recommendation_label?` · ${credit.recommendation_label}`:''}</span>
               </Link>)}</div> : <div data-steldra-ui="empty" className={styles.empty}>Aucun crédit dans cette rubrique.</div>}
+              {view !== 'dubbing' && (view === 'filmography' ? screenCredits : directingCredits).length > creditVisibleCount && <button type="button" onClick={() => setCreditVisibleCount((count) => count + 24)}>Voir 24 titres de plus</button>}
             </div>
           )}
         </section>

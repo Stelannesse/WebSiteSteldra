@@ -5,6 +5,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import ReviewSection from './ReviewSection';
 import MainNav from './mainNav';
@@ -189,6 +191,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
     ...(hasEpisodes ? [{ value: 'episodes' as const, label: 'Saisons & épisodes' }] : []),
   ];
 
+  const creatorLinks = mediaDetails?.creator_people?.map((person, index) => <span key={person.id}>{index > 0 ? ', ' : ''}<Link href={`/talents/${person.id}`}>{person.name}</Link></span>);
   const creators = (mediaDetails?.directors?.length ? mediaDetails.directors : mediaDetails?.creators || []).join(', ');
   const formatStatus = (value?: string | null) => {
     if (!value) return '—';
@@ -206,7 +209,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
         {mediaDetails.actors.slice(0, limit).map((actor) => {
           const imageUrl = actor.image_url || actor.profile_path || null;
           return (
-            <article key={`${actor.id}_${actor.name}`} data-steldra-ui="castCard" className={styles.castCard}>
+            <Link href={`/talents/${encodeURIComponent(String(actor.id))}`} key={`${actor.id}_${actor.name}`} data-steldra-ui="castCard" className={styles.castCard}>
               {imageUrl ? (
                 <img data-steldra-ui="castImage" className={styles.castImage} src={imageUrl} alt={actor.name} referrerPolicy="no-referrer" />
               ) : (
@@ -217,7 +220,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
                 {actor.character && <span data-steldra-ui="castRole" className={styles.castRole}>{actor.character}</span>}
                 {actor.voice_actor && <span data-steldra-ui="castVoice" className={styles.castVoice}>Voix : {actor.voice_actor}</span>}
               </div>
-            </article>
+            </Link>
           );
         })}
       </div>
@@ -318,7 +321,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
             </div>
 
             <aside data-steldra-ui="sideCard" className={styles.sideCard}>
-              <InfoRow label={selectedMedia.type === 'tv' ? 'Création' : 'Réalisation'} value={creators || '—'} />
+              <InfoRow label={selectedMedia.type === 'tv' ? 'Création' : 'Réalisation'} value={creatorLinks?.length ? creatorLinks : creators || '—'} />
               <InfoRow label="Pays" value={mediaDetails?.countries?.join(', ') || '—'} />
               <InfoRow label="Statut" value={formatStatus(mediaDetails?.status)} />
               <InfoRow label="Sortie" value={mediaDetails?.release_date || mediaDetails?.first_air_date || (releaseYear ? String(releaseYear) : '—')} />
@@ -354,7 +357,7 @@ export default function MediaPageContent(props: MediaPageContentProps) {
                   <TechItem label="Année" value={releaseYear ? String(releaseYear) : '—'} />
                   <TechItem label="Durée" value={formatRuntime() || '—'} />
                   {mediaDetails?.original_title && mediaDetails.original_title !== selectedMedia.title && <TechItem label="Titre original" value={mediaDetails.original_title} />}
-                  {creators && <TechItem label={selectedMedia.type === 'tv' ? 'Création' : 'Réalisation'} value={creators} />}
+                  {creators && <TechItem label={selectedMedia.type === 'tv' ? 'Création' : 'Réalisation'} value={creatorLinks?.length ? creatorLinks : creators} />}
                 </div>
               </div>
             </section>
@@ -514,12 +517,12 @@ export default function MediaPageContent(props: MediaPageContentProps) {
 }
 
 /** Affiche une ligne libellé/valeur dans les informations du média. */
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return <div data-steldra-ui="infoRow" className={styles.infoRow}><span data-steldra-ui="infoLabel" className={styles.infoLabel}>{label}</span><strong data-steldra-ui="infoValue" className={styles.infoValue}>{value}</strong></div>;
 }
 
 /** Affiche une caractéristique technique du média. */
-function TechItem({ label, value }: { label: string; value: string }) {
+function TechItem({ label, value }: { label: string; value: ReactNode }) {
   return <div data-steldra-ui="techItem" className={styles.techItem}><span>{label}</span><strong>{value}</strong></div>;
 }
 

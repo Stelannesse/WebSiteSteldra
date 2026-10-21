@@ -6,6 +6,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { readUser } from '../lib/browserData';
 import { createClient } from '../lib/supabase';
 import MainNav from '../components/mainNav';
 import type { CustomList, CustomListItem } from '../types/media';
@@ -43,6 +44,7 @@ export default function ListsPage() {
   const [description, setDescription] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingPreviews, setLoadingPreviews] = useState(true);
   const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [query, setQuery] = useState('');
@@ -53,7 +55,7 @@ export default function ListsPage() {
       setLoading(true);
       setErrorMessage('');
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await readUser(supabase);
       if (!user) {
         setErrorMessage('Vous devez être connecté pour accéder à vos listes.');
         setLoading(false);
@@ -79,6 +81,8 @@ export default function ListsPage() {
         return;
       }
 
+      setLists(baseLists.map((list) => ({ ...list, previewItems: [], itemCount: 0 })));
+      setLoading(false);
       const ids = baseLists.map((list) => list.id);
       const { data: itemData, error: itemError } = await fetchAllPages<CustomListItem>((from, to) =>
         supabase
@@ -109,6 +113,7 @@ export default function ListsPage() {
         })
       );
       setLoading(false);
+      setLoadingPreviews(false);
     };
 
     void loadLists();
@@ -186,7 +191,7 @@ export default function ListsPage() {
         Array.from({ length: compact ? 3 : 4 }).map((_, index) => {
           const item = list.previewItems[index % list.previewItems.length];
           const src = posterUrl(item);
-          return src ? <img key={`${item?.id}-${index}`} src={src} alt="" /> : <div key={index} data-steldra-ui="coverFallback" className={styles.coverFallback} />;
+          return src ? <img key={`${item?.id}-${index}`} src={src} alt="" loading="lazy" decoding="async" /> : <div key={index} data-steldra-ui="coverFallback" className={styles.coverFallback} />;
         })
       ) : (
         <div data-steldra-ui="emptyPreview" className={styles.emptyPreview}>{list.name.charAt(0).toUpperCase()}</div>
@@ -265,7 +270,7 @@ export default function ListsPage() {
                   {recentLists.map((list) => (
                     <Link key={list.id} href={`/lists/${list.id}`}>
                       <span>{list.name.charAt(0).toUpperCase()}</span>
-                      <div><strong>{list.name}</strong><small>{list.itemCount} média{list.itemCount > 1 ? 's' : ''}</small></div>
+                      <div><strong>{list.name}</strong><small>{loadingPreviews ? 'Chargement…' : `${list.itemCount} média${list.itemCount > 1 ? 's' : ''}`}</small></div>
                       <time>{formatDate(list.updated_at || list.created_at)}</time>
                     </Link>
                   ))}
@@ -279,7 +284,7 @@ export default function ListsPage() {
                     <Link href={`/lists/${list.id}`} data-steldra-ui="featuredCard" className={styles.featuredCard} key={list.id}>
                       {renderPreview(list, true)}
                       <div data-steldra-ui="featuredShade" className={styles.featuredShade} />
-                      <div data-steldra-ui="featuredText" className={styles.featuredText}><strong>{list.name}</strong><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span></div>
+                      <div data-steldra-ui="featuredText" className={styles.featuredText}><strong>{list.name}</strong><span>{loadingPreviews ? 'Chargement…' : `${list.itemCount} titre${list.itemCount > 1 ? 's' : ''}`}</span></div>
                     </Link>
                   ))}
                 </div>
@@ -305,7 +310,7 @@ export default function ListsPage() {
                       <div data-steldra-ui="cardBody" className={styles.cardBody}>
                         <div data-steldra-ui="cardTitleRow" className={styles.cardTitleRow}><h2>{list.name}</h2>{list.is_shared && <span title="Liste partagée">⌁</span>}</div>
                         <p>{list.description || 'Liste personnalisée ordonnée'}</p>
-                        <div data-steldra-ui="cardMeta" className={styles.cardMeta}><span>{list.itemCount} titre{list.itemCount > 1 ? 's' : ''}</span><time>{formatDate(list.updated_at || list.created_at)}</time></div>
+                        <div data-steldra-ui="cardMeta" className={styles.cardMeta}><span>{loadingPreviews ? 'Chargement…' : `${list.itemCount} titre${list.itemCount > 1 ? 's' : ''}`}</span><time>{formatDate(list.updated_at || list.created_at)}</time></div>
                         <div data-steldra-ui="cardAction" className={styles.cardAction}>Ouvrir <span>→</span></div>
                       </div>
                     </Link>

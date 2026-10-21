@@ -47,6 +47,9 @@ export interface MediaItem {
   rating?: number | null;
   type: MediaType;
   favorite?: boolean;
+  steldra_completed_at?: string;
+  steldra_history_episodes?: string[];
+  steldra_new_episode?: string;
   steldra_added_at?: string;
   steldra_last_interaction_at?: string;
 }

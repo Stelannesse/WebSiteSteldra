@@ -12,6 +12,7 @@ export async function GET(request: Request) {
 
   const id = searchParams.get('id');
   const type = searchParams.get('type');
+  const summaryOnly = searchParams.get('mode') === 'summary';
   if (!['movie', 'tv', 'drama', 'anime'].includes(type || '')) {
     return NextResponse.json({ error: 'Ce contenu appartient au site de lecture.' }, { status: 400 });
   }
@@ -140,6 +141,10 @@ export async function GET(request: Request) {
     }
   }
 
+  if (!TMDB_API_KEY) {
+    return NextResponse.json({ error: 'Le service des fiches est indisponible : la clé TMDB_API_KEY manque sur le serveur.' }, { status: 503 });
+  }
+
   // =====================================================
   // CAS C : FILMS, SÉRIES ET DRAMAS TMDB
   // =====================================================
@@ -155,15 +160,20 @@ export async function GET(request: Request) {
       `${tmdbType}/${id}` +
       `?api_key=${TMDB_API_KEY}` +
       `&language=fr-FR` +
-      `&append_to_response=credits,videos`;
+      `${summaryOnly ? '' : '&append_to_response=credits,videos'}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { next: { revalidate: 3600 } });
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: 'Non trouvé sur TMDB' },
-        { status: 404 }
-      );
+      const status = res.status === 404 ? 404 : res.status === 429 ? 429 : 502;
+      const error = res.status === 404
+        ? 'Cette œuvre est introuvable sur TMDB.'
+        : res.status === 401 || res.status === 403
+          ? 'TMDB refuse la connexion du serveur. Vérifiez la clé TMDB_API_KEY.'
+          : res.status === 429
+            ? 'TMDB reçoit trop de demandes. Réessayez dans quelques instants.'
+            : 'Le service des fiches est temporairement indisponible.';
+      return NextResponse.json({ error }, { status });
     }
 
     const data = await res.json();
@@ -205,7 +215,7 @@ export async function GET(request: Request) {
       ? data.videos.results
       : [];
 
-    if (trailerResults.length === 0) {
+    if (!summaryOnly && trailerResults.length === 0) {
       try {
         const fallbackVideosRes = await fetch(
           `https://api.themoviedb.org/3/${tmdbType}/${id}/videos?api_key=${TMDB_API_KEY}&language=en-US`
@@ -284,6 +294,11 @@ return NextResponse.json({
     data.overview ||
     'Aucun synopsis disponible en français.',
 
+  title: data.title || data.name || '',
+  episodes: data.number_of_episodes || 0,
+  creator_people: (tmdbType === 'movie'
+    ? (data.credits?.crew || []).filter((member: any) => member.job === 'Director')
+    : (data.created_by || [])).map((member: any) => ({ id: member.id, name: member.name })),
   actors,
 
   seasons_count:

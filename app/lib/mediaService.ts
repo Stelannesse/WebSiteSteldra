@@ -40,7 +40,8 @@ export type MediaDetailsResult = {
 
 /** Récupère la fiche complète d'un média. */
 export async function getMediaDetails(
-  media: MediaItem
+  media: MediaItem,
+  options?: { summary?: boolean }
 ) {
   let apiType: string;
 
@@ -58,7 +59,7 @@ export async function getMediaDetails(
   const res = await fetch(
     `/api/media-details?id=${encodeURIComponent(
       media.id.toString()
-    )}&type=${apiType}`
+    )}&type=${apiType}${options?.summary ? '&mode=summary' : ''}`
   );
 
   if (!res.ok) {

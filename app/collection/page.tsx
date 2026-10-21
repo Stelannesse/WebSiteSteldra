@@ -4,6 +4,7 @@
 
 'use client'; // Permet d'utiliser les fonctionnalités côté client
 
+import { readUser, loadCollection } from '../lib/browserData';
 import { createClient } from '../lib/supabase';
 import { useState, useEffect, useMemo, useRef } from 'react'; // Gérer les données et les actions
 import styles from '../page.module.css'; //Importer le style de la page
@@ -34,6 +35,8 @@ import {
 /** Composant principal de cette page ou zone d'interface. */
 export default function Home() {
 const [supabase] = useState(() => createClient());
+const metadataAttempted = useRef(new Set<string>());
+const metadataQueue = useRef<Promise<void>>(Promise.resolve());
   const [query, setQuery] = useState(''); // État pour la recherche
   const [results, setResults] = useState<MediaItem[]>([]); // État pour les résultats de recherche
   const [loading, setLoading] = useState(false); // État pour indiquer si la recherche est en cours
@@ -42,9 +45,10 @@ const [supabase] = useState(() => createClient());
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null); // État pour stocker la date de création du compte de l'utilisateur connecté
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [initialDataReady, setInitialDataReady] = useState(false);
+  const [collectionComplete, setCollectionComplete] = useState(false);
   const [pendingScrollRestore, setPendingScrollRestore] = useState<number | null>(null);
   const [collectionStateRestored, setCollectionStateRestored] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(120);
+  const [visibleCount, setVisibleCount] = useState(24);
   const [quickLists, setQuickLists] = useState<Array<{ id: string; name: string }>>([]);
   
 
@@ -287,7 +291,8 @@ const enrichMissingMetadata = async (
   list: Record<string, MyListItem>,
   currentUserId: string
 ) => {
-  const missing = Object.entries(list).filter(([, entry]) => {
+  const missing = Object.entries(list).filter(([key, entry]) => {
+    if (metadataAttempted.current.has(`${currentUserId}:${key}`)) return false;
     if (!isCinemaType(entry?.media?.type)) return false;
     const hasGenres =
       Array.isArray(entry.media.genres) &&
@@ -310,17 +315,7 @@ const enrichMissingMetadata = async (
     return;
   }
 
-  /*
-   * Évite de relancer tout l'enrichissement plusieurs fois
-   * pendant la même session navigateur.
-   */
-  const sessionKey = `steldra_metadata_enrichment_${currentUserId}`;
-
-  if (sessionStorage.getItem(sessionKey) === 'running') {
-    return;
-  }
-
-  sessionStorage.setItem(sessionKey, 'running');
+  missing.forEach(([key]) => metadataAttempted.current.add(`${currentUserId}:${key}`));
   setMetadataIndexing(true);
 
   try {
@@ -337,7 +332,7 @@ const enrichMissingMetadata = async (
       const results = await Promise.allSettled(
         chunk.map(async ([key, entry]) => {
           try {
-            const details = await getMediaDetails(entry.media);
+            const details = await getMediaDetails(entry.media, { summary: true });
 
             const genres = Array.isArray(details.genres)
               ? details.genres
@@ -493,7 +488,7 @@ const enrichMissingMetadata = async (
      * "done" empêche un deuxième gros enrichissement
      * pendant la même session.
      */
-    sessionStorage.setItem(sessionKey, 'done');
+
   }
 };
 
@@ -541,10 +536,24 @@ const handleAddToMyList = async (media: MediaItem, status: 'vu' | 'a_voir') => {
   }
 };
 
+// Applique immédiatement les sorties détectées sans recharger toute la collection.
+useEffect(() => {
+  const onRelease = (event: Event) => {
+    const { mediaId, mediaType, media } = (event as CustomEvent).detail || {};
+    const key = `${mediaType}_${mediaId}`;
+    setMyList((current) => !current[key] || current[key].status !== 'vu' ? current : {
+      ...current, [key]: { ...current[key], status: 'en_cours', media },
+    });
+  };
+  window.addEventListener('steldra:series-released', onRelease);
+  return () => window.removeEventListener('steldra:series-released', onRelease);
+}, []);
+
 // Vérification de la session utilisateur au chargement de la page
-useEffect(() => { 
+useEffect(() => {
+  let cancelled = false; 
   const loadInitialData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await readUser(supabase);
 
     if (user) {
       // Si connecté : on récupère tout depuis Supabase
@@ -552,15 +561,10 @@ useEffect(() => {
       setUserId(user.id);
 
       
-    const { data, error } = await fetchAllPages<any>((from, to) =>
-      supabase
-        .from('media_progress')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('media_id', { ascending: true })
-        .range(from, to)
-    );
-      if (data && !error) {
+    const applyRows = (data: any[], complete: boolean) => {
+      if (cancelled) return;
+      setCollectionComplete(complete);
+      {
         
 
         const newList: any = {};
@@ -600,9 +604,13 @@ useEffect(() => {
 setMyList(newList);
 setWatchedEpisodes(newEpisodes);
 setMangaProgress(newProgress);
-void enrichMissingMetadata(newList, user.id);
+setInitialDataReady(true);
+
 
       }
+    };
+    const { error } = await loadCollection(supabase, user.id, applyRows);
+    if (error && !cancelled) setCollectionComplete(true);
     } else {
       // Si pas connecté : on récupère depuis le localStorage
       const savedList = localStorage.getItem('steldra_multimedia_list_v1');
@@ -621,7 +629,8 @@ void enrichMissingMetadata(newList, user.id);
   };
 
       // On met à jour l'état pour indiquer que la vérification est terminée
-  loadInitialData();
+  void loadInitialData();
+  return () => { cancelled = true; };
 }, []);  
 
 useEffect(() => {
@@ -964,6 +973,7 @@ const handleToggleFavorite = async (media: MediaItem) => {
     .eq('media_type', media.type);
 
   if (error) console.error('Erreur mise à jour favori :', error);
+  else window.dispatchEvent(new CustomEvent('steldra:progress-updated'));
 };
 
 
@@ -1121,7 +1131,7 @@ displayItems = displayItems.filter(item => {
 const statusOrder: Record<string, number> = { en_cours: 0, en_pause: 1, a_voir: 2, termine: 3, abandonne: 4 };
 
 useEffect(() => {
-  setVisibleCount(120);
+  setVisibleCount(24);
 }, [query, statusFilter, typeFilter, sortBy, favoritesOnly, hideCompleted, yearFilter, viewMode]);
 
 displayItems = [...displayItems].sort((a, b) => {
@@ -1168,7 +1178,18 @@ displayItems = [...displayItems].sort((a, b) => {
   return a.title.localeCompare(b.title, 'fr', { numeric: true, sensitivity: 'base', ignorePunctuation: true });
 });
 
-const visibleDisplayItems = isSearching ? displayItems : displayItems.slice(0, visibleCount);
+const visibleDisplayItems = displayItems.slice(0, visibleCount);
+const visibleMetadataKey = visibleDisplayItems.map((item) => `${item.type}_${item.id}`).join('|');
+useEffect(() => {
+  if (!userId || !initialDataReady || !collectionComplete || isSearching) return;
+  const visibleList = Object.fromEntries(visibleDisplayItems.map((item) => {
+    const key = `${item.type}_${item.id}`;
+    return [key, myList[key]];
+  }).filter(([, entry]) => Boolean(entry))) as Record<string, MyListItem>;
+  metadataQueue.current = metadataQueue.current
+    .catch(() => undefined)
+    .then(() => enrichMissingMetadata(visibleList, userId));
+}, [userId, initialDataReady, collectionComplete, isSearching, visibleMetadataKey]);
 
 const continueItems = Object.values(myList).filter((entry) => isCinemaType(entry?.media?.type))
   .filter((entry) => getFilterStatus(entry.media, entry.status) === 'en_cours');
@@ -1279,6 +1300,7 @@ return (
         </article>
       </section>
 
+      {!collectionComplete && userId && <p role="status">Chargement de la suite de la collection… Les filtres et totaux se complètent progressivement.</p>}
       {loading && <div data-steldra-ui="collectionLoading" className={styles.collectionLoading}>Recherche en cours…</div>}
 
       {!isSearching && continueItems.length > 0 && (
@@ -1332,7 +1354,7 @@ return (
           })}
         </div>
 
-        {!isSearching && visibleCount < displayItems.length && <div data-steldra-ui="collectionLoadMoreWrap" className={styles.collectionLoadMoreWrap}><button type="button" data-steldra-ui="collectionPremiumLoadMore" className={styles.collectionPremiumLoadMore} onClick={() => setVisibleCount((count) => count + 120)}>Afficher 120 médias de plus <span>{Math.min(visibleCount, displayItems.length)} / {displayItems.length}</span></button></div>}
+        {visibleCount < displayItems.length && <div data-steldra-ui="collectionLoadMoreWrap" className={styles.collectionLoadMoreWrap}><button type="button" data-steldra-ui="collectionPremiumLoadMore" className={styles.collectionPremiumLoadMore} onClick={() => setVisibleCount((count) => count + 24)}>Afficher 24 médias de plus <span>{Math.min(visibleCount, displayItems.length)} / {displayItems.length}</span></button></div>}
       </section>
 
       <footer data-steldra-ui="collectionOptionFooter" className={styles.collectionOptionFooter}><blockquote>« Le cinéma, ce n’est pas seulement une question de technique. C’est une question d’être humain. »</blockquote><span>— Andreï Tarkovski</span></footer>

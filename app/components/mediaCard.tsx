@@ -122,7 +122,7 @@ const openDetails = () => {
         {isReadingType ? 'À lire' : 'À voir'}
       </button>
 
-      <img
+      <img loading="lazy" decoding="async"
         src={posterUrl}
         alt={`Affiche de ${item.title}`}
         referrerPolicy="no-referrer"
