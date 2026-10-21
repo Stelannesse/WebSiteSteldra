@@ -265,7 +265,7 @@ export default function TalentDetailPage() {
                 <div data-steldra-ui="poster" className={styles.poster}><SteldraPoster src={credit.poster_path} alt={credit.title}/></div>
                 <strong>{credit.title}</strong><span>{credit.year||'—'}{credit.recommendation_label?` · ${credit.recommendation_label}`:''}</span>
               </Link>)}</div> : <div data-steldra-ui="empty" className={styles.empty}>Aucun crédit dans cette rubrique.</div>}
-              {view !== 'dubbing' && (view === 'filmography' ? screenCredits : directingCredits).length > creditVisibleCount && <button type="button" onClick={() => setCreditVisibleCount((count) => count + 24)}>Voir 24 titres de plus</button>}
+              {(view === 'filmography' ? screenCredits : directingCredits).length > creditVisibleCount && <button type="button" onClick={() => setCreditVisibleCount((count) => count + 24)}>Voir 24 titres de plus</button>}
             </div>
           )}
         </section>
